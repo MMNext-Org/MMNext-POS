@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MMNextPOS.Application/MMNextPOS.Application.csproj" />
+    <Project Path="src/MMNextPOS.Domain/MMNextPOS.Domain.csproj" />
+    <Project Path="src/MMNextPOS.Infrastructure/MMNextPOS.Infrastructure.csproj" />
+    <Project Path="src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj" />
+    <Project Path="tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>
