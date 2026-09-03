@@ -1,0 +1,46 @@
+name: Kimi-K3 Repo Agent Setup
+
+# PR အသစ်ဖွင့်ချိန် (သို့) Code အသစ်တင်ချိန်တွင် Agent ကို အလုပ်လုပ်စေမည်
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+
+jobs:
+  run-kimi-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      # အဆင့် ၁: GitHub Repository ထဲက Code တွေကို ဆွဲယူခြင်း
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # အဆင့် ၂: Agent အလုပ်လုပ်ရန် Python ထည့်သွင်းခြင်း
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # အဆင့် ၃: AI Agent (Aider) ကို Install လုပ်ခြင်း
+      - name: Install AI Agent (Aider)
+        run: |
+          python -m pip install --upgrade pip
+          pip install aider-chat
+
+      # အဆင့် ၄: NVIDIA API မှတစ်ဆင့် Kimi-K3 ကို ခေါ်သုံးခြင်း
+      - name: Run Kimi-K3 Agent
+        env:
+          # GitHub > Settings > Secrets and variables > Actions တွင် ကြိုတင်ထည့်သွင်းထားရမည့် Key များ
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Aider ကို Kimi-K3 မော်ဒယ်ချိတ်ဆက်၍ Run ခြင်း
+          aider \
+            --model openai/moonshotai/kimi-k3 \
+            --openai-api-base https://integrate.api.nvidia.com/v1 \
+            --openai-api-key $NVIDIA_API_KEY \
+            --message "Please review the latest code changes, find any bugs, and suggest improvements." \
+            --yes
