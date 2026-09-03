@@ -35,7 +35,6 @@ jobs:
         env:
           # GitHub > Settings > Secrets and variables > Actions တွင် ကြိုတင်ထည့်သွင်းထားရမည့် Key များ
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Aider ကို Kimi-K3 မော်ဒယ်ချိတ်ဆက်၍ Run ခြင်း
           aider \
