@@ -11,9 +11,12 @@ namespace MMNextPOS.Domain.Models
         public int? LocationId { get; set; }
         public int? SupplierId { get; set; } // For receive movements
         public int? CustomerId { get; set; } // For issue movements
+        public int? ProductId { get; set; }
+        public int Quantity { get; set; }
         public string? Reason { get; set; }
         public string Status { get; set; } = "Active";
         public int? CreatedByUserId { get; set; }
         public string? Notes { get; set; }
+        public bool IsActive { get; set; } = true;
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -15,10 +17,12 @@ namespace MMNextPOS.Infrastructure.Repositories
     public class GenericRepository<T> : RepositoryBase, IRepository<T> where T : class
     {
         private readonly string _tableName;
+        private readonly bool _hasIsDeleted;
 
         public GenericRepository(IUnitOfWork unitOfWork, string tableName) : base(unitOfWork)
         {
             _tableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
+            _hasIsDeleted = typeof(T).GetProperty("IsDeleted") != null;
         }
 
         public virtual async Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
@@ -83,21 +87,73 @@ namespace MMNextPOS.Infrastructure.Repositories
 
         public virtual async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            var sql = $"DELETE FROM {_tableName} WHERE Id = @Id";
-            await Connection.ExecuteAsync(sql, new { Id = id }, Transaction).ConfigureAwait(false);
+            if (_hasIsDeleted)
+            {
+                // Soft delete
+                var sql = $"UPDATE {_tableName} SET IsDeleted = 1 WHERE Id = @Id";
+                await Connection.ExecuteAsync(sql, new { Id = id }, Transaction).ConfigureAwait(false);
+            }
+            else
+            {
+                // Hard delete
+                var sql = $"DELETE FROM {_tableName} WHERE Id = @Id";
+                await Connection.ExecuteAsync(sql, new { Id = id }, Transaction).ConfigureAwait(false);
+            }
         }
 
         public virtual async Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             var sql = $"SELECT * FROM {_tableName} WHERE Id = @Id";
+            if (_hasIsDeleted)
+            {
+                sql += " AND IsDeleted = 0";
+            }
             return await Connection.QuerySingleOrDefaultAsync<T>(sql, new { Id = id }, Transaction).ConfigureAwait(false);
         }
 
         public virtual async Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             var sql = $"SELECT * FROM {_tableName}";
+            if (_hasIsDeleted)
+            {
+                sql += " WHERE IsDeleted = 0";
+            }
             var result = await Connection.QueryAsync<T>(sql, transaction: Transaction).ConfigureAwait(false);
             return result.AsList();
+        }
+
+        public virtual async Task<PagedResult<T>> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+
+            var offset = (page - 1) * pageSize;
+
+            var countSql = $"SELECT COUNT(*) FROM {_tableName}";
+            if (_hasIsDeleted)
+            {
+                countSql += " WHERE IsDeleted = 0";
+            }
+
+            var totalCount = await Connection.ExecuteScalarAsync<int>(countSql, transaction: Transaction).ConfigureAwait(false);
+
+            var sql = $"SELECT * FROM {_tableName}";
+            if (_hasIsDeleted)
+            {
+                sql += " WHERE IsDeleted = 0";
+            }
+            sql += $" ORDER BY Id LIMIT @Limit OFFSET @Offset";
+
+            var parameters = new { Limit = pageSize, Offset = offset };
+            var result = await Connection.QueryAsync<T>(sql, parameters, Transaction).ConfigureAwait(false);
+
+            return new PagedResult<T>
+            {
+                Items = result.AsList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

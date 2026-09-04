@@ -6,10 +6,10 @@ namespace MMNextPOS.Domain.Models
     /// <summary>
     /// Represents a sales transaction (header) with customer info for display.
     /// </summary>
-    public class Sale
+    public class Sale : EntityBase
     {
         [Key]
-        public int Id { get; set; }
+        public new int Id { get; set; }
 
         [Required]
         public int CustomerId { get; set; }

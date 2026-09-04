@@ -13,5 +13,6 @@ namespace MMNextPOS.Infrastructure.Repositories
         Task<Product> AddAsync(Product product, CancellationToken cancellationToken = default);
         Task UpdateAsync(Product product, CancellationToken cancellationToken = default);
         Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+        Task AdjustStockAsync(int productId, int quantityAdjustment, string reason, int adjustedBy, CancellationToken cancellationToken = default);
     }
 }

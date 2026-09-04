@@ -6,10 +6,14 @@ namespace MMNextPOS.Domain.Models
     /// <summary>
     /// Represents a customer of the POS system.
     /// </summary>
-    public class Customer
+    public class Customer : EntityBase
     {
         [Key]
-        public int Id { get; set; }
+        public new int Id { get; set; }
+
+        [Required]
+        [MaxLength(20)]
+        public string Code { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(150)]
@@ -23,5 +27,7 @@ namespace MMNextPOS.Domain.Models
 
         [MaxLength(100)]
         public string? Email { get; set; }
+
+        public bool IsActive { get; set; } = true;
     }
 }

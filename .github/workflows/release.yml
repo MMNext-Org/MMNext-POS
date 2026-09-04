@@ -1,0 +1,162 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  SOLUTION_FILE: 'MMNextPOS.slnx'
+  PROJECT_FILE: 'src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj'
+
+jobs:
+  # ===========================
+  # Release Build
+  # ===========================
+  release-build:
+    name: Build Release Artifacts
+    runs-on: windows-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
+      release-notes: ${{ steps.changelog.outputs.release_notes }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v3
+        id: gitversion
+        with:
+          useConfigFile: true
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      - name: Build Release
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore -v minimal
+        env:
+          DEVEXPRESS_LICENSE_KEY: 'evaluation'
+
+      - name: Run tests
+        run: dotnet test ${{ env.SOLUTION_FILE }} --configuration Release --no-build --verbosity normal
+
+      - name: Publish WinForms (Self-contained, win-x64)
+        run: |
+          dotnet publish ${{ env.PROJECT_FILE }} \
+            --configuration Release \
+            --self-contained true \
+            --runtime win-x64 \
+            --output "${{ runner.temp }}/publish-win-x64" \
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=false \
+            -p:IncludeNativeLibrariesForSelfExtract=true
+        env:
+          DEVEXPRESS_LICENSE_KEY: 'evaluation'
+
+      - name: Create ZIP archive
+        run: |
+          cd "${{ runner.temp }}/publish-win-x64"
+          7z a -tzip "${{ runner.temp }}/MMNextPOS-${{ steps.gitversion.outputs.nuGetVersionV2 }}-win-x64.zip" *
+
+      - name: Generate release notes
+        id: changelog
+        run: |
+          # Extract release notes from CHANGELOG.md or git log
+          if [ -f "CHANGELOG.md" ]; then
+            # Get content between current version and previous version
+            VERSION="${{ steps.gitversion.outputs.nuGetVersionV2 }}"
+            NOTES=$(awk "/^## \[$VERSION\]/,/^## \[/" CHANGELOG.md | head -n -1 | tail -n +2)
+          else
+            NOTES=$(git log --oneline --decorate --format="* %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+          fi
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MMNextPOS-${{ steps.gitversion.outputs.nuGetVersionV2 }}-win-x64
+          path: ${{ runner.temp }}/MMNextPOS-${{ steps.gitversion.outputs.nuGetVersionV2 }}-win-x64.zip
+          retention-days: 90
+
+  # ===========================
+  # Create GitHub Release
+  # ===========================
+  create-release:
+    name: Create GitHub Release
+    needs: release-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: MMNextPOS-${{ needs.release-build.outputs.version }}-win-x64
+          path: ${{ runner.temp }}/release
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.release-build.outputs.version }}
+          name: MMNext POS v${{ needs.release-build.outputs.version }}
+          body: ${{ needs.release-build.outputs.release-notes }}
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          files: ${{ runner.temp }}/release/*.zip
+          generate_release_notes: true
+
+  # ===========================
+  # Notify (optional - Slack/Teams/Email)
+  # ===========================
+  notify:
+    name: Notify Release
+    needs: create-release
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Release notification
+        if: success()
+        run: |
+          echo "✅ Release v${{ needs.release-build.outputs.version }} published successfully!"
+          echo "🔗 https://github.com/${{ github.repository }}/releases/tag/v${{ needs.release-build.outputs.version }}"
+        # Add Slack/Teams webhook here if needed
+        # - name: Slack notification
+        #   uses: 8398a7/action-slack@v3
+        #   with:
+        #     status: ${{ job.status }}
+        #     channel: '#releases'
+        #     text: "MMNext POS v${{ needs.release-build.outputs.version }} released!"
+        #   env:
+        #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

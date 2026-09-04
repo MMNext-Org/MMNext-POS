@@ -1,22 +1,18 @@
 using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace MMNextPOS.Domain.Models
 {
     /// <summary>
     /// Represents an invoice generated from a sale.
     /// </summary>
-    public class Invoice
+    public class Invoice : EntityBase
     {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
+        public string InvoiceNo { get; set; } = string.Empty;
         public int SaleId { get; set; }
-
+        public int CustomerId { get; set; }
         public DateTime InvoiceDate { get; set; } = DateTime.UtcNow;
-
-        [Range(0, double.MaxValue)]
         public decimal AmountDue { get; set; }
+        public string Status { get; set; } = "Active"; // Active, Paid, Voided
+        public int? CreatedByUserId { get; set; }
     }
 }

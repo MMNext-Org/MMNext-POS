@@ -31,10 +31,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '8.0.x'
 
       - name: Build
         run: dotnet build MMNextPOS.slnx --configuration Release --no-restore
+
+      - name: Format Check
+        run: dotnet format --verify-no-changes
 
       - name: Unit test (Application layer)
         run: dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj --configuration Release --no-build --verbosity normal

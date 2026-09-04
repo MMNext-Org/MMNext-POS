@@ -77,7 +77,7 @@ namespace MMNextPOS.Application.Tests
 
             // Act & Assert
             await Assert.ThrowsAsync<InsufficientStockException>(() => service.CreateSaleAsync(sale, details));
-            
+
             // Verify rollback was called
             _unitOfWorkMock.Verify(r => r.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
             _unitOfWorkMock.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -106,7 +106,7 @@ namespace MMNextPOS.Application.Tests
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateSaleAsync(sale, details));
-            
+
             // Verify rollback was called, commit was not
             _unitOfWorkMock.Verify(r => r.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
             _unitOfWorkMock.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);

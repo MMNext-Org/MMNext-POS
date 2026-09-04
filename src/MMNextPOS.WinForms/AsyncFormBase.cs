@@ -8,7 +8,7 @@ namespace MMNextPOS.WinForms
 {
     /// <summary>
     /// Base class for WinForms that need async operations, cancellation handling,
-    /// and consistent error/info dialogs.
+    /// and consistent error/info/confirm dialogs.
     /// </summary>
     public abstract class AsyncFormBase : XtraForm, IDisposable
     {
@@ -52,6 +52,36 @@ namespace MMNextPOS.WinForms
             if (wait) System.Windows.Forms.Application.DoEvents();
         }
 
+        /// <summary>
+        /// Show a progress message with a wait cursor.
+        /// </summary>
+        protected void ShowProgress(string message = "Processing...")
+        {
+            ShowInfo(message);
+            SetWaitCursor(true);
+        }
+
+        /// <summary>
+        /// Hide the progress indicator and restore cursor.
+        /// </summary>
+        protected void HideProgress()
+        {
+            SetWaitCursor(false);
+        }
+
+        /// <summary>
+        /// Show a confirmation dialog and return the user's choice.
+        /// </summary>
+        protected bool ShowConfirm(string message, string caption = "Confirm")
+        {
+            if (this.InvokeRequired)
+            {
+                return (bool)Invoke(new Func<string, string, bool>(ShowConfirm), message, caption);
+            }
+            var result = XtraMessageBox.Show(this, message, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            return result == DialogResult.Yes;
+        }
+
         protected void ShowError(string message)
         {
             if (this.InvokeRequired)
@@ -71,6 +101,18 @@ namespace MMNextPOS.WinForms
             }
             XtraMessageBox.Show(this, message, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
+
+        /// <summary>
+        /// Cancel any pending async operation.
+        /// </summary>
+        protected void CancelAsync() => _cts.Cancel();
+
+        // Virtual methods for derived forms to override
+        protected virtual bool ValidateForm() => true;
+
+        protected virtual void LoadEntityData(object entity) { }
+
+        protected virtual void SaveEntityData(object entity) { }
 
         // Dispose pattern – cancels any pending async work and disposes resources.
         protected override void Dispose(bool disposing)

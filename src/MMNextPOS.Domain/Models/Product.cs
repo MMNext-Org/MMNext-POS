@@ -7,13 +7,13 @@ namespace MMNextPOS.Domain.Models
     /// <summary>
     /// Represents a product (stock item) in the POS system.
     /// </summary>
-    public class Product
+    public class Product : EntityBase
     {
         /// <summary>
         /// Primary key.
         /// </summary>
         [Key]
-        public int Id { get; set; }
+        public new int Id { get; set; }
 
         /// <summary>
         /// Unique stock keeping unit.

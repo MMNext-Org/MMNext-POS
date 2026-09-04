@@ -15,5 +15,15 @@ namespace MMNextPOS.Infrastructure.Repositories
         Task DeleteAsync(int id, CancellationToken cancellationToken = default);
         Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<PagedResult<T>> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    }
+
+    public class PagedResult<T>
+    {
+        public IReadOnlyList<T> Items { get; set; } = Array.Empty<T>();
+        public int TotalCount { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
     }
 }

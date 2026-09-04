@@ -8,17 +8,16 @@ using MMNextPOS.Domain.Models;
 
 namespace MMNextPOS.Infrastructure.Repositories
 {
-    public class SaleRepository : RepositoryBase, ISaleRepository
+    public class SaleRepository : GenericRepository<Sale>, ISaleRepository
     {
-        public SaleRepository(IUnitOfWork unitOfWork) : base(unitOfWork) { }
+        public SaleRepository(IUnitOfWork unitOfWork)
+            : base(unitOfWork, "Sales")
+        {
+        }
 
         public async Task<Sale> CreateAsync(Sale sale, CancellationToken cancellationToken = default)
         {
-            const string sql = @"INSERT INTO Sales (CustomerId, SaleDate, TotalAmount) VALUES (@CustomerId, @SaleDate, @TotalAmount);
-                                 SELECT LAST_INSERT_ID();";
-            var id = await Connection.ExecuteScalarAsync<long>(sql, sale, Transaction).ConfigureAwait(false);
-            sale.Id = (int)id;
-            return sale;
+            return await AddAsync(sale, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -33,12 +32,12 @@ namespace MMNextPOS.Infrastructure.Repositories
             }
 
             const string saleSql = @"INSERT INTO Sales (CustomerId, SaleDate, TotalAmount) VALUES (@CustomerId, @SaleDate, @TotalAmount);
-                                     SELECT LAST_INSERT_ID();";
+                                         SELECT LAST_INSERT_ID();";
             var saleId = await Connection.ExecuteScalarAsync<long>(saleSql, sale, Transaction).ConfigureAwait(false);
             sale.Id = (int)saleId;
 
             const string detailSql = @"INSERT INTO SaleDetails (SaleId, ProductId, Quantity, UnitPrice) VALUES (@SaleId, @ProductId, @Quantity, @UnitPrice);
-                                       SELECT LAST_INSERT_ID();";
+                                           SELECT LAST_INSERT_ID();";
 
             foreach (var detail in details)
             {
@@ -61,12 +60,16 @@ namespace MMNextPOS.Infrastructure.Repositories
         public async Task<IReadOnlyList<Sale>> GetRecentAsync(int count = 20, CancellationToken cancellationToken = default)
         {
             const string sql = @"SELECT s.*, c.Name AS CustomerName 
-                                FROM Sales s 
-                                LEFT JOIN Customers c ON s.CustomerId = c.Id 
-                                ORDER BY s.SaleDate DESC 
-                                LIMIT @Count";
+                                    FROM Sales s 
+                                    LEFT JOIN Customers c ON s.CustomerId = c.Id 
+                                    ORDER BY s.SaleDate DESC 
+                                    LIMIT @Count";
             var result = await Connection.QueryAsync<Sale>(sql, new { Count = count }, Transaction).ConfigureAwait(false);
             return result.AsList();
         }
+
+        // Implement required IRepository methods that may not be fully covered
+        // Note: GenericRepository provides AddAsync, UpdateAsync, DeleteAsync, GetByIdAsync, GetAllAsync, GetPageAsync
+        // The interface ISaleRepository uses CreateAsync which we map to AddAsync above
     }
 }

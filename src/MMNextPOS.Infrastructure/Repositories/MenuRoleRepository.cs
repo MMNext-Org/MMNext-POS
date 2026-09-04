@@ -4,7 +4,7 @@ namespace MMNextPOS.Infrastructure.Repositories
 {
     public class MenuRoleRepository : GenericRepository<MenuRole>, IMenuRoleRepository
     {
-        public MenuRoleRepository(IUnitOfWork unitOfWork) 
+        public MenuRoleRepository(IUnitOfWork unitOfWork)
             : base(unitOfWork, "MenuRoles")
         {
         }

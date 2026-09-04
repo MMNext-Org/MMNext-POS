@@ -4,7 +4,7 @@ namespace MMNextPOS.Infrastructure.Repositories
 {
     public class CurrencyRepository : GenericRepository<Currency>, ICurrencyRepository
     {
-        public CurrencyRepository(IUnitOfWork unitOfWork) 
+        public CurrencyRepository(IUnitOfWork unitOfWork)
             : base(unitOfWork, "Currencies")
         {
         }

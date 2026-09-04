@@ -1,0 +1,33 @@
+# Dependency Review Configuration for MMNext POS
+# Fails PR if vulnerabilities are found at specified severity level
+
+fail-on-severity: moderate  # low, moderate, high, critical
+
+# Allow specific vulnerabilities that are known and accepted
+allow-ghsas:
+  # Example: GHSA-xxxx-xxxx-xxxx
+  # Add any false positives here with justification comment
+
+# Deny specific packages/versions regardless of vulnerability status
+deny-packages: []
+
+# Configuration for license scanning
+license-check:
+  # Fail on incompatible licenses
+  fail-on-incompatible: true
+  allowed-licenses:
+    - MIT
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - CC0-1.0
+    - Unlicense
+    - MS-PL  # Microsoft Public License (for DevExpress maybe)
+  # Deny these licenses
+  denied-licenses:
+    - GPL-2.0
+    - GPL-3.0
+    - AGPL-3.0
+    - LGPL-2.1
+    - LGPL-3.0

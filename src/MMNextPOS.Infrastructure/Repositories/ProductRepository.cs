@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -9,30 +8,11 @@ using MMNextPOS.Domain.Models;
 
 namespace MMNextPOS.Infrastructure.Repositories
 {
-    public class ProductRepository : RepositoryBase, IProductRepository
+    public class ProductRepository : GenericRepository<Product>, IProductRepository
     {
-        public ProductRepository(IUnitOfWork unitOfWork) : base(unitOfWork) { }
-
-        public async Task<Product> AddAsync(Product product, CancellationToken cancellationToken = default)
+        public ProductRepository(IUnitOfWork unitOfWork)
+            : base(unitOfWork, "Products")
         {
-            const string sql = @"INSERT INTO Products (Sku, Name, Price, StockQuantity) VALUES (@Sku, @Name, @Price, @StockQuantity);
-                                 SELECT LAST_INSERT_ID();";
-            var id = await Connection.ExecuteScalarAsync<long>(sql, product, Transaction).ConfigureAwait(false);
-            product.Id = (int)id;
-            return product;
-        }
-
-        public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
-        {
-            const string sql = "DELETE FROM Products WHERE Id = @Id";
-            await Connection.ExecuteAsync(sql, new { Id = id }, Transaction).ConfigureAwait(false);
-        }
-
-        public async Task<IReadOnlyList<Product>> GetAllAsync(CancellationToken cancellationToken = default)
-        {
-            const string sql = "SELECT * FROM Products";
-            var result = await Connection.QueryAsync<Product>(sql, transaction: Transaction).ConfigureAwait(false);
-            return result.AsList();
         }
 
         public async Task<IReadOnlyList<Product>> GetLowStockProductsAsync(CancellationToken cancellationToken = default, int? minStockAlertLevel = null)
@@ -41,18 +21,6 @@ namespace MMNextPOS.Infrastructure.Repositories
             const string sql = "SELECT * FROM Products WHERE IsActive = 1 AND StockQuantity <= @MinStockAlertLevel";
             var result = await Connection.QueryAsync<Product>(sql, new { MinStockAlertLevel = level }, Transaction).ConfigureAwait(false);
             return result.AsList();
-        }
-
-        public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        {
-            const string sql = "SELECT * FROM Products WHERE Id = @Id";
-            return await Connection.QuerySingleOrDefaultAsync<Product>(sql, new { Id = id }, Transaction).ConfigureAwait(false);
-        }
-
-        public async Task UpdateAsync(Product product, CancellationToken cancellationToken = default)
-        {
-            const string sql = "UPDATE Products SET Sku = @Sku, Name = @Name, Price = @Price, StockQuantity = @StockQuantity WHERE Id = @Id";
-            await Connection.ExecuteAsync(sql, product, Transaction).ConfigureAwait(false);
         }
 
         public async Task AdjustStockAsync(int productId, int quantityAdjustment, string reason, int adjustedBy, CancellationToken cancellationToken = default)

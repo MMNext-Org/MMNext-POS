@@ -22,5 +22,8 @@ namespace MMNextPOS.Domain.Models
 
         /// <summary>User id of the last updater.</summary>
         public int? UpdatedBy { get; set; }
+
+        /// <summary>Soft delete flag. When true, entity is logically deleted but retained in DB.</summary>
+        public bool IsDeleted { get; set; }
     }
 }

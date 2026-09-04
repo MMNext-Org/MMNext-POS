@@ -47,7 +47,7 @@ namespace MMNextPOS.Application.Services
                     var product = await _productRepo.GetByIdAsync(d.ProductId, cancellationToken);
                     if (product == null)
                         throw new ValidationException($"Product {d.ProductId} not found after sale creation.");
-                    
+
                     product.StockQuantity -= d.Quantity;
                     await _productRepo.UpdateAsync(product, cancellationToken);
                 }

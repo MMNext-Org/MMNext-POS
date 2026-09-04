@@ -8,6 +8,7 @@ namespace MMNextPOS.Domain.Models
         public int PurchaseId { get; set; }
         public int ProductId { get; set; }
         public int Quantity { get; set; }
+        public int ReceivedQuantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal TaxAmount { get; set; }

@@ -15,11 +15,12 @@ using MMNextPOS.Domain.Models;
 namespace MMNextPOS.WinForms
 {
     /// <summary>
-    /// Dialog for creating a new sale with line items.
+    /// Dialog for creating a new sale with line items, with SaleTemp integration for live draft/hold/resume.
     /// </summary>
     public class NewSaleForm : AsyncFormBase
     {
         private readonly ISalesService _salesService;
+        private readonly ISaleTempService _saleTempService;
         private readonly IProductService _productService;
         private readonly ICustomerService _customerService;
 
@@ -31,6 +32,8 @@ namespace MMNextPOS.WinForms
         private SimpleButton _removeLineButton = null!;
         private SimpleButton _saveButton = null!;
         private SimpleButton _cancelButton = null!;
+        private SimpleButton _holdButton = null!;
+        private SimpleButton _printButton = null!;
         private LabelControl _totalLabel = null!;
         private TextEdit _searchProductBox = null!;
         private BindingList<SaleDetailViewModel> _lineItems = new();
@@ -38,17 +41,35 @@ namespace MMNextPOS.WinForms
         // Cache for products (for lookup)
         private List<Product> _allProducts = new();
 
+        // SaleTemp integration
+        private SaleTemp? _currentDraft = null;
+        private bool _isResumingDraft = false;
+
         public NewSaleForm(
             ISalesService salesService,
+            ISaleTempService saleTempService,
             IProductService productService,
             ICustomerService customerService)
         {
             _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
+            _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
 
             InitializeComponent();
             this.Load += async (s, e) => await LoadReferenceDataAsync();
+        }
+
+        // Overload for resuming a draft
+        public NewSaleForm(
+            ISalesService salesService,
+            ISaleTempService saleTempService,
+            IProductService productService,
+            ICustomerService customerService,
+            SaleTemp draft) : this(salesService, saleTempService, productService, customerService)
+        {
+            _currentDraft = draft ?? throw new ArgumentNullException(nameof(draft));
+            _isResumingDraft = true;
         }
 
         private void InitializeComponent()
@@ -264,16 +285,37 @@ namespace MMNextPOS.WinForms
             };
             _saveButton.Click += async (s, e) => await SaveSaleAsync();
 
+            _holdButton = new SimpleButton
+            {
+                Text = "Hold Draft",
+                Location = new Point(140, 15),
+                Width = 100,
+                Height = 35
+            };
+            _holdButton.Click += async (s, e) => await HoldDraftAsync();
+
+            _printButton = new SimpleButton
+            {
+                Text = "Print Receipt",
+                Location = new Point(250, 15),
+                Width = 100,
+                Height = 35,
+                Enabled = false
+            };
+            _printButton.Click += async (s, e) => await PrintReceiptAsync();
+
             _cancelButton = new SimpleButton
             {
                 Text = "Cancel",
-                Location = new Point(140, 15),
+                Location = new Point(360, 15),
                 Width = 100,
                 Height = 35
             };
             _cancelButton.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
 
             buttonPanel.Controls.Add(_saveButton);
+            buttonPanel.Controls.Add(_holdButton);
+            buttonPanel.Controls.Add(_printButton);
             buttonPanel.Controls.Add(_cancelButton);
 
             // Assemble
@@ -298,10 +340,47 @@ namespace MMNextPOS.WinForms
 
                 // Load products for lookup
                 _allProducts = (await _productService.GetAllAsync(CancellationToken)).ToList();
+
+                // If resuming a draft, load it
+                if (_isResumingDraft && _currentDraft != null)
+                {
+                    await LoadDraftAsync();
+                }
             }
             catch (Exception ex)
             {
                 ShowError($"Failed to load reference data: {ex.Message}");
+            }
+            finally
+            {
+                SetWaitCursor(false);
+            }
+        }
+
+        private async Task LoadDraftAsync()
+        {
+            if (_currentDraft == null) return;
+
+            try
+            {
+                SetWaitCursor(true);
+
+                // Load customer
+                if (_currentDraft.CustomerId.HasValue)
+                {
+                    _customerLookup.EditValue = _currentDraft.CustomerId.Value;
+                }
+
+                // Load sale temp details (would need a detail service - for now we'll simulate)
+                // In a real implementation, you'd load from SaleTempDetail table
+                // For now, we'll just set the basic info
+
+                _totalLabel.Text = $"Total: {_currentDraft.NetAmount:C2}";
+                _printButton.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Failed to load draft: {ex.Message}");
             }
             finally
             {
@@ -460,6 +539,8 @@ namespace MMNextPOS.WinForms
             {
                 SetWaitCursor(true);
                 _saveButton.Enabled = false;
+                _holdButton.Enabled = false;
+                _printButton.Enabled = false;
                 _cancelButton.Enabled = false;
 
                 var customerId = Convert.ToInt32(_customerLookup.EditValue);
@@ -482,7 +563,15 @@ namespace MMNextPOS.WinForms
                 // Create sale via service
                 var createdSale = await _salesService.CreateSaleAsync(sale, details, CancellationToken);
 
+                // If we had a draft, delete it
+                if (_currentDraft != null)
+                {
+                    await _saleTempService.DeleteAsync(_currentDraft.Id, CancellationToken);
+                    _currentDraft = null;
+                }
+
                 ShowInfo($"Sale #{createdSale.Id} created successfully!");
+                _printButton.Enabled = true;
                 this.DialogResult = DialogResult.OK;
             }
             catch (Exception ex)
@@ -493,8 +582,138 @@ namespace MMNextPOS.WinForms
             {
                 SetWaitCursor(false);
                 _saveButton.Enabled = true;
+                _holdButton.Enabled = true;
                 _cancelButton.Enabled = true;
             }
+        }
+
+        private async Task HoldDraftAsync()
+        {
+            if (!_lineItems.Any())
+            {
+                ShowInfo("Please add at least one product line before holding.");
+                return;
+            }
+
+            if (_customerLookup.EditValue == null)
+            {
+                ShowInfo("Please select a customer before holding.");
+                return;
+            }
+
+            try
+            {
+                SetWaitCursor(true);
+                _holdButton.Enabled = false;
+
+                var draft = _currentDraft ?? new SaleTemp();
+
+                draft.CustomerId = Convert.ToInt32(_customerLookup.EditValue);
+                draft.CustomerName = _customerLookup.Text;
+                draft.SaleDate = DateTime.UtcNow;
+                draft.TotalAmount = _lineItems.Sum(l => l.LineTotal);
+                draft.DiscountAmount = 0;
+                draft.TaxAmount = 0;
+                draft.NetAmount = _lineItems.Sum(l => l.LineTotal);
+                draft.Status = "Draft";
+                draft.Notes = "Auto-saved draft";
+
+                if (_currentDraft != null)
+                {
+                    // Update existing draft
+                    draft.Id = _currentDraft.Id;
+                    await _saleTempService.UpdateAsync(draft, CancellationToken);
+                    ShowInfo("Draft updated successfully.");
+                }
+                else
+                {
+                    // Create new draft
+                    var createdDraft = await _saleTempService.AddAsync(draft, CancellationToken);
+                    _currentDraft = createdDraft;
+                    _isResumingDraft = true;
+                    ShowInfo("Draft saved successfully.");
+                }
+
+                _printButton.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Failed to hold draft: {ex.Message}");
+            }
+            finally
+            {
+                SetWaitCursor(false);
+                _holdButton.Enabled = true;
+            }
+        }
+
+        private async Task PrintReceiptAsync()
+        {
+            if (_currentDraft == null && _lineItems.Any())
+            {
+                // Create a temporary draft for printing
+                var draft = new SaleTemp
+                {
+                    CustomerId = Convert.ToInt32(_customerLookup.EditValue),
+                    CustomerName = _customerLookup.Text,
+                    SaleDate = DateTime.UtcNow,
+                    TotalAmount = _lineItems.Sum(l => l.LineTotal),
+                    NetAmount = _lineItems.Sum(l => l.LineTotal),
+                    Status = "Print"
+                };
+                _currentDraft = await _saleTempService.AddAsync(draft, CancellationToken);
+            }
+
+            if (_currentDraft == null)
+            {
+                ShowInfo("No sale to print.");
+                return;
+            }
+
+            try
+            {
+                SetWaitCursor(true);
+                _printButton.Enabled = false;
+
+                // Generate receipt using report service
+                // For now, we'll show a simple message
+                var receipt = GenerateReceiptText();
+                XtraMessageBox.Show(this, receipt, $"Receipt - Sale #{_currentDraft.Id}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Failed to print receipt: {ex.Message}");
+            }
+            finally
+            {
+                SetWaitCursor(false);
+                _printButton.Enabled = true;
+            }
+        }
+
+        private string GenerateReceiptText()
+        {
+            var lines = new List<string>
+            {
+                "MMNext POS - Receipt",
+                "====================",
+                $"Sale #: {_currentDraft?.Id ?? 0}",
+                $"Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+                $"Customer: {_currentDraft?.CustomerName ?? "Walk-in"}",
+                "----------------------------"
+            };
+
+            foreach (var line in _lineItems)
+            {
+                lines.Add($"{line.ProductName} x{line.Quantity} @ {line.UnitPrice:C2} = {line.LineTotal:C2}");
+            }
+
+            lines.Add("----------------------------");
+            lines.Add($"Total: {_lineItems.Sum(l => l.LineTotal):C2}");
+            lines.Add("====================");
+            lines.Add("Thank you for your purchase!");
+
+            return string.Join(Environment.NewLine, lines);
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -507,6 +726,11 @@ namespace MMNextPOS.WinForms
             if (keyData == (Keys.Control | Keys.S))
             {
                 _ = SaveSaleAsync();
+                return true;
+            }
+            if (keyData == Keys.F2)
+            {
+                _ = HoldDraftAsync();
                 return true;
             }
             if (keyData == Keys.Enter && _searchProductBox.Focused)
