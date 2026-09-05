@@ -111,7 +111,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var currency = (Currency)entity;
             _codeEdit.Text = currency.Code;
@@ -124,7 +124,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var currency = (Currency)entity;
             currency.Code = _codeEdit.Text.Trim().ToUpperInvariant();

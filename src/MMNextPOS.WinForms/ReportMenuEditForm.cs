@@ -131,7 +131,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var menu = (ReportMenus)entity;
             _codeEdit.Text = menu.Code;
@@ -149,7 +149,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var menu = (ReportMenus)entity;
             menu.Code = _codeEdit.Text ?? string.Empty;

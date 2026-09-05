@@ -206,7 +206,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var purchase = (Purchase)entity;
             _invoiceNoEdit.Text = purchase.InvoiceNo;
@@ -230,7 +230,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var purchase = (Purchase)entity;
             purchase.InvoiceNo = _invoiceNoEdit.Text.Trim();

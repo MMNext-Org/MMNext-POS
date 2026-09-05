@@ -119,7 +119,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var location = (Location)entity;
             _codeEdit.Text = location.Code;
@@ -135,7 +135,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var location = (Location)entity;
             location.Code = _codeEdit.Text.Trim();

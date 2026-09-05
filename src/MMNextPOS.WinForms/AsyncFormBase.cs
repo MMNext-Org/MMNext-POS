@@ -110,9 +110,9 @@ namespace MMNextPOS.WinForms
         // Virtual methods for derived forms to override
         protected virtual bool ValidateForm() => true;
 
-        protected virtual void LoadEntityData(object entity) { }
+        public virtual void LoadEntityData(object entity) { }
 
-        protected virtual void SaveEntityData(object entity) { }
+        public virtual void SaveEntityData(object entity) { }
 
         // Dispose pattern – cancels any pending async work and disposes resources.
         protected override void Dispose(bool disposing)

@@ -346,7 +346,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var movement = (StockMovement)entity;
             _movementNoEdit.Text = movement.MovementNo;
@@ -358,7 +358,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             // Handled by SaveMovementAsync
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraBars.FluentDesignSystem;
 using DevExpress.XtraBars.Navigation;
@@ -19,6 +20,8 @@ namespace MMNextPOS.WinForms
     public partial class MainForm : AsyncFormBase
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly IUserSession _userSession;
+        private readonly IMainNavigationService _navigationService;
         private readonly ISalesService _salesService;
         private readonly IProductService _productService;
         private readonly ICustomerService _customerService;
@@ -49,6 +52,8 @@ namespace MMNextPOS.WinForms
         private readonly IMenuRoleService _menuRoleService;
         private readonly IReportMenusService _reportMenusService;
         private readonly IEmailSettingService _emailSettingService;
+        private readonly IThemeService _themeService;
+        private readonly ILanguageService _languageService;
         private readonly WinFormsReportService _reportService;
 
         // Concrete list page instances
@@ -71,6 +76,8 @@ namespace MMNextPOS.WinForms
         private ReportMenusListPage _reportMenusListPage = null!;
         private EmailSettingsListPage _emailSettingsListPage = null!;
         private SuppliersListPage _suppliersListPage = null!;
+        private ThemesListPage _themesListPage = null!;
+        private LanguagesListPage _languagesListPage = null!;
 
         // Transaction ListPages
         private SaleTempsListPage _saleTempsListPage = null!;
@@ -89,9 +96,12 @@ namespace MMNextPOS.WinForms
         // Navigation
         private FluentDesignFormContainer _mainContainer = null!;
         private NavigationPane _navigationPane = null!;
+        private LabelControl _userInfoLabel = null!;
 
-        public MainForm(
+public MainForm(
             IServiceProvider serviceProvider,
+            IUserSession userSession,
+            IMainNavigationService navigationService,
             ISalesService salesService,
             IProductService productService,
             ICustomerService customerService,
@@ -120,9 +130,13 @@ namespace MMNextPOS.WinForms
             IMenuRoleService menuRoleService,
             IReportMenusService reportMenusService,
             IEmailSettingService emailSettingService,
+            IThemeService themeService,
+            ILanguageService languageService,
             WinFormsReportService reportService)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
             _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
@@ -152,11 +166,15 @@ namespace MMNextPOS.WinForms
             _menuRoleService = menuRoleService ?? throw new ArgumentNullException(nameof(menuRoleService));
             _reportMenusService = reportMenusService ?? throw new ArgumentNullException(nameof(reportMenusService));
             _emailSettingService = emailSettingService ?? throw new ArgumentNullException(nameof(emailSettingService));
+            _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+            _languageService = languageService ?? throw new ArgumentNullException(nameof(languageService));
             _reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
 
             InitializeComponent();
             InitializeListPages();
             InitializeNavigation();
+            UpdateUserInfo();
+            ApplyUserPreferences();
         }
 
         private void InitializeComponent()
@@ -171,6 +189,68 @@ namespace MMNextPOS.WinForms
             _navigationPane = new NavigationPane();
             _navigationPane.Dock = DockStyle.Left;
             _navigationPane.Width = 280;
+
+            // User info panel at top of navigation
+            var userInfoPanel = new PanelControl
+            {
+                Dock = DockStyle.Top,
+                Height = 100,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                Padding = new Padding(10, 5, 10, 5)
+            };
+
+            var userInfoLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 2,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
+            };
+            userInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            userInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90F));
+            userInfoLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            userInfoLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+
+            _userInfoLabel = new LabelControl
+            {
+                Dock = DockStyle.Fill,
+                Text = "Loading...",
+                Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                Appearance = { TextOptions = { HAlignment = DevExpress.Utils.HorzAlignment.Near }, ForeColor = System.Drawing.Color.FromArgb(80, 80, 80) },
+                AutoSizeMode = LabelAutoSizeMode.None
+            };
+            userInfoLayout.Controls.Add(_userInfoLabel, 0, 0);
+            userInfoLayout.SetColumnSpan(_userInfoLabel, 2);
+
+            // Change Password button
+            var changePasswordButton = new SimpleButton
+            {
+                Text = "Change Password",
+                Dock = DockStyle.Fill,
+                Height = 30,
+                Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                Appearance = { BackColor = System.Drawing.Color.FromArgb(0, 122, 204), ForeColor = System.Drawing.Color.White },
+                ButtonStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple
+            };
+            changePasswordButton.Click += OnChangePasswordClick;
+            userInfoLayout.Controls.Add(changePasswordButton, 0, 1);
+
+            // Logout button
+            var logoutButton = new SimpleButton
+            {
+                Text = "Logout",
+                Dock = DockStyle.Fill,
+                Height = 30,
+                Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                Appearance = { BackColor = System.Drawing.Color.FromArgb(200, 80, 80), ForeColor = System.Drawing.Color.White },
+                ButtonStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple
+            };
+            logoutButton.Click += OnLogoutClick;
+            userInfoLayout.Controls.Add(logoutButton, 1, 1);
+
+            userInfoPanel.Controls.Add(userInfoLayout);
+            _navigationPane.Controls.Add(userInfoPanel);
 
             // Main content container
             _mainContainer = new FluentDesignFormContainer
@@ -203,6 +283,8 @@ namespace MMNextPOS.WinForms
             _reportMenusListPage = new ReportMenusListPage(_reportMenusService, _serviceProvider);
             _emailSettingsListPage = new EmailSettingsListPage(_emailSettingService, _serviceProvider);
             _suppliersListPage = new SuppliersListPage(_supplierService, _serviceProvider);
+            _themesListPage = new ThemesListPage(_themeService, _serviceProvider);
+            _languagesListPage = new LanguagesListPage(_languageService, _serviceProvider);
 
             // Transaction ListPages
             _saleTempsListPage = new SaleTempsListPage(_saleTempService, _serviceProvider);
@@ -217,149 +299,173 @@ namespace MMNextPOS.WinForms
             _paymentsListPage = new PaymentsListPage(_paymentRepository, _serviceProvider);
 
             // Reports
-            _reportsViewerForm = new ReportsViewerForm(_reportService);
+            _reportsViewerForm = new ReportsViewerForm(_reportService, _serviceProvider);
         }
 
         private void InitializeNavigation()
         {
+            if (!_userSession.IsAuthenticated)
+                return;
+
+            // Get navigation pages based on user roles
+            var roleCodes = _userSession.Roles.Select(r => r.Code).ToList();
+            var isAdmin = roleCodes.Any(rc => string.Equals(rc, "Admin", StringComparison.OrdinalIgnoreCase));
+            var isManager = roleCodes.Any(rc => string.Equals(rc, "Manager", StringComparison.OrdinalIgnoreCase));
+            var isCashier = roleCodes.Any(rc => string.Equals(rc, "Cashier", StringComparison.OrdinalIgnoreCase));
+            var isWarehouse = roleCodes.Any(rc => string.Equals(rc, "Warehouse", StringComparison.OrdinalIgnoreCase));
+
             // ============ CORE MODULES ============
-            var productsPage = new NavigationPage { Caption = "Products" };
-            productsPage.Controls.Add(_productsListPage);
-            _navigationPane.Pages.Add(productsPage);
+            // Products - visible to all roles
+            AddNavigationPage("Products", _productsListPage);
 
-            var customersPage = new NavigationPage { Caption = "Customers" };
-            customersPage.Controls.Add(_customersListPage);
-            _navigationPane.Pages.Add(customersPage);
+            // Customers - visible to all roles
+            AddNavigationPage("Customers", _customersListPage);
 
-            var salesPage = new NavigationPage { Caption = "Sales" };
-            // Add New Sale button to the Sales page toolbar
-            var newSaleButton = new SimpleButton
+            // Sales - visible to Admin, Manager, Cashier
+            if (isAdmin || isManager || isCashier)
             {
-                Text = "New Sale",
-                Location = new Point(10, 10),
-                Width = 100,
-                Height = 35
-            };
-            newSaleButton.Click += (s, e) => OpenNewSaleDialog();
-            _salesListPage.Controls.Add(newSaleButton);
+                var salesPage = new NavigationPage { Caption = "Sales" };
+                var newSaleButton = new SimpleButton
+                {
+                    Text = "New Sale",
+                    Location = new Point(10, 10),
+                    Width = 100,
+                    Height = 35
+                };
+                newSaleButton.Click += (s, e) => OpenNewSaleDialog();
+                _salesListPage.Controls.Add(newSaleButton);
 
-            // Add Hold Sale button to the Sales page toolbar
-            var holdSaleButton = new SimpleButton
+                var holdSaleButton = new SimpleButton
+                {
+                    Text = "Hold Sale",
+                    Location = new Point(120, 10),
+                    Width = 100,
+                    Height = 35
+                };
+                holdSaleButton.Click += (s, e) => OpenHoldSaleDialog();
+                _salesListPage.Controls.Add(holdSaleButton);
+
+                salesPage.Controls.Add(_salesListPage);
+                _navigationPane.Pages.Add(salesPage);
+            }
+
+            // Outstanding - visible to Admin, Manager
+            if (isAdmin || isManager)
             {
-                Text = "Hold Sale",
-                Location = new Point(120, 10),
-                Width = 100,
-                Height = 35
-            };
-            holdSaleButton.Click += (s, e) => OpenHoldSaleDialog();
-            _salesListPage.Controls.Add(holdSaleButton);
-            
-            salesPage.Controls.Add(_salesListPage);
-            _navigationPane.Pages.Add(salesPage);
-
-            var outstandingPage = new NavigationPage { Caption = "Outstanding" };
-            outstandingPage.Controls.Add(_outstandingListPage);
-            _navigationPane.Pages.Add(outstandingPage);
+                AddNavigationPage("Outstanding", _outstandingListPage);
+            }
 
             // ============ MASTER DATA ============
-            var categoriesPage = new NavigationPage { Caption = "Categories" };
-            categoriesPage.Controls.Add(_categoriesListPage);
-            _navigationPane.Pages.Add(categoriesPage);
-
-            var unitsPage = new NavigationPage { Caption = "Units" };
-            unitsPage.Controls.Add(_unitsListPage);
-            _navigationPane.Pages.Add(unitsPage);
-
-            var groupsPage = new NavigationPage { Caption = "Groups" };
-            groupsPage.Controls.Add(_groupsListPage);
-            _navigationPane.Pages.Add(groupsPage);
-
-            var currenciesPage = new NavigationPage { Caption = "Currencies" };
-            currenciesPage.Controls.Add(_currenciesListPage);
-            _navigationPane.Pages.Add(currenciesPage);
-
-            var taxesPage = new NavigationPage { Caption = "Taxes" };
-            taxesPage.Controls.Add(_taxesListPage);
-            _navigationPane.Pages.Add(taxesPage);
-
-            var discountsPage = new NavigationPage { Caption = "Discounts" };
-            discountsPage.Controls.Add(_discountsListPage);
-            _navigationPane.Pages.Add(discountsPage);
-
-            var locationsPage = new NavigationPage { Caption = "Locations" };
-            locationsPage.Controls.Add(_locationsListPage);
-            _navigationPane.Pages.Add(locationsPage);
-
-            var companiesPage = new NavigationPage { Caption = "Companies" };
-            companiesPage.Controls.Add(_companiesListPage);
-            _navigationPane.Pages.Add(companiesPage);
-
-            var suppliersPage = new NavigationPage { Caption = "Suppliers" };
-            suppliersPage.Controls.Add(_suppliersListPage);
-            _navigationPane.Pages.Add(suppliersPage);
+            // Master data - visible to Admin, Manager
+            if (isAdmin || isManager)
+            {
+                AddNavigationPage("Categories", _categoriesListPage);
+                AddNavigationPage("Units", _unitsListPage);
+                AddNavigationPage("Groups", _groupsListPage);
+                AddNavigationPage("Currencies", _currenciesListPage);
+                AddNavigationPage("Taxes", _taxesListPage);
+                AddNavigationPage("Discounts", _discountsListPage);
+                AddNavigationPage("Locations", _locationsListPage);
+                AddNavigationPage("Companies", _companiesListPage);
+                AddNavigationPage("Suppliers", _suppliersListPage);
+            }
 
             // ============ ADMINISTRATION ============
-            var usersPage = new NavigationPage { Caption = "Users" };
-            usersPage.Controls.Add(_usersListPage);
-            _navigationPane.Pages.Add(usersPage);
-
-            var rolesPage = new NavigationPage { Caption = "Roles" };
-            rolesPage.Controls.Add(_rolesListPage);
-            _navigationPane.Pages.Add(rolesPage);
-
-            var reportMenusPage = new NavigationPage { Caption = "Report Menus" };
-            reportMenusPage.Controls.Add(_reportMenusListPage);
-            _navigationPane.Pages.Add(reportMenusPage);
-
-            var emailSettingsPage = new NavigationPage { Caption = "Email Settings" };
-            emailSettingsPage.Controls.Add(_emailSettingsListPage);
-            _navigationPane.Pages.Add(emailSettingsPage);
+            // Administration - visible only to Admin
+            if (isAdmin)
+            {
+                AddNavigationPage("Users", _usersListPage);
+                AddNavigationPage("Roles", _rolesListPage);
+                AddNavigationPage("Themes", _themesListPage);
+                AddNavigationPage("Languages", _languagesListPage);
+                AddNavigationPage("Report Menus", _reportMenusListPage);
+                AddNavigationPage("Email Settings", _emailSettingsListPage);
+            }
 
             // ============ REPORTS ============
-            var reportsPage = new NavigationPage { Caption = "Reports" };
-            reportsPage.Controls.Add(_reportsViewerForm);
-            _navigationPane.Pages.Add(reportsPage);
+            // Reports - visible to Admin, Manager
+            if (isAdmin || isManager)
+            {
+                AddNavigationPage("Reports", _reportsViewerForm);
+            }
 
             // ============ TRANSACTIONS ============
-            var saleTempsPage = new NavigationPage { Caption = "Sale Drafts" };
-            saleTempsPage.Controls.Add(_saleTempsListPage);
-            _navigationPane.Pages.Add(saleTempsPage);
+            // Transaction pages - visible to Admin, Manager
+            if (isAdmin || isManager)
+            {
+                AddNavigationPage("Sale Drafts", _saleTempsListPage);
+                AddNavigationPage("Sales Returns", _salesReturnsListPage);
+                AddNavigationPage("Purchases", _purchasesListPage);
+                AddNavigationPage("Purchase Returns", _purchaseReturnsListPage);
+                AddNavigationPage("Stock Movements", _stockMovementsListPage);
+                AddNavigationPage("Assemblies (BOM)", _assembliesListPage);
+                AddNavigationPage("Stock Transfers", _stockTransfersListPage);
+                AddNavigationPage("Expenses", _expensesListPage);
+                AddNavigationPage("Expense Types", _expenseTypesListPage);
+                AddNavigationPage("Payments", _paymentsListPage);
+            }
+            // Warehouse-specific pages
+            else if (isWarehouse)
+            {
+                AddNavigationPage("Stock Movements", _stockMovementsListPage);
+                AddNavigationPage("Stock Transfers", _stockTransfersListPage);
+            }
 
-            var salesReturnsPage = new NavigationPage { Caption = "Sales Returns" };
-            salesReturnsPage.Controls.Add(_salesReturnsListPage);
-            _navigationPane.Pages.Add(salesReturnsPage);
+            // Select first page by default
+            if (_navigationPane.Pages.Count > 0)
+            {
+                _navigationPane.SelectedPageIndex = 0;
+            }
+        }
 
-            var purchasesPage = new NavigationPage { Caption = "Purchases" };
-            purchasesPage.Controls.Add(_purchasesListPage);
-            _navigationPane.Pages.Add(purchasesPage);
+        private void AddNavigationPage(string caption, Control content)
+        {
+            var page = new NavigationPage { Caption = caption };
+            page.Controls.Add(content);
+            _navigationPane.Pages.Add(page);
+        }
 
-            var purchaseReturnsPage = new NavigationPage { Caption = "Purchase Returns" };
-            purchaseReturnsPage.Controls.Add(_purchaseReturnsListPage);
-            _navigationPane.Pages.Add(purchaseReturnsPage);
+        private void UpdateUserInfo()
+        {
+            if (_userInfoLabel != null && _userSession.IsAuthenticated)
+            {
+                var roles = string.Join(", ", _userSession.Roles.Select(r => r.Name));
+                _userInfoLabel.Text = $"{_userSession.CurrentUser?.FullName ?? _userSession.CurrentUser?.Username}\n{roles}";
+            }
+        }
 
-            var stockMovementsPage = new NavigationPage { Caption = "Stock Movements" };
-            stockMovementsPage.Controls.Add(_stockMovementsListPage);
-            _navigationPane.Pages.Add(stockMovementsPage);
+        private async void ApplyUserPreferences()
+        {
+            try
+            {
+                // Apply default theme
+                var defaultTheme = await _themeService.GetDefaultAsync();
+                if (defaultTheme != null)
+                {
+                    await _themeService.ApplyThemeAsync(defaultTheme);
+                }
 
-            var assembliesPage = new NavigationPage { Caption = "Assemblies (BOM)" };
-            assembliesPage.Controls.Add(_assembliesListPage);
-            _navigationPane.Pages.Add(assembliesPage);
-
-            var stockTransfersPage = new NavigationPage { Caption = "Stock Transfers" };
-            stockTransfersPage.Controls.Add(_stockTransfersListPage);
-            _navigationPane.Pages.Add(stockTransfersPage);
-
-            var expensesPage = new NavigationPage { Caption = "Expenses" };
-            expensesPage.Controls.Add(_expensesListPage);
-            _navigationPane.Pages.Add(expensesPage);
-
-            var expenseTypesPage = new NavigationPage { Caption = "Expense Types" };
-            expenseTypesPage.Controls.Add(_expenseTypesListPage);
-            _navigationPane.Pages.Add(expenseTypesPage);
-
-            var paymentsPage = new NavigationPage { Caption = "Payments" };
-            paymentsPage.Controls.Add(_paymentsListPage);
-            _navigationPane.Pages.Add(paymentsPage);
+                // Apply default language (could set thread culture, etc.)
+                var defaultLanguage = await _languageService.GetDefaultAsync();
+                if (defaultLanguage != null && !string.IsNullOrEmpty(defaultLanguage.CultureCode))
+                {
+                    try
+                    {
+                        var culture = new System.Globalization.CultureInfo(defaultLanguage.CultureCode);
+                        System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+                        System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+                    }
+                    catch
+                    {
+                        // Invalid culture code, ignore
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't crash
+                System.Diagnostics.Debug.WriteLine($"Failed to apply user preferences: {ex.Message}");
+            }
         }
 
         private void OpenNewSaleDialog()
@@ -379,6 +485,28 @@ namespace MMNextPOS.WinForms
             {
                 // Refresh sales list if needed
                 _salesListPage.LoadAsync().ConfigureAwait(false);
+            }
+        }
+
+        private void OnChangePasswordClick(object? sender, EventArgs e)
+        {
+            using var dialog = _serviceProvider.GetService<ChangePasswordForm>();
+            if (dialog != null)
+            {
+                dialog.ShowDialog(this);
+            }
+        }
+
+        private void OnLogoutClick(object? sender, EventArgs e)
+        {
+            if (ShowConfirm("Are you sure you want to logout?", "Confirm Logout"))
+            {
+                // Clear user session
+                _userSession.Clear();
+
+                // Close MainForm and return to LoginForm
+                this.DialogResult = DialogResult.Abort; // Special code for logout
+                this.Close();
             }
         }
 
@@ -406,6 +534,8 @@ namespace MMNextPOS.WinForms
                 _reportMenusListPage.Dispose();
                 _emailSettingsListPage.Dispose();
                 _suppliersListPage.Dispose();
+                _themesListPage.Dispose();
+                _languagesListPage.Dispose();
 
                 // Dispose transaction list pages
                 _saleTempsListPage.Dispose();
@@ -425,6 +555,7 @@ namespace MMNextPOS.WinForms
                 // Dispose navigation
                 _navigationPane?.Dispose();
                 _mainContainer?.Dispose();
+                _userInfoLabel?.Dispose();
 
                 _productsListPage = null!;
                 _customersListPage = null!;

@@ -133,7 +133,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var email = (EmailSetting)entity;
             _smtpHostEdit.Text = email.SmtpHost;
@@ -148,7 +148,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var email = (EmailSetting)entity;
             email.SmtpHost = _smtpHostEdit.Text.Trim();

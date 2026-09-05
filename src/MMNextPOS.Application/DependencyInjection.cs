@@ -54,7 +54,6 @@ namespace MMNextPOS.Application
             services.AddScoped<IAssemblyDetailRepository, AssemblyDetailRepository>();
             services.AddScoped<IStockTransferRepository, StockTransferRepository>();
             services.AddScoped<IStockTransferDetailRepository, StockTransferDetailRepository>();
-            services.AddScoped<IStockTransferDetailRepository, StockTransferDetailRepository>();
             services.AddScoped<IStarCashFlowReportRepository, StarCashFlowReportRepository>();
             services.AddScoped<IStarProfitLossReportRepository, StarProfitLossReportRepository>();
             services.AddScoped<IStarStockBalanceReportRepository, StarStockBalanceReportRepository>();
@@ -102,6 +101,7 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.ILocationService, Services.LocationService>();
             services.AddScoped<Services.ICompanyService, Services.CompanyService>();
             services.AddScoped<Services.IUserService, Services.UserService>();
+            services.AddScoped<Services.IUserSession, Services.UserSession>();
             services.AddScoped<Services.IRoleService, Services.RoleService>();
             services.AddScoped<Services.IUserRoleService, Services.UserRoleService>();
             services.AddScoped<Services.IMenuRoleService, Services.MenuRoleService>();
@@ -117,7 +117,13 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.IInventoryService, Services.InventoryService>();
             services.AddScoped<Services.ISettingService, Services.SettingService>();
             services.AddScoped<Services.ILicenseInfoService, Services.LicenseInfoService>();
+            services.AddSingleton<Services.IDeviceFingerprintService, Services.DeviceFingerprintService>();
+            services.AddScoped<Services.ILicenseGuard, Services.LicenseGuard>();
             services.AddScoped<Services.IReportService, Services.ReportService>();
+
+            // Theme & Language services
+            services.AddScoped<Services.IThemeService, Services.ThemeService>();
+            services.AddScoped<Services.ILanguageService, Services.LanguageService>();
 
             // Receipt/Voucher services
             services.AddScoped<Services.ISaleReceiptService, Services.SaleReceiptService>();

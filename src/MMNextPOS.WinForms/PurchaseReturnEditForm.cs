@@ -191,7 +191,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var pr = (PurchaseReturn)entity;
             _returnNoEdit.Text = pr.ReturnNo;
@@ -210,7 +210,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var pr = (PurchaseReturn)entity;
             pr.ReturnNo = _returnNoEdit.Text.Trim();

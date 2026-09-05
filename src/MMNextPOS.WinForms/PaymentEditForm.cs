@@ -237,7 +237,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var payment = (Payment)entity;
             _paymentNoEdit.Text = payment.PaymentNo;
@@ -265,7 +265,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var payment = (Payment)entity;
             payment.PaymentNo = _paymentNoEdit.Text.Trim();

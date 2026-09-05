@@ -70,7 +70,7 @@ namespace MMNextPOS.WinForms
         /// <summary>
         /// Loads entity data into form controls. Override in derived classes.
         /// </summary>
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             // Default implementation does nothing
         }
@@ -78,7 +78,7 @@ namespace MMNextPOS.WinForms
         /// <summary>
         /// Saves form data to entity. Override in derived classes.
         /// </summary>
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             // Default implementation does nothing
         }

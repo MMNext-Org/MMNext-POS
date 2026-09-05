@@ -11,5 +11,7 @@ namespace MMNextPOS.Infrastructure.Repositories
         Task<Sale> CreateSaleWithDetailsAsync(Sale sale, IEnumerable<SaleDetail> details, CancellationToken cancellationToken = default);
         Task AddDetailAsync(SaleDetail detail, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Sale>> GetRecentAsync(int count = 20, CancellationToken cancellationToken = default);
+        Task<Sale?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<Sale>> GetAllAsync(CancellationToken cancellationToken = default);
     }
 }

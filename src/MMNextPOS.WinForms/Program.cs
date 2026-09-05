@@ -13,6 +13,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using DevExpress.XtraEditors;
 using MMNextPOS.Application;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Infrastructure;
@@ -55,13 +56,29 @@ namespace MMNextPOS.WinForms
                     services.AddApplication(configuration); // registers repos & services
 
                     // Core Forms
+                    services.AddTransient<LoginForm>();
                     services.AddTransient<MainForm>();
                     services.AddTransient<NewSaleForm>();
                     services.AddTransient<OutstandingForm>();
                     services.AddTransient<ReportsViewerForm>(); // Reports viewer
+                    services.AddTransient<ChangePasswordForm>();
+                    services.AddTransient<ResetPasswordForm>();
+                    services.AddTransient<LicenseRegistrationForm>(); // License activation
 
                     // WinForms Services
                     services.AddTransient<Services.WinFormsReportService>(); // WinForms DevExpress ReportService
+
+                    // Reports
+                    services.AddTransient<Reports.SaleReceiptReport>();
+                    services.AddTransient<Reports.SaleInvoiceReport>();
+                    services.AddTransient<Reports.PurchaseInvoiceReport>();
+                    services.AddTransient<Reports.StockListReport>();
+                    services.AddTransient<Reports.ProfitLossReport>();
+                    services.AddTransient<Reports.CashFlowReport>();
+                    services.AddTransient<Reports.OutstandingReport>();
+                    services.AddTransient<Reports.BarcodeLabelsReport>();
+                    services.AddTransient<Reports.SaleHistoryReport>();
+                    services.AddTransient<Reports.StockMovementReport>();
 
                     // Core ListPages
                     services.AddTransient<ProductsListPage>();
@@ -84,6 +101,10 @@ namespace MMNextPOS.WinForms
                     services.AddTransient<EmailSettingsListPage>();
                     services.AddTransient<SuppliersListPage>();
 
+                    // Theme & Language ListPages
+                    services.AddTransient<ThemesListPage>();
+                    services.AddTransient<LanguagesListPage>();
+
                     // Transaction ListPages
                     services.AddTransient<SaleTempsListPage>();
                     services.AddTransient<SalesReturnsListPage>();
@@ -103,13 +124,42 @@ namespace MMNextPOS.WinForms
                     var dbInit = serviceProvider.GetRequiredService<DatabaseInitializer>();
                     dbInit.InitializeAsync().GetAwaiter().GetResult();
 
-                    // Resolve the main form
-                    var mainForm = serviceProvider.GetRequiredService<MainForm>();
-
+                    // Initialise WinForms application styles (required before any form is shown).
                     System.Windows.Forms.Application.SetHighDpiMode(HighDpiMode.SystemAware);
                     System.Windows.Forms.Application.EnableVisualStyles();
                     System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
-                    System.Windows.Forms.Application.Run(mainForm);
+
+                    // License gate: enforce activation + device binding before login.
+                    if (!EnforceLicenseAsync(serviceProvider).GetAwaiter().GetResult())
+                    {
+                        return;
+                    }
+
+                    // Login loop - continue until user exits (not logout)
+                    DialogResult loginResult;
+                    MainForm? mainForm = null;
+                    do
+                    {
+                        // Show LoginForm
+                        var loginForm = serviceProvider.GetRequiredService<LoginForm>();
+                        loginResult = loginForm.ShowDialog();
+                        loginForm.Dispose();
+
+                        if (loginResult != DialogResult.OK)
+                        {
+                            // User cancelled or login failed - exit application
+                            return;
+                        }
+
+                        // Resolve the main form (UserSession is already populated)
+                        mainForm = serviceProvider.GetRequiredService<MainForm>();
+
+                        System.Windows.Forms.Application.Run(mainForm);
+
+                        // Check if user logged out (DialogResult.Abort)
+                        // If so, the loop will continue and show LoginForm again
+                    }
+                    while (mainForm?.DialogResult == DialogResult.Abort);
                 }
                 finally
                 {
@@ -127,6 +177,55 @@ namespace MMNextPOS.WinForms
             {
                 Log.CloseAndFlush();
             }
+        }
+
+        /// <summary>
+        /// Verifies the active license + device binding. When invalid, shows
+        /// the registration form so the user can activate. Returns false if
+        /// the user cancels — the caller should exit the application.
+        /// </summary>
+        static async Task<bool> EnforceLicenseAsync(IServiceProvider rootProvider)
+        {
+            const int maxAttempts = 3;
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                LicenseStatus status;
+                using (var scope = rootProvider.CreateScope())
+                {
+                    var guard = scope.ServiceProvider.GetRequiredService<ILicenseGuard>();
+                    status = await guard.CheckAsync().ConfigureAwait(false);
+                }
+
+                if (status.IsValid)
+                {
+                    return true;
+                }
+
+                Log.Warning("License check failed: {Reason} - {Message}", status.Reason, status.Message);
+
+                using var regScope = rootProvider.CreateScope();
+                var form = regScope.ServiceProvider.GetRequiredService<LicenseRegistrationForm>();
+                form.Prepopulate(status);
+                var result = form.ShowDialog();
+
+                if (result != DialogResult.OK)
+                {
+                    XtraMessageBox.Show(
+                        status.Message,
+                        "MMNext POS — License Required",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return false;
+                }
+            }
+
+            XtraMessageBox.Show(
+                "License activation did not succeed after multiple attempts. The application will now exit.",
+                "MMNext POS — License Required",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return false;
         }
 
         static async Task RunHealthCheckEndpoint(IConfiguration configuration, CancellationToken cancellationToken)

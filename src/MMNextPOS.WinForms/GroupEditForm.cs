@@ -114,7 +114,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var group = (Group)entity;
             _codeEdit.Text = group.Code;
@@ -129,7 +129,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var group = (Group)entity;
             group.Code = _codeEdit.Text.Trim();

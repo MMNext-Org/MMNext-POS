@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
 using Moq;
 using Xunit;
@@ -14,11 +15,30 @@ namespace MMNextPOS.Application.Tests
     public class LicenseInfoServiceTests
     {
         private readonly Mock<ILicenseInfoRepository> _licenseRepoMock = new();
+        private readonly Mock<IDeviceInfoRepository> _deviceRepoMock = new();
+        private readonly Mock<IDeviceFingerprintService> _fingerprintMock = new();
+        private readonly Mock<IUnitOfWork> _uowMock = new();
         private readonly Mock<IAuditService> _auditServiceMock = new();
+
+        public LicenseInfoServiceTests()
+        {
+            _fingerprintMock.Setup(f => f.GetCurrent()).Returns(new DeviceFingerprint(
+                Hash: "test-hash",
+                MachineName: "TEST",
+                MacAddress: "00:00:00:00:00:00",
+                CpuId: null,
+                HardDiskSerial: null,
+                OsVersion: "test"));
+        }
 
         private ILicenseInfoService CreateService()
         {
-            return new LicenseInfoService(_licenseRepoMock.Object, _auditServiceMock.Object);
+            return new LicenseInfoService(
+                _licenseRepoMock.Object,
+                _deviceRepoMock.Object,
+                _fingerprintMock.Object,
+                _uowMock.Object,
+                _auditServiceMock.Object);
         }
 
         [Fact]

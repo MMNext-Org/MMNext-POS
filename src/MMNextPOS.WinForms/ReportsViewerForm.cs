@@ -6,9 +6,11 @@ using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraPrinting;
 using DevExpress.XtraReports.UI;
+using Microsoft.Extensions.DependencyInjection;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
 using MMNextPOS.Infrastructure.Repositories;
+using MMNextPOS.WinForms.Reports;
 using MMNextPOS.WinForms.Services;
 
 namespace MMNextPOS.WinForms
@@ -19,6 +21,7 @@ namespace MMNextPOS.WinForms
     public partial class ReportsViewerForm : XtraForm
     {
         private readonly WinFormsReportService _reportService;
+        private readonly IServiceProvider _serviceProvider;
         private XtraReport _currentReport = null!;
 
         private ComboBoxEdit _reportSelector = null!;
@@ -29,9 +32,10 @@ namespace MMNextPOS.WinForms
         private SimpleButton _refreshButton = null!;
         private PanelControl _toolbarPanel = null!;
 
-        public ReportsViewerForm(WinFormsReportService reportService)
+        public ReportsViewerForm(WinFormsReportService reportService, IServiceProvider serviceProvider)
         {
             _reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             InitializeComponent();
             LoadReports();
         }
@@ -135,18 +139,26 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async void LoadSelectedReport()
+private async void LoadSelectedReport()
         {
             if (_reportSelector.SelectedItem is not ReportMenuItem item) return;
 
             try
             {
-                var reportBytes = await _reportService.GenerateReportAsync(item.Menu.Code, new Dictionary<string, object>());
-                
+                // Get parameters based on report type
+                var parameters = await GetReportParametersAsync(item.Menu.Code);
+                if (parameters == null)
+                {
+                    // User cancelled parameter form
+                    return;
+                }
+
+                var reportBytes = await _reportService.GenerateReportAsync(item.Menu.Code, parameters);
+
                 using var stream = new MemoryStream(reportBytes);
                 _currentReport = new XtraReport();
                 _currentReport.LoadLayout(stream);
-                
+
                 _documentViewer.DocumentSource = _currentReport;
                 _currentReport.CreateDocument();
             }
@@ -154,6 +166,53 @@ namespace MMNextPOS.WinForms
             {
                 XtraMessageBox.Show(this, $"Failed to load report: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private async Task<Dictionary<string, object>?> GetReportParametersAsync(string reportCode)
+        {
+            // Map report codes to parameter forms
+            return reportCode switch
+            {
+                // Date range reports
+                "PROFIT_LOSS" or "CASH_FLOW" or "OUTSTANDING" or "SALE_HISTORY" or "STOCK_MOVEMENT" 
+                    => await ShowDateRangeParameterFormAsync(),
+
+                // Single entity reports
+                "SALE_RECEIPT" or "SALE_INVOICE" 
+                    => await ShowEntityParameterFormAsync("Sale"),
+
+                "PURCHASE_INVOICE" 
+                    => await ShowEntityParameterFormAsync("Purchase"),
+
+                // Reports with no parameters
+                "STOCK_LIST" or "BARCODE_LABELS" 
+                    => new Dictionary<string, object>(),
+
+                _ => new Dictionary<string, object>()
+            };
+        }
+
+        private async Task<Dictionary<string, object>?> ShowDateRangeParameterFormAsync()
+        {
+            using var form = _serviceProvider.GetRequiredService<DateRangeParameterForm>();
+            var result = form.ShowDialog(this);
+            if (result == DialogResult.OK && form.IsValid)
+            {
+                return form.GetParameters();
+            }
+            return null;
+        }
+
+        private async Task<Dictionary<string, object>?> ShowEntityParameterFormAsync(string entityType)
+        {
+            using var form = _serviceProvider.GetRequiredService<EntityParameterForm>();
+            // The form title will be set in constructor
+            var result = form.ShowDialog(this);
+            if (result == DialogResult.OK && form.IsValid)
+            {
+                return form.GetParameters();
+            }
+            return null;
         }
 
         private void PrintReport()

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MMNextPOS.Domain.Models;
@@ -74,6 +75,44 @@ namespace MMNextPOS.Application.Services
         {
             // Implementation could reuse CreateSaleAsync logic for a single detail.
             throw new NotImplementedException();
+        }
+
+        public Task<Sale?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return _saleRepo.GetByIdAsync(id, cancellationToken);
+        }
+
+        public Task<IReadOnlyList<Sale>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            return GetAllAsync(null, null, null, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<Sale>> GetAllAsync(
+            DateTime? fromDate = null,
+            DateTime? toDate = null,
+            int? customerId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allSales = await _saleRepo.GetAllAsync(cancellationToken);
+
+            var filtered = allSales.AsQueryable();
+
+            if (fromDate.HasValue)
+            {
+                filtered = filtered.Where(s => s.SaleDate >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                filtered = filtered.Where(s => s.SaleDate <= toDate.Value);
+            }
+
+            if (customerId.HasValue)
+            {
+                filtered = filtered.Where(s => s.CustomerId == customerId.Value);
+            }
+
+            return filtered.OrderByDescending(s => s.SaleDate).ToList();
         }
     }
 }

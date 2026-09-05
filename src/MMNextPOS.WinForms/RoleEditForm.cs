@@ -89,7 +89,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var role = (Role)entity;
             _codeEdit.Text = role.Code;
@@ -100,7 +100,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             var role = (Role)entity;
             role.Code = _codeEdit.Text.Trim();

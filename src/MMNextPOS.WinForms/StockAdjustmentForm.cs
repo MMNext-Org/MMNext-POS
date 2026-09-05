@@ -272,7 +272,7 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        protected override void LoadEntityData(object entity)
+        public override void LoadEntityData(object entity)
         {
             var product = (Product)entity;
             _productLookup.EditValue = product.Id;
@@ -285,7 +285,7 @@ namespace MMNextPOS.WinForms
             ValidateForm();
         }
 
-        protected override void SaveEntityData(object entity)
+        public override void SaveEntityData(object entity)
         {
             // Handled by SaveAdjustmentAsync
         }

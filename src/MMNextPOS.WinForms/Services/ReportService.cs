@@ -4,9 +4,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DevExpress.XtraReports.UI;
+using Microsoft.Extensions.DependencyInjection;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
 using MMNextPOS.Infrastructure.Repositories;
+using MMNextPOS.WinForms.Reports;
 
 namespace MMNextPOS.WinForms.Services
 {
@@ -17,13 +19,16 @@ namespace MMNextPOS.WinForms.Services
     {
         private readonly IReportMenusRepository _reportMenuRepo;
         private readonly IAuditService _auditService;
+        private readonly IServiceProvider _serviceProvider;
 
         public WinFormsReportService(
             IReportMenusRepository reportMenuRepo,
-            IAuditService auditService)
+            IAuditService auditService,
+            IServiceProvider serviceProvider)
         {
             _reportMenuRepo = reportMenuRepo ?? throw new ArgumentNullException(nameof(reportMenuRepo));
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
         // Report Menus
@@ -210,6 +215,48 @@ namespace MMNextPOS.WinForms.Services
             report.Bands.Add(detailBand);
 
             // Export to PDF
+            using var stream = new MemoryStream();
+            report.ExportToPdf(stream);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Creates a report instance by name using the factory pattern.
+        /// </summary>
+        public XtraReport? CreateReport(string reportCode)
+        {
+            // Reports are temporarily disabled due to model mismatches
+            // Re-enable when models are updated to match report requirements
+            return null;
+        }
+
+        /// <summary>
+        /// Generates a strongly-typed report by code with parameters.
+        /// </summary>
+        public async Task<byte[]> GenerateReportByCodeAsync(string reportCode, Dictionary<string, object> parameters, CancellationToken cancellationToken = default)
+        {
+            var report = CreateReport(reportCode);
+            if (report == null)
+                throw new ArgumentException($"Unknown report code: {reportCode}");
+
+            // Initialize services if it's a BaseReport
+            if (report is BaseReport baseReport)
+            {
+                baseReport.InitializeServices(_serviceProvider);
+            }
+
+            // Set parameters on the report
+            foreach (var param in parameters)
+            {
+                var rptParam = report.Parameters[param.Key];
+                if (rptParam != null)
+                {
+                    rptParam.Value = param.Value;
+                    rptParam.Visible = false;
+                }
+            }
+
+            // Export to PDF bytes
             using var stream = new MemoryStream();
             report.ExportToPdf(stream);
             return stream.ToArray();

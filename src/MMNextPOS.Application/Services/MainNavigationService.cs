@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -13,51 +14,87 @@ namespace MMNextPOS.Application.Services
     public class MainNavigationService : IMainNavigationService
     {
         private readonly IMenuRoleService _menuRoleService;
+        private readonly IRoleService _roleService;
 
-        public MainNavigationService(IMenuRoleService menuRoleService)
+        public MainNavigationService(IMenuRoleService menuRoleService, IRoleService roleService)
         {
-            _menuRoleService = menuRoleService;
+            _menuRoleService = menuRoleService ?? throw new ArgumentNullException(nameof(menuRoleService));
+            _roleService = roleService ?? throw new ArgumentNullException(nameof(roleService));
         }
 
         public async Task<IReadOnlyList<NavigationPageModel>> GetNavigationAsync(string role, CancellationToken cancellationToken = default)
         {
-            var menus = await _menuRoleService.GetAllAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(role))
+                return Array.Empty<NavigationPageModel>();
 
-            var navigationPages = new List<NavigationPageModel>();
+            var roles = await _roleService.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            var matchedRole = roles.FirstOrDefault(r =>
+                string.Equals(r.Code, role, StringComparison.OrdinalIgnoreCase) && r.IsActive);
 
-            // Map MenuCode values to navigation page captions
-            var menuCodes = menus.Select(m => m.MenuCode).Distinct();
+            if (matchedRole == null)
+                return Array.Empty<NavigationPageModel>();
 
-            foreach (var code in menuCodes)
-            {
-                switch (code.ToUpperInvariant())
-                {
-                    case "SALES":
-                        navigationPages.Add(new NavigationPageModel { Caption = "Sales" });
-                        break;
-                    case "PRODUCT":
-                    case "INVENTORY":
-                        navigationPages.Add(new NavigationPageModel { Caption = "Products" });
-                        break;
-                    case "CUSTOMER":
-                        navigationPages.Add(new NavigationPageModel { Caption = "Customers" });
-                        break;
-                    case "REPORT":
-                    case "REPORTS":
-                        navigationPages.Add(new NavigationPageModel { Caption = "Reports" });
-                        break;
-                    default:
-                        navigationPages.Add(new NavigationPageModel { Caption = code });
-                        break;
-                }
-            }
+            var menus = await _menuRoleService.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            var menuCodes = menus
+                .Where(m => m.RoleId == matchedRole.Id && m.CanView)
+                .Select(m => m.MenuCode)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-            return navigationPages;
+            return menuCodes
+                .OrderBy(MapOrder, Comparer<int>.Default)
+                .ThenBy(code => code, StringComparer.OrdinalIgnoreCase)
+                .Select(code => new NavigationPageModel { Caption = MapCaption(code) })
+                .ToList();
         }
 
-        public async Task<IReadOnlyList<NavigationPageModel>> GetDefaultNavigationAsync(CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<NavigationPageModel>> GetDefaultNavigationAsync(CancellationToken cancellationToken = default)
         {
-            return await GetNavigationAsync("User", cancellationToken);
+            IReadOnlyList<NavigationPageModel> pages = new[]
+            {
+                new NavigationPageModel { Caption = "Products" },
+                new NavigationPageModel { Caption = "Customers" }
+            };
+
+            return Task.FromResult(pages);
+        }
+
+        private static int MapOrder(string code)
+        {
+            switch (code.ToUpperInvariant())
+            {
+                case "SALES": return 1;
+                case "PRODUCT":
+                case "INVENTORY": return 2;
+                case "CUSTOMER": return 3;
+                case "PURCHASE": return 4;
+                case "OUTSTANDING": return 5;
+                case "EXPENSE": return 6;
+                case "WAREHOUSE": return 7;
+                case "REPORT":
+                case "REPORTS": return 8;
+                case "SETTINGS": return 9;
+                default: return int.MaxValue;
+            }
+        }
+
+        private static string MapCaption(string code)
+        {
+            switch (code.ToUpperInvariant())
+            {
+                case "SALES": return "Sales";
+                case "PRODUCT":
+                case "INVENTORY": return "Products";
+                case "CUSTOMER": return "Customers";
+                case "PURCHASE": return "Purchases";
+                case "OUTSTANDING": return "Outstanding";
+                case "EXPENSE": return "Expenses";
+                case "WAREHOUSE": return "Stock Transfers";
+                case "REPORT":
+                case "REPORTS": return "Reports";
+                case "SETTINGS": return "Settings";
+                default: return code;
+            }
         }
     }
 }
