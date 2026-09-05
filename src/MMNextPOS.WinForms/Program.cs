@@ -68,18 +68,6 @@ namespace MMNextPOS.WinForms
                     // WinForms Services
                     services.AddTransient<Services.WinFormsReportService>(); // WinForms DevExpress ReportService
 
-                    // Reports
-                    services.AddTransient<Reports.SaleReceiptReport>();
-                    services.AddTransient<Reports.SaleInvoiceReport>();
-                    services.AddTransient<Reports.PurchaseInvoiceReport>();
-                    services.AddTransient<Reports.StockListReport>();
-                    services.AddTransient<Reports.ProfitLossReport>();
-                    services.AddTransient<Reports.CashFlowReport>();
-                    services.AddTransient<Reports.OutstandingReport>();
-                    services.AddTransient<Reports.BarcodeLabelsReport>();
-                    services.AddTransient<Reports.SaleHistoryReport>();
-                    services.AddTransient<Reports.StockMovementReport>();
-
                     // Core ListPages
                     services.AddTransient<ProductsListPage>();
                     services.AddTransient<CustomersListPage>();
