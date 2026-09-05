@@ -26,5 +26,10 @@ namespace MMNextPOS.Application.Services
             DateTime? toDate = null,
             int? customerId = null,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets the sale details for a specific sale.
+        /// </summary>
+        Task<IReadOnlyList<SaleDetail>> GetSaleDetailsAsync(int saleId, CancellationToken cancellationToken = default);
     }
 }

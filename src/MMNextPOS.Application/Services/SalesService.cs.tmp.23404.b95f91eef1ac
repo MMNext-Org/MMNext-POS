@@ -12,12 +12,18 @@ namespace MMNextPOS.Application.Services
     public class SalesService : ISalesService
     {
         private readonly ISaleRepository _saleRepo;
+        private readonly ISaleDetailRepository _saleDetailRepo;
         private readonly IProductRepository _productRepo;
         private readonly IUnitOfWork _unitOfWork;
 
-        public SalesService(ISaleRepository saleRepo, IProductRepository productRepo, IUnitOfWork unitOfWork)
+        public SalesService(
+            ISaleRepository saleRepo,
+            ISaleDetailRepository saleDetailRepo,
+            IProductRepository productRepo,
+            IUnitOfWork unitOfWork)
         {
             _saleRepo = saleRepo ?? throw new ArgumentNullException(nameof(saleRepo));
+            _saleDetailRepo = saleDetailRepo ?? throw new ArgumentNullException(nameof(saleDetailRepo));
             _productRepo = productRepo ?? throw new ArgumentNullException(nameof(productRepo));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
@@ -113,6 +119,11 @@ namespace MMNextPOS.Application.Services
             }
 
             return filtered.OrderByDescending(s => s.SaleDate).ToList();
+        }
+
+        public async Task<IReadOnlyList<SaleDetail>> GetSaleDetailsAsync(int saleId, CancellationToken cancellationToken = default)
+        {
+            return await _saleDetailRepo.GetBySaleIdAsync(saleId, cancellationToken);
         }
     }
 }

@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
 using MMNextPOS.Infrastructure.Repositories;
-using MMNextPOS.WinForms.Reports;
 
 namespace MMNextPOS.WinForms.Services
 {
