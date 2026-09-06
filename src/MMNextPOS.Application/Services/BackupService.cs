@@ -84,7 +84,7 @@ namespace MMNextPOS.Application.Services
             try
             {
                 var backupPath = await CreateBackupAsync(setting, cancellationToken);
-                
+
                 result.CompletedAt = DateTime.UtcNow;
                 result.Status = "Success";
                 result.FilePath = backupPath;
@@ -150,7 +150,7 @@ namespace MMNextPOS.Application.Services
         {
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             var fileName = $"MMNextPOS_Backup_{setting.Name}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
-            
+
             var backupDir = Path.GetDirectoryName(setting.BackupPath) ?? Path.GetTempPath();
             var backupPath = Path.Combine(backupDir, fileName);
 

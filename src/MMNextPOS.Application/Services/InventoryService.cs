@@ -411,7 +411,7 @@ namespace MMNextPOS.Application.Services
         private async Task ReverseProductStockFromDetailAsync(StockMovementDetail? detail, CancellationToken cancellationToken)
         {
             if (detail == null) return;
-            
+
             var movement = await _stockMovementRepo.GetByIdAsync(detail.StockMovementId, cancellationToken);
             if (movement == null) return;
 

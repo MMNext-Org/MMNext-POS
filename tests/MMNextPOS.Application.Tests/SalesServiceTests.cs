@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MMNextPOS.Application.Services;
@@ -111,6 +112,106 @@ namespace MMNextPOS.Application.Tests
             // Verify rollback was called, commit was not
             _unitOfWorkMock.Verify(r => r.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
             _unitOfWorkMock.Verify(r => r.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        private void SetupSales(params Sale[] sales)
+        {
+            _saleRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                         .ReturnsAsync((IReadOnlyList<Sale>)sales.ToList());
+        }
+
+        [Fact]
+        public async Task GetAllAsync_NoFilters_ReturnsAllSalesOrderedByDateDescending()
+        {
+            // Arrange
+            SetupSales(
+                new Sale { Id = 1, CustomerId = 1, SaleDate = new DateTime(2026, 9, 1), TotalAmount = 10m },
+                new Sale { Id = 2, CustomerId = 2, SaleDate = new DateTime(2026, 9, 3), TotalAmount = 20m },
+                new Sale { Id = 3, CustomerId = 1, SaleDate = new DateTime(2026, 9, 2), TotalAmount = 30m });
+
+            var service = CreateService();
+
+            // Act
+            var result = await service.GetAllAsync();
+
+            // Assert
+            Assert.Equal(new[] { 2, 3, 1 }, result.Select(s => s.Id));
+        }
+
+        [Fact]
+        public async Task GetAllAsync_DateRange_FiltersInclusively()
+        {
+            // Arrange
+            SetupSales(
+                new Sale { Id = 1, SaleDate = new DateTime(2026, 8, 31, 23, 59, 59), TotalAmount = 10m },
+                new Sale { Id = 2, SaleDate = new DateTime(2026, 9, 1), TotalAmount = 20m },
+                new Sale { Id = 3, SaleDate = new DateTime(2026, 9, 5, 12, 0, 0), TotalAmount = 30m },
+                new Sale { Id = 4, SaleDate = new DateTime(2026, 9, 10), TotalAmount = 40m });
+
+            var service = CreateService();
+
+            // Act
+            var result = await service.GetAllAsync(
+                fromDate: new DateTime(2026, 9, 1),
+                toDate: new DateTime(2026, 9, 5));
+
+            // Assert
+            Assert.Equal(new[] { 3, 2 }, result.Select(s => s.Id));
+        }
+
+        [Fact]
+        public async Task GetAllAsync_CustomerFilter_ReturnsOnlySalesForThatCustomer()
+        {
+            // Arrange
+            SetupSales(
+                new Sale { Id = 1, CustomerId = 1, SaleDate = new DateTime(2026, 9, 1), TotalAmount = 10m },
+                new Sale { Id = 2, CustomerId = 2, SaleDate = new DateTime(2026, 9, 2), TotalAmount = 20m },
+                new Sale { Id = 3, CustomerId = 1, SaleDate = new DateTime(2026, 9, 3), TotalAmount = 30m });
+
+            var service = CreateService();
+
+            // Act
+            var result = await service.GetAllAsync(customerId: 1);
+
+            // Assert
+            Assert.Equal(new[] { 3, 1 }, result.Select(s => s.Id));
+        }
+
+        [Fact]
+        public async Task GetAllAsync_StatusFilter_IsCaseInsensitiveAndExcludesNullStatus()
+        {
+            // Arrange
+            SetupSales(
+                new Sale { Id = 1, SaleDate = new DateTime(2026, 9, 1), TotalAmount = 10m, Status = "Completed" },
+                new Sale { Id = 2, SaleDate = new DateTime(2026, 9, 2), TotalAmount = 20m, Status = "completed" },
+                new Sale { Id = 3, SaleDate = new DateTime(2026, 9, 3), TotalAmount = 30m, Status = "Voided" },
+                new Sale { Id = 4, SaleDate = new DateTime(2026, 9, 4), TotalAmount = 40m, Status = null });
+
+            var service = CreateService();
+
+            // Act
+            var result = await service.GetAllAsync(status: "COMPLETED");
+
+            // Assert
+            Assert.Equal(new[] { 2, 1 }, result.Select(s => s.Id));
+        }
+
+        [Fact]
+        public async Task GetAllAsync_LocationFilter_ReturnsOnlySalesForThatLocation()
+        {
+            // Arrange
+            SetupSales(
+                new Sale { Id = 1, SaleDate = new DateTime(2026, 9, 1), TotalAmount = 10m, LocationId = 1 },
+                new Sale { Id = 2, SaleDate = new DateTime(2026, 9, 2), TotalAmount = 20m, LocationId = 2 },
+                new Sale { Id = 3, SaleDate = new DateTime(2026, 9, 3), TotalAmount = 30m, LocationId = null });
+
+            var service = CreateService();
+
+            // Act
+            var result = await service.GetAllAsync(locationId: 1);
+
+            // Assert
+            Assert.Equal(new[] { 1 }, result.Select(s => s.Id));
         }
     }
 }

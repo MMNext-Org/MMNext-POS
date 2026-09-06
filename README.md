@@ -1,224 +1,72 @@
-# MMNextPOS – Modern Windows POS Application
+# MMNextPOS Custom Agent Setup
 
-**MMNextPOS** is a modern, maintainable Windows desktop Point‑of‑Sale (POS) system built with .NET 8, WinForms, and DevExpress. It replaces the legacy FusionPOS codebase with a clean layered architecture (Domain, Infrastructure, Application, Presentation) and asynchronous, test‑driven development.
+ဒီ package က `MMNextPOS` အတွက် **approval-based custom agent workflow** ကို တည်ဆောက်ပေးပါတယ်။ Agent က request ကို အရင်ခွဲခြမ်းပြီး Domain, Infrastructure, Application, WinForms နဲ့ Tests အလိုက် task ခွဲပေးမယ်။ NVIDIA-compatible API ကို advisory analysis အတွက်သာ အသုံးပြုပြီး၊ code ပြင်ခြင်း သို့မဟုတ် command run ခြင်းမပြုမီ user approval လိုအပ်အောင် သတ်မှတ်ထားပါတယ်။
 
----
+## ပါဝင်သည့်ဖိုင်များ
 
-## Table of Contents
-- [Architecture Overview](#architecture-overview)
-- [Getting Started](#getting-started)
-- [Database Setup & Migration Guide](#database-setup--migration-guide)
-- [Running the Application](#running-the-application)
-- [Testing](#testing)
-- [Continuous Integration (GitHub Actions)](#continuous-integration-github-actions)
-- [Packaging & Installer](#packaging--installer)
-- [Contributing](#contributing)
+| ဖိုင် | ရည်ရွယ်ချက် |
+|---|---|
+| `.github/agents/mmnextpos-orchestrator.agent.md` | Main orchestrator; plan, approval gate, implementation flow, review handoff |
+| `.github/agents/mmnextpos-planner.agent.md` | Read-only implementation planner |
+| `.github/agents/mmnextpos-reviewer.agent.md` | Read-only diff, security, architecture, and test reviewer |
+| `tools/nvidia_router.py` | NVIDIA OpenAI-compatible endpoint ကို သုံးပြီး advisory sub-task များ ခွဲဝေစစ်ဆေးသည့် script |
+| `tools/Invoke-MMNextPOSRouter.ps1` | Windows PowerShell launcher |
+| `config/nvidia.env.example` | Secret မပါသော environment variable template |
+| `Install-MMNextPOSAgent.ps1` | Project ထဲသို့ setup files ကူးထည့်သည့် installer |
 
----
+## Windows တွင် တပ်ဆင်ခြင်း
 
-## Architecture Overview
+ZIP ကို extract လုပ်ပြီး PowerShell ကို **ပုံမှန် user အဖြစ်** ဖွင့်ပါ။ Admin rights မလိုအပ်ပါက မသုံးပါနှင့်။ ထို့နောက်—
 
-```mermaid
-flowchart TB
-    subgraph Domain
-        Product[Product POCO]
-        Customer[Customer POCO]
-        Sale[Sale POCO]
-        SaleDetail[SaleDetail POCO]
-        Invoice[Invoice POCO]
-    end
-
-    subgraph Infrastructure
-        RepoBase[RepositoryBase]
-        ProductRepo[ProductRepository]
-        SaleRepo[SaleRepository]
-        CustomerRepo[CustomerRepository]
-        DBInit[DatabaseInitializer]
-    end
-
-    subgraph Application
-        SalesService[SalesService]
-        CustomerService[CustomerService]
-        DI[DependencyInjection]
-    end
-
-    subgraph Presentation
-        MainForm[MainForm (WinForms)]
-        Program[Program.cs – DI bootstrap]
-    end
-
-    Domain --> Infrastructure
-    Infrastructure --> Application
-    Application --> Presentation
-    Presentation --> Program
-```
-
-- **Domain** – Pure POCO entities and domain‑specific exceptions.
-- **Infrastructure** – Async MySQL repositories built with **Dapper**, plus a `DatabaseInitializer` that creates tables on first run.
-- **Application** – Service layer (`ISalesService`, `ICustomerService`) containing business rules (stock validation, audit logging, etc.).
-- **Presentation** – WinForms UI (`MainForm`) that consumes services via **Microsoft.Extensions.DependencyInjection**.
-
----
-
-## Getting Started
-
-### Prerequisites
-- Windows 10/11 (or any Windows that supports .NET 8).
-- [.NET SDK 8.0](https://dotnet.microsoft.com/download/dotnet/8.0) installed.
-- MySQL 8.0 server (local, Docker, or remote).
-- (Optional) DevExpress WinForms components – a free community license is sufficient for development. See the DevExpress documentation for installation.
-
-### Clone the Repository
-```bash
-git clone https://github.com/<your‑org>/MMNextPOS.git
-cd MMNextPOS
-```
-
-### Set up the Connection String
-The application reads a connection string from the environment variable `MMNEXTPOS_CONNECTION_STRING`. Create it locally (PowerShell example):
 ```powershell
-$env:MMNEXTPOS_CONNECTION_STRING = "Server=localhost;Port=3306;Database=mmnextpos;User ID=root;Password=yourPassword;Pooling=true;"
+Set-ExecutionPolicy -Scope Process Bypass
+cd C:\path\to\MMNextPOS-agent-setup
+.\Install-MMNextPOSAgent.ps1 -ProjectRoot 'J:\Project 1\MMNext POS'
 ```
-If the variable is not present, the app falls back to a default `root` connection (useful for local Docker testing).
 
----
+Installer က existing source code ကို မပြင်ပါ။ `.github/agents` ထဲတွင် agent profiles၊ `tools\mmnextpos-agent` ထဲတွင် router files၊ `config` ထဲတွင် secret-free template ကိုသာ ထည့်ပေးပါမယ်။
 
-## Database Setup & Migration Guide
+## NVIDIA API သတ်မှတ်ခြင်း
 
-The first time the application starts, **DatabaseInitializer** runs and creates the required tables if they do not already exist. The schema includes:
-- `Products`
-- `Customers`
-- `Sales`
-- `SaleDetails`
+NVIDIA account မှရရှိသော key ကို source code ထဲ မရေးဘဲ Windows user environment variable အဖြစ်သတ်မှတ်ပါ။
 
-### Manual Migration (optional)
-If you need to apply the schema manually (e.g., on a production server), run the following SQL script (found in `src/MMNextPOS.Infrastructure/DatabaseInitializer.cs`):
-```sql
-CREATE TABLE IF NOT EXISTS Products (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    Sku VARCHAR(50) NOT NULL,
-    Name VARCHAR(200) NOT NULL,
-    Price DECIMAL(18,2) NOT NULL,
-    StockQuantity INT NOT NULL
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS Customers (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(150) NOT NULL,
-    Address VARCHAR(200) NULL,
-    Phone VARCHAR(20) NULL,
-    Email VARCHAR(100) NULL
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS Sales (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    CustomerId INT NOT NULL,
-    SaleDate DATETIME NOT NULL,
-    TotalAmount DECIMAL(18,2) NOT NULL,
-    CONSTRAINT FK_Sales_Customer FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS SaleDetails (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    SaleId INT NOT NULL,
-    ProductId INT NOT NULL,
-    Quantity INT NOT NULL,
-    UnitPrice DECIMAL(18,2) NOT NULL,
-    CONSTRAINT FK_SaleDetails_Sale FOREIGN KEY (SaleId) REFERENCES Sales(Id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT FK_SaleDetails_Product FOREIGN KEY (ProductId) REFERENCES Products(Id) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB;
+```powershell
+[Environment]::SetEnvironmentVariable('NVIDIA_API_KEY', 'YOUR_KEY_HERE', 'User')
 ```
-Run the script against your MySQL instance before launching the application if you prefer a manual approach.
 
----
+Terminal အသစ်ဖွင့်ပြီးမှ router ကို စမ်းပါ။ Model IDs နှင့် availability က account၊ quota၊ region နဲ့ အချိန်အလိုက် ပြောင်းလဲနိုင်သောကြောင့် `NVIDIA_MODEL_*` values တွေကို hard-code မလုပ်ထားပါ။ Router က `/v1/models` ကို စစ်ပြီး configured model သို့မဟုတ် compatible name ကို ရွေးပါမယ်။ NVIDIA access ကို **free ဖြစ်သည်ဟု မယူဆပါနှင့်**—သင့် account ထဲတွင် quota/terms ကို ကိုယ်တိုင်စစ်ပါ။
 
-## Running the Application
+ဥပမာ advisory run—
 
-```bash
-# Build the solution
-dotnet build -c Release
-
-# Run the WinForms app
-dotnet run --project src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj```
-
-The UI opens to a simple **Sales Dashboard** showing recent sales. Use the **Refresh** button to reload data. Future extensions will add product, customer, and reporting screens.
-
----
-
-## Testing
-
-### Unit Tests (Application Layer)
-```bash
-# From the repository root
-dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj```
-
-### Integration Tests (Infrastructure Layer)
-The integration tests spin up a MySQL Docker container automatically via **Testcontainers**.
-```bash
-# Ensure Docker is running
-dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj```
-
-All tests run on the CI pipeline as well (see below).
-
----
-
-## Continuous Integration (GitHub Actions)
-
-The repository includes a GitHub Actions workflow (`.github/workflows/ci.yml`) that:
-1. Restores, builds, and runs unit tests.
-2. Starts a MySQL service container and runs integration tests.
-
-![CI status](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg?branch=main)
-
----
-
-## Packaging & Installer
-
-### Self‑Contained Publish
-```bash
-# Publish a self‑contained Windows executable
-dotnet publish src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish```
-The output folder (`publish`) contains `MMNextPOS.WinForms.exe` and all required runtime files – you can zip this folder for distribution.
-
-### MSI Installer (WiX Toolset)
-If you prefer an MSI installer, you can use the **WiX Toolset**. Below is a minimal WiX fragment (save as `Installer.wxs`):
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="MMNextPOS" Language="1033" Version="1.0.0.0" Manufacturer="YourCompany" UpgradeCode="{11111111-2222-3333-4444-555555555555}">
-    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="MMNextPOS">
-          <Component Id="MainExe" Guid="{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE}">
-            <File Source="publish\MMNextPOS.WinForms.exe" KeyPath="yes" />
-          </Component>
-        </Directory>
-      </Directory>
-    </Directory>
-    <Feature Id="DefaultFeature" Level="1">
-      <ComponentRef Id="MainExe" />
-    </Feature>
-  </Product>
-</Wix>
+```powershell
+cd 'J:\Project 1\MMNext POS'
+.\tools\mmnextpos-agent\Invoke-MMNextPOSRouter.ps1 `
+  -Task 'Add barcode scanning validation to the sales workflow' `
+  -Context 'Relevant redacted file names and small excerpts only'
 ```
-Build the MSI with the WiX tools:
-```bash
-candle Installer.wxs
-light -ext WixUIExtension Installer.wixobj -o MMNextPOS.msi```
-Distribute `MMNextPOS.msi` to end users – it installs the self‑contained executable in `Program Files\MMNextPOS`.
 
----
+Router သည် analysis JSON ကို stdout သို့ထုတ်ပြီး source files မပြင်၊ build မလုပ်၊ test မလုပ်၊ database မပြင်ပါ။ API key မရှိလျှင် ရပ်တန့်ပါမယ်။
 
-## Contributing
+## Copilot အသုံးပြုခြင်း
 
-1. Fork the repo and create a feature branch.
-2. Follow the **layered architecture** – add new entities in `Domain`, repositories in `Infrastructure`, services in `Application`, and UI in `WinForms`.
-3. Write unit tests for any new service logic and integration tests for repository changes.
-4. Ensure the CI pipeline passes before opening a Pull Request.
+Repository ကို VS Code/Copilot ဖြင့်ဖွင့်ပြီး custom agent selector ထဲမှ `mmnextpos-orchestrator` ကိုရွေးပါ။ ပထမ prompt တွင် requirement ပေးပါ။ Agent က **Understanding → Affected areas → Task breakdown → NVIDIA advisory routing → Proposed changes → Verification plan → Approval required** အစီအစဉ်နဲ့ ပြန်မေးပါမယ်။ `Approve this plan?` ကို သင်အတည်ပြုပြီးမှသာ edit/build/test ဆက်လုပ်ခွင့် ရှိပါတယ်။ Planner နဲ့ Reviewer ကို handoff buttons ဖြင့် သီးခြားသုံးနိုင်ပါတယ်။
 
----
+## လုံခြုံရေးနှင့် ကန့်သတ်ချက်များ
 
-## License
+ဒီ setup က Copilot custom-agent profiles နဲ့ local advisory router ဖြစ်ပါတယ်။ `github.exe` ကို package ထဲသို့ မကူးပါ၊ executable upload မလုပ်ပါ၊ Windows မှာရှိပြီးသား Copilot installation ကိုပဲ အသုံးပြုပါမယ်။ NVIDIA router သည် Copilot ကိုယ်တိုင်၏ model backend ကို အလိုအလျောက်ပြောင်းပေးခြင်းမဟုတ်ဘဲ planning/review အတွက် သီးခြား advisory calls ပြုလုပ်တာဖြစ်ပါတယ်။ Copilot model selection နှင့် NVIDIA API model routing သည် သီးခြားအရာများဖြစ်သည်။
 
-MMNextPOS is released under the MIT License. See the `LICENSE` file for details.
+Agent သည် API key၊ connection string password၊ user data၊ database dump သို့မဟုတ် repository အပြည့်အစုံကို ပြင်ပ model သို့ မပို့ရပါ။ Database migration, destructive command, release publish, force-push နှင့် unrelated refactor များအတွက် သီးခြား approval လိုအပ်ပါမယ်။
+
+## Verification checklist
+
+တပ်ဆင်ပြီးနောက် agent file များကို review လုပ်ပါ။ ထို့နောက် သီးခြား branch တစ်ခုတွင် small planning request ဖြင့်စမ်းပါ။ Plan ကို approve မလုပ်ဘဲ file changes မဖြစ်ကြောင်း စစ်ပါ။ Approve ပြီးနောက် relevant unit tests နှင့် `dotnet build -c Release` ကို run ခိုင်းပြီး reviewer handoff ဖြင့် diff ကိုပြန်စစ်ပါ။ Integration tests အတွက် Docker/MySQL အခြေအနေကို အရင်အတည်ပြုပါ။
+
+## အခြေခံ project context
+
+MMNextPOS သည် .NET 8 WinForms + DevExpress၊ Domain/Infrastructure/Application/Presentation layered architecture၊ Dapper/MySQL၊ xUnit နှင့် Testcontainers ကို အသုံးပြုထားပါတယ်။ Repository ရှိ `.github/AGENTS.md` နှင့် `.claude/AGENTS.md` ညွှန်ကြားချက်များကို agent profiles များက လိုက်နာရန် သတ်မှတ်ထားပါတယ်။
+
+## References
+
+1. [GitHub: Creating custom agents for Copilot cloud agent](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/create-custom-agents)
+2. [Visual Studio Code: Custom agents](https://code.visualstudio.com/docs/agent-customization/custom-agents)
+3. [NVIDIA API Documentation](https://docs.api.nvidia.com/)

@@ -37,7 +37,7 @@ namespace MMNextPOS.WinForms.Reports
             Margins = new Margins(10, 10, 10, 10);
             PaperKind = DXPaperKind.Custom;
             Font = new Font("Consolas", 8);
-            
+
             // Create bands
             var headerBand = new ReportHeaderBand { HeightF = 180 };
             var detailBand = new DetailBand { HeightF = 25 };
@@ -330,7 +330,7 @@ namespace MMNextPOS.WinForms.Reports
 
             var customer = _currentSale.CustomerId > 0 ? await _customerService!.GetByIdAsync(_currentSale.CustomerId, cancellationToken) : null;
             _customerLabel.Text = $"Customer: {customer?.Name ?? "Walk-in"}";
-            
+
             _cashierLabel.Text = $"Cashier: User #{_currentSale.Id}"; // Would need user service
 
             // Get sale details
@@ -341,7 +341,7 @@ namespace MMNextPOS.WinForms.Reports
         protected override void OnBeforePrint(System.ComponentModel.CancelEventArgs e)
         {
             base.OnBeforePrint(e);
-            
+
             // This would be called during report generation to populate detail rows
             // For thermal receipt, we typically build the entire report programmatically
         }
@@ -352,7 +352,7 @@ namespace MMNextPOS.WinForms.Reports
         public async Task<byte[]> GenerateReceiptAsync(int saleId, CancellationToken cancellationToken = default)
         {
             await PopulateAsync(saleId, cancellationToken);
-            
+
             using var stream = new System.IO.MemoryStream();
             this.ExportToPdf(stream);
             return stream.ToArray();

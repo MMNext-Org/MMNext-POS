@@ -128,7 +128,7 @@ namespace MMNextPOS.WinForms.Services
                 var assembly = typeof(WinFormsReportService).Assembly;
                 var resourceName = $"MMNextPOS.WinForms.Reports.{fileName}";
                 var stream = assembly.GetManifestResourceStream(resourceName);
-                
+
                 if (stream != null)
                 {
                     var report = new XtraReport();
@@ -155,7 +155,7 @@ namespace MMNextPOS.WinForms.Services
         private async Task<byte[]> GenerateDynamicReportAsync(string reportName, Dictionary<string, object> parameters, CancellationToken cancellationToken)
         {
             await Task.CompletedTask;
-            
+
             // Generate a dynamic XtraReport
             var report = new XtraReport
             {

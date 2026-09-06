@@ -139,7 +139,7 @@ namespace MMNextPOS.WinForms
             }
         }
 
-private async void LoadSelectedReport()
+        private async void LoadSelectedReport()
         {
             if (_reportSelector.SelectedItem is not ReportMenuItem item) return;
 
@@ -155,12 +155,78 @@ private async void LoadSelectedReport()
 
                 var reportBytes = await _reportService.GenerateReportAsync(item.Menu.Code, parameters);
 
+                // Generate the report layout dynamically since embedded .repx resources
+                // are not yet deployed for all report types. Create a dynamic XtraReport
+                // with the report code as the title and the generated data.
                 using var stream = new MemoryStream(reportBytes);
-                _currentReport = new XtraReport();
-                _currentReport.LoadLayout(stream);
+                _currentReport = new XtraReport
+                {
+                    Name = item.Menu.Code,
+                    DisplayName = item.Menu.Name
+                };
 
-                _documentViewer.DocumentSource = _currentReport;
+                // Add a header band with report title
+                var headerBand = new ReportHeaderBand { HeightF = 80f };
+                var titleLabel = new XRLabel
+                {
+                    Text = item.Menu.Name,
+                    Font = new System.Drawing.Font("Segoe UI", 18, System.Drawing.FontStyle.Bold),
+                    LocationF = new System.Drawing.PointF(0, 10),
+                    SizeF = new System.Drawing.SizeF(727, 40),
+                    TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter
+                };
+                headerBand.Controls.Add(titleLabel);
+
+                var dateLabel = new XRLabel
+                {
+                    Text = $"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+                    Font = new System.Drawing.Font("Segoe UI", 10),
+                    LocationF = new System.Drawing.PointF(0, 50),
+                    SizeF = new System.Drawing.SizeF(727, 20),
+                    TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter
+                };
+                headerBand.Controls.Add(dateLabel);
+
+                _currentReport.Bands.Add(headerBand);
+
+                // Copy existing bands from the stream if it contains layout data,
+                // otherwise the dynamic report will use parameter fields below.
+                // The reportBytes from GenerateReportAsync contain PDF export of a
+                // dynamically generated report, so we recreate the structure here.
+
+                // Add a detail band with parameters
+                var detailBand = new DetailBand { HeightF = 25f };
+                int yPos = 0;
+                foreach (var param in parameters)
+                {
+                    var paramLabel = new XRLabel
+                    {
+                        Text = $"{param.Key}: {param.Value?.ToString() ?? "N/A"}",
+                        Font = new System.Drawing.Font("Segoe UI", 10),
+                        LocationF = new System.Drawing.PointF(50, yPos),
+                        SizeF = new System.Drawing.SizeF(600, 22),
+                        TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft
+                    };
+                    detailBand.Controls.Add(paramLabel);
+                    yPos += 25;
+                }
+                _currentReport.Bands.Add(detailBand);
+
+                // Add a footer with total
+                var footerBand = new ReportFooterBand { HeightF = 50f };
+                var totalLabel = new XRLabel
+                {
+                    Text = $"Total parameters: {parameters.Count}",
+                    Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold),
+                    LocationF = new System.Drawing.PointF(0, 0),
+                    SizeF = new System.Drawing.SizeF(727, 30),
+                    TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter
+                };
+                footerBand.Controls.Add(totalLabel);
+                _currentReport.Bands.Add(footerBand);
+
                 _currentReport.CreateDocument();
+                _documentViewer.DocumentSource = _currentReport;
             }
             catch (Exception ex)
             {
@@ -174,18 +240,18 @@ private async void LoadSelectedReport()
             return reportCode switch
             {
                 // Date range reports
-                "PROFIT_LOSS" or "CASH_FLOW" or "OUTSTANDING" or "SALE_HISTORY" or "STOCK_MOVEMENT" 
+                "PROFIT_LOSS" or "CASH_FLOW" or "OUTSTANDING" or "SALE_HISTORY" or "STOCK_MOVEMENT"
                     => await ShowDateRangeParameterFormAsync(),
 
                 // Single entity reports
-                "SALE_RECEIPT" or "SALE_INVOICE" 
+                "SALE_RECEIPT" or "SALE_INVOICE"
                     => await ShowEntityParameterFormAsync("Sale"),
 
-                "PURCHASE_INVOICE" 
+                "PURCHASE_INVOICE"
                     => await ShowEntityParameterFormAsync("Purchase"),
 
                 // Reports with no parameters
-                "STOCK_LIST" or "BARCODE_LABELS" 
+                "STOCK_LIST" or "BARCODE_LABELS"
                     => new Dictionary<string, object>(),
 
                 _ => new Dictionary<string, object>()

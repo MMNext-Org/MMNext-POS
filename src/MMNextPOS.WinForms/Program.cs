@@ -50,7 +50,7 @@ namespace MMNextPOS.WinForms
 
                     // Register Serilog logger
                     services.AddSingleton<Serilog.ILogger>(sp => Log.Logger);
-                    services.AddSingleton<Microsoft.Extensions.Logging.ILogger>(sp => 
+                    services.AddSingleton<Microsoft.Extensions.Logging.ILogger>(sp =>
                         new Microsoft.Extensions.Logging.LoggerFactory().CreateLogger("MMNextPOS"));
 
                     services.AddApplication(configuration); // registers repos & services

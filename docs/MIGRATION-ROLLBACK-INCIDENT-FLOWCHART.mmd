@@ -1,0 +1,74 @@
+flowchart TD
+    A[Change or incident detected] --> B{Is data integrity or recovery uncertain?}
+    B -- No --> C[Follow normal change procedure]
+    C --> Z[Record evidence and close activity]
+    B -- Yes --> D[STOP writes, migration, release, and retries]
+    D --> E[Declare incident and assign Incident Lead]
+    E --> F[Switch affected system to maintenance or read-only mode]
+    F --> G[Preserve logs, versions, IDs, checksums, backups, and timeline]
+    G --> H{Which critical path is affected?}
+
+    H -- R3 Schema/Migration --> R3A[Capture source/target schema and last successful migration]
+    R3A --> R3B{Does target contain accepted business writes?}
+    R3B -- No --> R3C[Verify immutable source backup]
+    R3C --> R3D{Backup verified?}
+    R3D -- Yes --> R3E[Rebuild target from last known-good schema]
+    R3D -- No --> X[Escalate: data-loss risk; keep system blocked]
+    R3B -- Yes --> R3F[Restore last verified target backup]
+    R3F --> R3G[Create approved delta report]
+    R3E --> R3H[Repair migration only in disposable staging]
+    R3G --> R3H
+    R3H --> R3I[Run migration twice and reconcile rows, totals, stock, payments, invoices, FKs, indexes]
+    R3I --> R3J{Reconciliation clean and approved?}
+    R3J -- No --> X
+    R3J -- Yes --> R3K[Run on fresh target and retain evidence]
+
+    H -- R4 Transaction --> R4A[Freeze affected reference and mark UNKNOWN if commit is unclear]
+    R4A --> R4B[Run read-only reconciliation]
+    R4B --> R4C{Transaction state?}
+    R4C -- NOT_COMMITTED --> R4D[Allow exactly one idempotent retry]
+    R4C -- COMMITTED --> R4E[Accept original; reject duplicate replay]
+    R4C -- PARTIAL/UNKNOWN --> R4F[Obtain Application Lead + Finance SME approval]
+    R4F --> R4G[Execute auditable compensating transaction]
+    R4D --> R4H[Reconcile stock, payment, outstanding, invoice, and audit]
+    R4E --> R4H
+    R4G --> R4H
+    R4H --> R4I{One authoritative result and clean audit?}
+    R4I -- No --> X
+    R4I -- Yes --> R4J[Run failure-injection regression test]
+
+    H -- R11 Backup/Recovery --> R11A[Record last good backup, last accepted write, RPO, and RTO]
+    R11A --> R11B[Protect all backup copies and failed artifacts]
+    R11B --> R11C[Select newest retained backup with valid checksum]
+    R11C --> R11D{Checksum and isolated restore pass?}
+    R11D -- No --> R11E[Try next retained recovery point]
+    R11E --> R11D
+    R11D -- Yes --> R11F[Verify schema, startup, reads, stock/payment/invoice totals, and rollback write]
+    R11F --> R11G{Can production recover within RTO?}
+    R11G -- No --> R11H[Use read-only mode or approved manual transaction log]
+    R11G -- Yes --> R11I[Restore or switch to verified recovery environment]
+    R11H --> R11I
+    R11I --> R11J[Replay controlled deltas only]
+    R11J --> R11K[Reconcile before/after data and account for manual transactions]
+    R11K --> R11L{Recovery evidence complete?}
+    R11L -- No --> X
+    R11L -- Yes --> R11M[Operations Owner approves restoration]
+
+    R3K --> Q[Independent technical verification]
+    R4J --> Q
+    R11M --> Q
+    Q --> W[Business owner verifies stock, payment, invoice, and financial results]
+    W --> Y{All restart criteria met?}
+    Y -- No --> X
+    Y -- Yes --> N[Controlled reopening: test account, pilot role, then general users]
+    N --> O[Post-incident review and regression test]
+    O --> Z[Update risk register, runbook, checklist, and evidence index]
+
+    classDef stop fill:#ffe5e5,stroke:#b42318,stroke-width:2px,color:#7a271a;
+    classDef decision fill:#fff4d6,stroke:#b54708,stroke-width:1px,color:#7a2e0b;
+    classDef verify fill:#e7f6ec,stroke:#087443,stroke-width:1px,color:#075e38;
+    classDef normal fill:#eaf2ff,stroke:#175cd3,stroke-width:1px,color:#123a8c;
+    class D,F,X stop;
+    class B,R3B,R3D,R3J,R4C,R4I,R11D,R11G,R11L,Y decision;
+    class Q,W,N,O,Z,R3I,R4H,R4J,R11F,R11K,R11M verify;
+    class A,C,E,G,H,R3A,R3C,R3E,R3F,R3G,R3H,R3K,R4A,R4B,R4D,R4E,R4F,R4G,R11A,R11B,R11C,R11E,R11H,R11I,R11J normal;

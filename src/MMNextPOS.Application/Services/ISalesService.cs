@@ -12,19 +12,23 @@ namespace MMNextPOS.Application.Services
         Task<IReadOnlyList<Sale>> GetRecentSalesAsync(int count = 20, CancellationToken cancellationToken = default);
         Task<SaleDetail> AddSaleDetailAsync(int saleId, SaleDetail detail, CancellationToken cancellationToken = default);
         Task<Sale?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        
+
         /// <summary>
         /// Gets all sales with optional filtering.
         /// </summary>
         /// <param name="fromDate">Filter sales from this date (inclusive).</param>
         /// <param name="toDate">Filter sales to this date (inclusive).</param>
         /// <param name="customerId">Filter by customer ID.</param>
+        /// <param name="status">Filter by sale status (e.g., "Completed", "Hold", "Voided").</param>
+        /// <param name="locationId">Filter by location ID.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Filtered list of sales.</returns>
         Task<IReadOnlyList<Sale>> GetAllAsync(
             DateTime? fromDate = null,
             DateTime? toDate = null,
             int? customerId = null,
+            string? status = null,
+            int? locationId = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

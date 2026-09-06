@@ -103,7 +103,7 @@ namespace MMNextPOS.WinForms.Reports
             for (int row = 0; row < 1; row++) // Single row per detail band iteration
             {
                 var tableRow = new XRTableRow { HeightF = _labelHeight };
-                
+
                 for (int col = 0; col < _labelsPerRow; col++)
                 {
                     var cell = new XRTableCell
@@ -115,7 +115,7 @@ namespace MMNextPOS.WinForms.Reports
                         Padding = new PaddingInfo(5, 5, 5, 5),
                         TextAlignment = TextAlignment.TopLeft
                     };
-                    
+
                     // Label content will be populated in BeforePrint
                     var labelPanel = new XRPanel
                     {
@@ -123,7 +123,7 @@ namespace MMNextPOS.WinForms.Reports
                         SizeF = new SizeF(_labelWidth - 10, _labelHeight - 10),
                         Borders = BorderSide.None
                     };
-                    
+
                     // Product name
                     var nameLabel = new XRLabel
                     {
@@ -178,7 +178,7 @@ namespace MMNextPOS.WinForms.Reports
                     cell.Controls.Add(labelPanel);
                     tableRow.Cells.Add(cell);
                 }
-                
+
                 _labelsTable.Rows.Add(tableRow);
             }
 
@@ -203,9 +203,9 @@ namespace MMNextPOS.WinForms.Reports
         /// Populates the report with product data.
         /// </summary>
         public async Task PopulateAsync(
-            List<int>? productIds = null, 
-            int? categoryId = null, 
-            bool activeOnly = true, 
+            List<int>? productIds = null,
+            int? categoryId = null,
+            bool activeOnly = true,
             CancellationToken cancellationToken = default)
         {
             _products = (await _productService!.GetAllAsync(cancellationToken)).ToList();
@@ -242,7 +242,7 @@ namespace MMNextPOS.WinForms.Reports
             CancellationToken cancellationToken = default)
         {
             await PopulateAsync(productIds, categoryId, activeOnly, cancellationToken);
-            
+
             using var stream = new System.IO.MemoryStream();
             this.ExportToPdf(stream);
             return stream.ToArray();

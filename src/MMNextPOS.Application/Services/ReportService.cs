@@ -144,7 +144,7 @@ namespace MMNextPOS.Application.Services
         public async Task<byte[]> GenerateReportAsync(string reportName, Dictionary<string, object> parameters, CancellationToken cancellationToken = default)
         {
             await Task.CompletedTask;
-            
+
             // Base implementation returns JSON representation
             var reportData = new
             {
@@ -152,12 +152,12 @@ namespace MMNextPOS.Application.Services
                 GeneratedAt = DateTime.UtcNow,
                 Parameters = parameters
             };
-            
+
             var json = System.Text.Json.JsonSerializer.Serialize(reportData, new System.Text.Json.JsonSerializerOptions
             {
                 WriteIndented = true
             });
-            
+
             return System.Text.Encoding.UTF8.GetBytes(json);
         }
     }

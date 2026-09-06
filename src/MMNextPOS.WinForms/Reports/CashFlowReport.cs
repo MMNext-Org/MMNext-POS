@@ -157,7 +157,7 @@ namespace MMNextPOS.WinForms.Reports
             summaryTable.Rows.Add(CreateInfoRow("Total Expenses:", _totalExpensesLabel));
             summaryTable.Rows.Add(CreateInfoRow("Total Collections:", _totalCollectionsLabel));
             summaryTable.Rows.Add(CreateInfoRow("Total Payments:", _totalPaymentsLabel));
-            
+
             var sepRow = new XRTableRow { HeightF = 2 };
             sepRow.Cells.Add(new XRTableCell { Borders = BorderSide.None });
             sepRow.Cells.Add(new XRTableCell { Borders = BorderSide.None });
@@ -229,8 +229,8 @@ namespace MMNextPOS.WinForms.Reports
             // Build detail rows
             foreach (var cf in _cfReports)
             {
-                var row = CreateDetailRow(new[] 
-                { 
+                var row = CreateDetailRow(new[]
+                {
                     FormatDate(cf.ReportDate),
                     cf.Notes,
                     FormatCurrency(cf.TotalSales + cf.TotalCollections),
@@ -242,13 +242,13 @@ namespace MMNextPOS.WinForms.Reports
         }
 
         public async Task<byte[]> GenerateCashFlowAsync(
-            int locationId, 
-            DateTime fromDate, 
-            DateTime toDate, 
+            int locationId,
+            DateTime fromDate,
+            DateTime toDate,
             CancellationToken cancellationToken = default)
         {
             await PopulateAsync(locationId, fromDate, toDate, cancellationToken);
-            
+
             using var stream = new System.IO.MemoryStream();
             this.ExportToPdf(stream);
             return stream.ToArray();

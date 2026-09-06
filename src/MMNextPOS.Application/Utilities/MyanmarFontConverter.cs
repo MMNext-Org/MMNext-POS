@@ -99,7 +99,7 @@ namespace MMNextPOS.Application.Utilities
                     UnicodeToZawgyiMap[kvp.Value] = kvp.Key;
                 }
             }
-            
+
             // Add additional reverse mappings for common Unicode sequences
             UnicodeToZawgyiMap[" monasterya"] = "ျ"; // ya-pint
             UnicodeToZawgyiMap["ြ"] = "ျ"; // ya-yit (approximation)
@@ -120,7 +120,7 @@ namespace MMNextPOS.Application.Utilities
             {
                 // Try to match longest sequences first
                 bool matched = false;
-                
+
                 // Check for 4-char sequences
                 if (i + 3 < zawgyiText.Length)
                 {

@@ -86,13 +86,15 @@ namespace MMNextPOS.Application.Services
 
         public Task<IReadOnlyList<Sale>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            return GetAllAsync(null, null, null, cancellationToken);
+            return GetAllAsync(null, null, null, null, null, cancellationToken);
         }
 
         public async Task<IReadOnlyList<Sale>> GetAllAsync(
             DateTime? fromDate = null,
             DateTime? toDate = null,
             int? customerId = null,
+            string? status = null,
+            int? locationId = null,
             CancellationToken cancellationToken = default)
         {
             var allSales = await _saleRepo.GetAllAsync(cancellationToken);
@@ -106,12 +108,23 @@ namespace MMNextPOS.Application.Services
 
             if (toDate.HasValue)
             {
-                filtered = filtered.Where(s => s.SaleDate <= toDate.Value);
+                // "To this date (inclusive)": date-only callers expect the whole day included.
+                filtered = filtered.Where(s => s.SaleDate < toDate.Value.Date.AddDays(1));
             }
 
             if (customerId.HasValue)
             {
                 filtered = filtered.Where(s => s.CustomerId == customerId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                filtered = filtered.Where(s => s.Status != null && s.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (locationId.HasValue)
+            {
+                filtered = filtered.Where(s => s.LocationId == locationId.Value);
             }
 
             return filtered.OrderByDescending(s => s.SaleDate).ToList();

@@ -31,7 +31,7 @@ namespace MMNextPOS.Infrastructure.Repositories
                 throw new InvalidOperationException("No active transaction. Call IUnitOfWork.BeginTransactionAsync first.");
             }
 
-            const string saleSql = @"INSERT INTO Sales (CustomerId, SaleDate, TotalAmount) VALUES (@CustomerId, @SaleDate, @TotalAmount);
+            const string saleSql = @"INSERT INTO Sales (CustomerId, SaleDate, TotalAmount, Status, LocationId) VALUES (@CustomerId, @SaleDate, @TotalAmount, @Status, @LocationId);
                                          SELECT LAST_INSERT_ID();";
             var saleId = await Connection.ExecuteScalarAsync<long>(saleSql, sale, Transaction).ConfigureAwait(false);
             sale.Id = (int)saleId;

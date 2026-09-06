@@ -385,5 +385,5 @@ namespace MMNextPOS.WinForms
         public decimal UnitPrice { get; set; }
         public int AvailableStock { get; set; }
         public decimal LineTotal => Quantity * UnitPrice;
-}
+    }
 }

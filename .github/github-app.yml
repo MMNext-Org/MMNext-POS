@@ -1,4 +1,4 @@
 auto_open_in_browser: false
 automation:
-  auto_issue_session: true
+  auto_issue_session: false
   remote_control: false

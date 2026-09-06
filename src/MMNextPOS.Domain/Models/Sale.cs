@@ -21,5 +21,16 @@ namespace MMNextPOS.Domain.Models
 
         [Range(0, double.MaxValue)]
         public decimal TotalAmount { get; set; }
+
+        /// <summary>
+        /// Sale status (e.g., "Completed", "Hold", "Voided", "Draft")
+        /// </summary>
+        [MaxLength(50)]
+        public string? Status { get; set; }
+
+        /// <summary>
+        /// Optional location/branch identifier for multi-location support
+        /// </summary>
+        public int? LocationId { get; set; }
     }
 }

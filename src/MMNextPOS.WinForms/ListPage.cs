@@ -476,7 +476,7 @@ namespace MMNextPOS.WinForms
         {
             _isAdvancedFilterExpanded = !_isAdvancedFilterExpanded;
             _advancedFilterPanel.Visible = _isAdvancedFilterExpanded;
-            
+
             // Find the TableLayoutPanel row for advanced filter panel
             var mainLayout = Controls.OfType<TableLayoutPanel>().FirstOrDefault();
             if (mainLayout != null && mainLayout.RowCount > 1)
@@ -498,13 +498,13 @@ namespace MMNextPOS.WinForms
         {
             _searchText = string.Empty;
             _searchBox.Text = string.Empty;
-            
+
             _filterDateFrom = null;
             _dateFromEdit.EditValue = null;
-            
+
             _filterDateTo = null;
             _dateToEdit.EditValue = null;
-            
+
             _filterStatus = string.Empty;
             _statusFilter.SelectedIndex = 0;
 

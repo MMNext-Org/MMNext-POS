@@ -45,7 +45,7 @@ namespace MMNextPOS.Application.Services
                 return null;
 
             var users = await _repo.GetAllAsync(cancellationToken);
-            var user = users.FirstOrDefault(u => 
+            var user = users.FirstOrDefault(u =>
                 string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase));
 
             if (user == null || !user.IsActive)

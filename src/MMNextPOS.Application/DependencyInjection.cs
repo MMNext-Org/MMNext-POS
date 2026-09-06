@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
@@ -85,6 +86,9 @@ namespace MMNextPOS.Application
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IPurchaseReceiptRepository, MMNextPOS.Infrastructure.Repositories.PurchaseReceiptRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IPurchaseReceiptDetailRepository, MMNextPOS.Infrastructure.Repositories.PurchaseReceiptDetailRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IPaymentVoucherRepository, MMNextPOS.Infrastructure.Repositories.PaymentVoucherRepository>();
+
+            // Register MigrationRunner as scoped (uses IUnitOfWork which is scoped)
+            services.AddScoped<IMigrationRunner, MigrationRunner>();
 
             // Register DatabaseInitializer as singleton (run once at startup)
             services.AddSingleton<DatabaseInitializer>();

@@ -36,7 +36,7 @@ namespace MMNextPOS.WinForms.Reports
             PageHeight = 1169; // A4 height in hundredths of inch (11.69")
             Margins = new Margins(50, 50, 50, 50);
             PaperKind = DXPaperKind.A4;
-            
+
             // Default fonts
             Font = new Font("Segoe UI", 9.75f);
         }
@@ -259,7 +259,7 @@ namespace MMNextPOS.WinForms.Reports
         protected XRTableRow CreateInfoRow(string label, XRLabel valueLabel)
         {
             var row = new XRTableRow { HeightF = 25 };
-            
+
             var labelCell = new XRTableCell
             {
                 Text = label,
@@ -269,7 +269,7 @@ namespace MMNextPOS.WinForms.Reports
                 Padding = new PaddingInfo(5, 10, 3, 3),
                 WidthF = 150
             };
-            
+
             var valueCell = new XRTableCell
             {
                 Controls = { valueLabel },
@@ -277,7 +277,7 @@ namespace MMNextPOS.WinForms.Reports
                 TextAlignment = TextAlignment.MiddleRight,
                 Padding = new PaddingInfo(5, 5, 3, 3)
             };
-            
+
             row.Cells.Add(labelCell);
             row.Cells.Add(valueCell);
             return row;
@@ -289,7 +289,7 @@ namespace MMNextPOS.WinForms.Reports
         protected XRTableRow CreateTotalRow(string label, XRLabel valueLabel)
         {
             var row = new XRTableRow { HeightF = 30 };
-            
+
             var labelCell = new XRTableCell
             {
                 Text = label,
@@ -300,7 +300,7 @@ namespace MMNextPOS.WinForms.Reports
                 Padding = new PaddingInfo(5, 10, 5, 5),
                 WidthF = 150
             };
-            
+
             var valueCell = new XRTableCell
             {
                 Controls = { valueLabel },
@@ -309,7 +309,7 @@ namespace MMNextPOS.WinForms.Reports
                 TextAlignment = TextAlignment.MiddleRight,
                 Padding = new PaddingInfo(5, 5, 5, 5)
             };
-            
+
             row.Cells.Add(labelCell);
             row.Cells.Add(valueCell);
             return row;
@@ -321,7 +321,7 @@ namespace MMNextPOS.WinForms.Reports
         protected XRTableRow CreateInfoRow(string label, XRLabel valueLabel, float labelWidth = 120)
         {
             var row = new XRTableRow { HeightF = 25 };
-            
+
             var labelCell = new XRTableCell
             {
                 Text = label,
@@ -331,7 +331,7 @@ namespace MMNextPOS.WinForms.Reports
                 Padding = new PaddingInfo(5, 10, 3, 3),
                 WidthF = labelWidth
             };
-            
+
             var valueCell = new XRTableCell
             {
                 Controls = { valueLabel },
@@ -339,7 +339,7 @@ namespace MMNextPOS.WinForms.Reports
                 TextAlignment = TextAlignment.MiddleLeft,
                 Padding = new PaddingInfo(5, 5, 3, 3)
             };
-            
+
             row.Cells.Add(labelCell);
             row.Cells.Add(valueCell);
             return row;

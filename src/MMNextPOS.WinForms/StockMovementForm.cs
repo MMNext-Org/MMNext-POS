@@ -245,7 +245,7 @@ namespace MMNextPOS.WinForms
             _detailsView.CellValueChanged += DetailsView_CellValueChanged;
             _detailsGrid.DataSource = _lineItems;
 
-// Add/Remove line buttons
+            // Add/Remove line buttons
             var lineButtonsPanel = new PanelControl
             {
                 Dock = DockStyle.Bottom,

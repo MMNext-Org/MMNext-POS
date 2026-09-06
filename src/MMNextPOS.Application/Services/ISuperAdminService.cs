@@ -14,18 +14,18 @@ namespace MMNextPOS.Application.Services
         Task<IReadOnlyList<SuperAdminLog>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<SuperAdminLog>> GetAllAsync(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default);
         Task<SuperAdminLog> AddAsync(SuperAdminLog log, CancellationToken cancellationToken = default);
-        
+
         // Security operations
         Task<bool> LockUserAsync(int userId, string reason, int adminUserId, CancellationToken cancellationToken = default);
         Task<bool> UnlockUserAsync(int userId, int adminUserId, CancellationToken cancellationToken = default);
         Task<bool> ResetUserPasswordAsync(int userId, string newPassword, int adminUserId, CancellationToken cancellationToken = default);
         Task<bool> DeactivateUserAsync(int userId, int adminUserId, CancellationToken cancellationToken = default);
-        
+
         // System maintenance
         Task<bool> ClearCacheAsync(CancellationToken cancellationToken = default);
         Task<bool> RebuildIndexesAsync(CancellationToken cancellationToken = default);
         Task<bool> VacuumDatabaseAsync(CancellationToken cancellationToken = default);
-        
+
         // Security audit
         Task<IReadOnlyList<SecurityAuditResult>> GetSecurityAuditAsync(DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
     }

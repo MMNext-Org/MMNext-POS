@@ -55,7 +55,7 @@ namespace MMNextPOS.Application.Services
         public async Task<bool> SetDefaultAsync(int id, CancellationToken cancellationToken = default)
         {
             var languages = await _repo.GetAllAsync(cancellationToken);
-            
+
             // Clear current default
             foreach (var lang in languages.Where(l => l.IsDefault))
             {

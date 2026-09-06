@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -224,6 +226,37 @@ CREATE TABLE IF NOT EXISTS Suppliers (
     UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- Original Sales Tables (moved before Transaction Tables for FK dependencies)
+CREATE TABLE IF NOT EXISTS Products (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    Sku VARCHAR(50) NOT NULL,
+    Name VARCHAR(200) NOT NULL,
+    Price DECIMAL(18,2) NOT NULL,
+    StockQuantity INT NOT NULL,
+    IsActive BOOLEAN DEFAULT 1,
+    MinStockAlertLevel INT NULL,
+    IsDeleted BOOLEAN DEFAULT 0,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CreatedBy INT NULL,
+    UpdatedBy INT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Customers (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    Code VARCHAR(20) NOT NULL UNIQUE,
+    Name VARCHAR(150) NOT NULL,
+    Address VARCHAR(200) NULL,
+    Phone VARCHAR(20) NULL,
+    Email VARCHAR(100) NULL,
+    IsActive BOOLEAN DEFAULT 1,
+    IsDeleted BOOLEAN DEFAULT 0,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CreatedBy INT NULL,
+    UpdatedBy INT NULL
+) ENGINE=InnoDB;
+
 -- Transaction Tables
 CREATE TABLE IF NOT EXISTS SaleTemps (
     Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -264,30 +297,14 @@ CREATE TABLE IF NOT EXISTS SaleTempDetails (
     CONSTRAINT FK_SaleTempDetails_Product FOREIGN KEY (ProductId) REFERENCES Products(Id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Original Sales Tables (preserved)
-CREATE TABLE IF NOT EXISTS Products (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    Sku VARCHAR(50) NOT NULL,
-    Name VARCHAR(200) NOT NULL,
-    Price DECIMAL(18,2) NOT NULL,
-    StockQuantity INT NOT NULL,
-    IsDeleted BOOLEAN DEFAULT 0
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS Customers (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(150) NOT NULL,
-    Address VARCHAR(200) NULL,
-    Phone VARCHAR(20) NULL,
-    Email VARCHAR(100) NULL,
-    IsDeleted BOOLEAN DEFAULT 0
-) ENGINE=InnoDB;
-
+-- Original Sales Tables (preserved - Customers and Products already created above)
 CREATE TABLE IF NOT EXISTS Sales (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     CustomerId INT NOT NULL,
     SaleDate DATETIME NOT NULL,
     TotalAmount DECIMAL(18,2) NOT NULL,
+    Status VARCHAR(50) NULL,
+    LocationId INT NULL,
     IsDeleted BOOLEAN DEFAULT 0,
     CONSTRAINT FK_Sales_Customer FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
@@ -984,8 +1001,42 @@ CREATE TABLE IF NOT EXISTS ChangeDateLogs (
 ";
             await _unitOfWork.Connection.ExecuteAsync(sql, commandTimeout: 30).ConfigureAwait(false);
 
+            // CREATE TABLE IF NOT EXISTS does not add columns to tables created by
+            // earlier versions. SaleRepository writes Sales.Status and Sales.LocationId,
+            // so existing databases must receive the columns before the first sale.
+            await EnsureSalesColumnsAsync().ConfigureAwait(false);
+
             // Seed default data
             await SeedDefaultDataAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task EnsureSalesColumnsAsync()
+        {
+            const string existingColumnsSql = @"
+SELECT COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'Sales'
+  AND COLUMN_NAME IN ('Status', 'LocationId');";
+
+            var existing = (await _unitOfWork.Connection
+                .QueryAsync<string>(existingColumnsSql, commandTimeout: 30)
+                .ConfigureAwait(false))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (!existing.Contains("Status"))
+            {
+                await _unitOfWork.Connection.ExecuteAsync(
+                    "ALTER TABLE Sales ADD COLUMN Status VARCHAR(50) NULL;",
+                    commandTimeout: 30).ConfigureAwait(false);
+            }
+
+            if (!existing.Contains("LocationId"))
+            {
+                await _unitOfWork.Connection.ExecuteAsync(
+                    "ALTER TABLE Sales ADD COLUMN LocationId INT NULL;",
+                    commandTimeout: 30).ConfigureAwait(false);
+            }
         }
 
         private async Task SeedDefaultDataAsync(CancellationToken cancellationToken = default)

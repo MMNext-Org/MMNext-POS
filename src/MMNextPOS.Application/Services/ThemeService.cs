@@ -48,11 +48,11 @@ namespace MMNextPOS.Application.Services
         {
             var themes = await _repo.GetAllAsync(cancellationToken);
             var defaultTheme = themes.FirstOrDefault(t => t.IsDefault && t.IsActive && !t.IsDeleted);
-            
+
             // Cache the current theme
             if (defaultTheme != null)
                 _currentTheme = defaultTheme;
-                
+
             return defaultTheme;
         }
 
@@ -62,7 +62,7 @@ namespace MMNextPOS.Application.Services
         public async Task<bool> SetDefaultAsync(int id, CancellationToken cancellationToken = default)
         {
             var themes = await _repo.GetAllAsync(cancellationToken);
-            
+
             // Clear current default
             foreach (var theme in themes.Where(t => t.IsDefault))
             {
