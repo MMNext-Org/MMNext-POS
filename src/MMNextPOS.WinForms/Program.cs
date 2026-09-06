@@ -93,6 +93,11 @@ namespace MMNextPOS.WinForms
                     services.AddTransient<ThemesListPage>();
                     services.AddTransient<LanguagesListPage>();
 
+                    // System administration screens
+                    services.AddTransient<BackupsListPage>();
+                    services.AddTransient<MigrationsListPage>();
+                    services.AddTransient<SuperAdminForm>();
+
                     // Transaction ListPages
                     services.AddTransient<SaleTempsListPage>();
                     services.AddTransient<SalesReturnsListPage>();

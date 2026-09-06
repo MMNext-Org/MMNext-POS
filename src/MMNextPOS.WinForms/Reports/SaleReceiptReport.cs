@@ -320,15 +320,15 @@ namespace MMNextPOS.WinForms.Reports
         /// </summary>
         public async Task PopulateAsync(int saleId, CancellationToken cancellationToken = default)
         {
-            _currentSale = await _salesService.GetByIdAsync(saleId, cancellationToken);
+            _currentSale = await _salesService!.GetByIdAsync(saleId, cancellationToken);
             if (_currentSale == null)
                 throw new InvalidOperationException($"Sale #{saleId} not found");
 
             // Populate header
             _saleCodeLabel.Text = $"Sale #: {_currentSale.Id}";
             _dateLabel.Text = $"Date: {FormatDateTime(_currentSale.SaleDate)}";
-            
-            var customer = _currentSale.CustomerId > 0 ? await _customerService.GetByIdAsync(_currentSale.CustomerId, cancellationToken) : null;
+
+            var customer = _currentSale.CustomerId > 0 ? await _customerService!.GetByIdAsync(_currentSale.CustomerId, cancellationToken) : null;
             _customerLabel.Text = $"Customer: {customer?.Name ?? "Walk-in"}";
             
             _cashierLabel.Text = $"Cashier: User #{_currentSale.Id}"; // Would need user service

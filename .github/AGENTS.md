@@ -13,12 +13,19 @@ This file provides conventions and guidelines to help AI coding agents be immedi
 
 ## Architecture
 
-```
+
 Domain          → Pure POCO entities & domain exceptions
 Infrastructure  → Async MySQL repos (Dapper), DatabaseInitializer
 Application     → Services (ISalesService, ICustomerService) with business rules
 Presentation    → WinForms UI (MainForm) via Microsoft.Extensions.DI
-```
+
+
+## Workflow
+
+1. Inspect only the context needed for the request.
+2. Explain affected files, dependencies, risks, and acceptance criteria.
+3. Before any edit or mutating command, show the plan and ask for explicit approval.
+4. After approval, make the smallest coherent change and report exact verification evidence.
 
 ## Build & Run Commands
 

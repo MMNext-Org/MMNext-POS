@@ -79,6 +79,11 @@ namespace MMNextPOS.WinForms
         private ThemesListPage _themesListPage = null!;
         private LanguagesListPage _languagesListPage = null!;
 
+        // System administration screens
+        private BackupsListPage _backupsListPage = null!;
+        private MigrationsListPage _migrationsListPage = null!;
+        private SuperAdminForm _superAdminForm = null!;
+
         // Transaction ListPages
         private SaleTempsListPage _saleTempsListPage = null!;
         private SalesReturnsListPage _salesReturnsListPage = null!;
@@ -300,6 +305,11 @@ public MainForm(
 
             // Reports
             _reportsViewerForm = new ReportsViewerForm(_reportService, _serviceProvider);
+
+            // System administration (resolved from DI; services not needed elsewhere here)
+            _backupsListPage = _serviceProvider.GetRequiredService<BackupsListPage>();
+            _migrationsListPage = _serviceProvider.GetRequiredService<MigrationsListPage>();
+            _superAdminForm = _serviceProvider.GetRequiredService<SuperAdminForm>();
         }
 
         private void InitializeNavigation()
@@ -380,6 +390,9 @@ public MainForm(
                 AddNavigationPage("Languages", _languagesListPage);
                 AddNavigationPage("Report Menus", _reportMenusListPage);
                 AddNavigationPage("Email Settings", _emailSettingsListPage);
+                AddNavigationPage("Backups", _backupsListPage);
+                AddNavigationPage("Data Migrations", _migrationsListPage);
+                AddNavigationPage("Super Admin", _superAdminForm);
             }
 
             // ============ REPORTS ============
@@ -552,6 +565,11 @@ public MainForm(
                 // Dispose reports viewer
                 _reportsViewerForm.Dispose();
 
+                // Dispose system administration screens
+                _backupsListPage?.Dispose();
+                _migrationsListPage?.Dispose();
+                _superAdminForm?.Dispose();
+
                 // Dispose navigation
                 _navigationPane?.Dispose();
                 _mainContainer?.Dispose();
@@ -585,6 +603,9 @@ public MainForm(
                 _expenseTypesListPage = null!;
                 _paymentsListPage = null!;
                 _reportsViewerForm = null!;
+                _backupsListPage = null!;
+                _migrationsListPage = null!;
+                _superAdminForm = null!;
                 _navigationPane = null!;
                 _mainContainer = null!;
             }

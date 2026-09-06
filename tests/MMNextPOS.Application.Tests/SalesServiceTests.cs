@@ -15,11 +15,12 @@ namespace MMNextPOS.Application.Tests
     {
         private readonly Mock<IProductRepository> _productRepoMock = new();
         private readonly Mock<ISaleRepository> _saleRepoMock = new();
+        private readonly Mock<ISaleDetailRepository> _saleDetailRepoMock = new();
         private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
 
         private ISalesService CreateService()
         {
-            return new SalesService(_saleRepoMock.Object, _productRepoMock.Object, _unitOfWorkMock.Object);
+            return new SalesService(_saleRepoMock.Object, _saleDetailRepoMock.Object, _productRepoMock.Object, _unitOfWorkMock.Object);
         }
 
         [Fact]

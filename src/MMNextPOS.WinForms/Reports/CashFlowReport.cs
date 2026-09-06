@@ -199,12 +199,12 @@ namespace MMNextPOS.WinForms.Reports
         /// </summary>
         public async Task PopulateAsync(int locationId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default)
         {
-            _cfReports = (await _reportService.GetCashFlowReportsAsync(locationId, fromDate, toDate, cancellationToken)).ToList();
+            _cfReports = (await _reportService!.GetCashFlowReportsAsync(locationId, fromDate, toDate, cancellationToken)).ToList();
 
             // Update header
             _periodLabel.Text = $"Period: {FormatDate(fromDate)} to {FormatDate(toDate)}";
-            
-            var location = await _locationService.GetByIdAsync(locationId, cancellationToken);
+
+            var location = await _locationService!.GetByIdAsync(locationId, cancellationToken);
             _locationLabel.Text = location != null ? $"Location: {location.Name}" : $"Location ID: {locationId}";
             _generatedLabel.Text = $"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
 

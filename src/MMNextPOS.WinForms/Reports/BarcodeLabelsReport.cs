@@ -29,7 +29,6 @@ namespace MMNextPOS.WinForms.Reports
         private int _labelsPerRow = 3;
         private int _labelWidth = 240; // hundredths of inch (2.4")
         private int _labelHeight = 100; // hundredths of inch (1.0")
-        private int _horizontalGap = 5;
         private int _verticalGap = 5;
 
         public BarcodeLabelsReport(IProductService productService)
@@ -209,13 +208,13 @@ namespace MMNextPOS.WinForms.Reports
             bool activeOnly = true, 
             CancellationToken cancellationToken = default)
         {
-            _products = (await _productService.GetAllAsync(cancellationToken)).ToList();
+            _products = (await _productService!.GetAllAsync(cancellationToken)).ToList();
 
             if (activeOnly)
                 _products = _products.Where(p => p.IsActive && !p.IsDeleted).ToList();
 
-            if (categoryId.HasValue)
-                _products = _products.Where(p => p.CategoryId == categoryId.Value).ToList();
+            // Note: the current Product model has no category association, so
+            // the categoryId filter cannot be applied until the model grows one.
 
             if (productIds != null && productIds.Any())
                 _products = _products.Where(p => productIds.Contains(p.Id)).ToList();
