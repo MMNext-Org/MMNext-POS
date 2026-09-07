@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
 
 namespace MMNextPOS.Application.Services
@@ -16,7 +17,11 @@ namespace MMNextPOS.Application.Services
         private readonly IPurchaseReturnRepository _returnRepo;
         private readonly IPurchaseReturnDetailRepository _returnDetailRepo;
         private readonly IProductRepository _productRepo;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditService _auditService;
+        private readonly IStockMovementService _stockMovementService;
+        private readonly IInvoiceNumberGenerator _invoiceNumberGenerator;
+        private readonly IOutstandingService _outstandingService;
 
         public PurchaseService(
             IPurchaseRepository repo,
@@ -24,14 +29,22 @@ namespace MMNextPOS.Application.Services
             IPurchaseReturnRepository returnRepo,
             IPurchaseReturnDetailRepository returnDetailRepo,
             IProductRepository productRepo,
-            IAuditService auditService)
+            IUnitOfWork unitOfWork,
+            IAuditService auditService,
+            IStockMovementService stockMovementService,
+            IInvoiceNumberGenerator invoiceNumberGenerator,
+            IOutstandingService outstandingService)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _detailRepo = detailRepo ?? throw new ArgumentNullException(nameof(detailRepo));
             _returnRepo = returnRepo ?? throw new ArgumentNullException(nameof(returnRepo));
             _returnDetailRepo = returnDetailRepo ?? throw new ArgumentNullException(nameof(returnDetailRepo));
             _productRepo = productRepo ?? throw new ArgumentNullException(nameof(productRepo));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+            _stockMovementService = stockMovementService ?? throw new ArgumentNullException(nameof(stockMovementService));
+            _invoiceNumberGenerator = invoiceNumberGenerator ?? throw new ArgumentNullException(nameof(invoiceNumberGenerator));
+            _outstandingService = outstandingService ?? throw new ArgumentNullException(nameof(outstandingService));
         }
 
         public Task<Purchase?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -101,16 +114,105 @@ namespace MMNextPOS.Application.Services
         // Purchase with details
         public async Task<Purchase> CreatePurchaseWithDetailsAsync(Purchase purchase, IEnumerable<PurchaseDetail> details, CancellationToken cancellationToken = default)
         {
-            var result = await _repo.AddAsync(purchase, cancellationToken).ConfigureAwait(false);
+            if (purchase == null) throw new ArgumentNullException(nameof(purchase));
+            if (details == null) throw new ArgumentNullException(nameof(details));
 
-            foreach (var detail in details)
+            var detailList = details as IList<PurchaseDetail> ?? details.ToList();
+            if (detailList.Count == 0)
             {
-                detail.PurchaseId = result.Id;
-                await _detailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
+                throw new ValidationException("A purchase must have at least one line item.");
             }
 
-            await _auditService.LogAsync(nameof(Purchase), result.Id, "Create", null, purchase, 1, "System", $"Created purchase {result.InvoiceNo} with details", cancellationToken).ConfigureAwait(false);
-            return result;
+            await _unitOfWork.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                // 1) Aggregate duplicate lines (ProductId → sum Quantity, last UnitPrice wins).
+                var aggregated = AggregateDuplicateLines(detailList);
+
+                // 2) Round money per line (banker's half-even) and sum for the header.
+                var rounded = RoundLines(aggregated);
+                purchase.TotalAmount = rounded.Sum(l => l.UnitPrice * l.Quantity);
+                purchase.NetAmount = purchase.TotalAmount - purchase.DiscountAmount + purchase.TaxAmount;
+                if (purchase.PurchaseDate == default) purchase.PurchaseDate = DateTime.UtcNow;
+                if (string.IsNullOrWhiteSpace(purchase.Status)) purchase.Status = "Active";
+
+                // 3) Atomic stock increase per line. TryIncrementStockAsync returns
+                //    false only when the product does not exist; there is no
+                //    "insufficient stock" failure mode for purchases.
+                foreach (var d in rounded)
+                {
+                    var ok = await _productRepo.TryIncrementStockAsync(d.ProductId, d.Quantity, 1, "Purchase", cancellationToken).ConfigureAwait(false);
+                    if (!ok)
+                    {
+                        throw new ValidationException($"Product {d.ProductId} not found.");
+                    }
+                }
+
+                // 4) Persist purchase header + details.
+                var created = await _repo.AddAsync(purchase, cancellationToken).ConfigureAwait(false);
+                foreach (var d in rounded)
+                {
+                    d.PurchaseId = created.Id;
+                    d.LineTotal = d.Quantity * d.UnitPrice - d.DiscountAmount + d.TaxAmount;
+                    await _detailRepo.AddAsync(d, cancellationToken).ConfigureAwait(false);
+                }
+
+                // 5) Stock movement header + one detail per purchase line.
+                await _stockMovementService.AddPurchaseMovementAsync(created, (IReadOnlyList<PurchaseDetail>)rounded, createdByUserId: null, cancellationToken).ConfigureAwait(false);
+
+                // 6) Auto-generated purchase-order number (PUR-YYYY-NNNNNN) on a
+                //    separate sequence from invoices.
+                var poNo = await _invoiceNumberGenerator.NextAsync("PUR", cancellationToken).ConfigureAwait(false);
+                created.InvoiceNo = poNo;
+                await _repo.UpdateAsync(created, cancellationToken).ConfigureAwait(false);
+
+                // 7) Supplier outstanding if NetAmount > PaidAmount.
+                //    SupplierOutstanding uses CreditAmount for "amount owed to
+                //    supplier" (opposite of CustomerOutstanding's AR convention).
+                var owed = created.NetAmount - created.PaidAmount;
+                if (created.SupplierId > 0 && owed > 0m)
+                {
+                    await _outstandingService.AddSupplierOutstandingAsync(new SupplierOutstanding
+                    {
+                        SupplierId = created.SupplierId,
+                        PurchaseId = created.Id,
+                        TransactionDate = created.PurchaseDate,
+                        DebitAmount = 0m,
+                        CreditAmount = owed,
+                        Balance = owed,
+                        Description = $"Auto from purchase {poNo}",
+                        Status = "Open"
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+
+                // 8) Audit INSIDE the transaction.
+                await _auditService.LogAsync(
+                    entityName: nameof(Purchase),
+                    entityId: created.Id,
+                    action: "Create",
+                    oldValues: null,
+                    newValues: new
+                    {
+                        PurchaseId = created.Id,
+                        PurchaseOrderNo = poNo,
+                        SupplierId = created.SupplierId,
+                        NetAmount = created.NetAmount,
+                        LineCount = rounded.Count
+                    },
+                    userId: null,
+                    userName: null,
+                    description: $"Purchase {poNo} posted: {rounded.Count} lines, total {created.NetAmount:C2}",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return created;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
+            }
         }
 
         public async Task<Purchase> UpdatePurchaseWithDetailsAsync(Purchase purchase, IEnumerable<PurchaseDetail> details, CancellationToken cancellationToken = default)
@@ -138,44 +240,63 @@ namespace MMNextPOS.Application.Services
         // Purchase lifecycle
         public async Task<Purchase> ReceivePurchaseAsync(int purchaseId, int receivedByUserId, IEnumerable<(int detailId, int receivedQuantity)> receivedItems, CancellationToken cancellationToken = default)
         {
-            var purchase = await _repo.GetByIdAsync(purchaseId, cancellationToken).ConfigureAwait(false);
-            if (purchase == null)
-                throw new KeyNotFoundException($"Purchase {purchaseId} not found");
+            await _unitOfWork.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
-            if (purchase.Status == "Received" || purchase.Status == "Cancelled")
-                throw new InvalidOperationException($"Cannot receive purchase with status {purchase.Status}");
-
-            var details = await _detailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
-            var purchaseDetails = details.Where(d => d.PurchaseId == purchaseId).ToList();
-
-            foreach (var item in receivedItems)
+            try
             {
-                var detail = purchaseDetails.FirstOrDefault(d => d.Id == item.detailId);
-                if (detail != null)
+                var purchase = await _repo.GetByIdAsync(purchaseId, cancellationToken).ConfigureAwait(false);
+                if (purchase == null)
+                    throw new KeyNotFoundException($"Purchase {purchaseId} not found");
+
+                if (purchase.Status == "Received" || purchase.Status == "Cancelled")
+                    throw new InvalidOperationException($"Cannot receive purchase with status {purchase.Status}");
+
+                var details = (await _detailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false))
+                    .Where(d => d.PurchaseId == purchaseId).ToList();
+
+                foreach (var item in receivedItems)
                 {
+                    var detail = details.FirstOrDefault(d => d.Id == item.detailId);
+                    if (detail == null) continue;
+
                     detail.ReceivedQuantity = item.receivedQuantity;
                     await _detailRepo.UpdateAsync(detail, cancellationToken).ConfigureAwait(false);
 
-                    // Update product stock
-                    await _productRepo.AdjustStockAsync(detail.ProductId, item.receivedQuantity,
-                        $"Purchase Receive - {purchase.InvoiceNo}", 1, cancellationToken).ConfigureAwait(false);
+                    // Atomic stock increase (Phase 3 hardening replaces the old
+                    // non-atomic AdjustStockAsync path used pre-Phase-2).
+                    var ok = await _productRepo.TryIncrementStockAsync(
+                        detail.ProductId, item.receivedQuantity, 1, $"Purchase Receive - {purchase.InvoiceNo}", cancellationToken).ConfigureAwait(false);
+                    if (!ok)
+                    {
+                        throw new ValidationException($"Product {detail.ProductId} not found.");
+                    }
                 }
-            }
 
-            var allReceived = purchaseDetails.All(d => d.ReceivedQuantity >= d.Quantity);
-            if (allReceived)
+                purchase.Status = details.All(d => d.ReceivedQuantity >= d.Quantity) ? "Received" : "PartiallyReceived";
+
+                await _repo.UpdateAsync(purchase, cancellationToken).ConfigureAwait(false);
+
+                // Stock movement + audit inside the transaction.
+                await _stockMovementService.AddPurchaseMovementAsync(purchase, details, receivedByUserId, cancellationToken).ConfigureAwait(false);
+                await _auditService.LogAsync(
+                    entityName: nameof(Purchase),
+                    entityId: purchase.Id,
+                    action: "Receive",
+                    oldValues: null,
+                    newValues: purchase,
+                    userId: null,
+                    userName: null,
+                    description: $"Received purchase {purchase.InvoiceNo}",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return purchase;
+            }
+            catch
             {
-                purchase.Status = "Received";
+                await _unitOfWork.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
             }
-            else
-            {
-                purchase.Status = "PartiallyReceived";
-            }
-
-            await _repo.UpdateAsync(purchase, cancellationToken).ConfigureAwait(false);
-            await _auditService.LogAsync(nameof(Purchase), purchase.Id, "Receive", null, purchase, 1, "System", $"Received purchase {purchase.InvoiceNo}", cancellationToken).ConfigureAwait(false);
-
-            return purchase;
         }
 
         public async Task<Purchase> HoldPurchaseAsync(int purchaseId, int userId, string? reason = null, CancellationToken cancellationToken = default)
@@ -343,6 +464,60 @@ namespace MMNextPOS.Application.Services
         {
             var available = await GetAvailableStockAsync(productId, cancellationToken).ConfigureAwait(false);
             return available >= quantity;
+        }
+
+        /// <summary>
+        /// Combines repeated lines for the same product into one line. The
+        /// last-seen UnitPrice wins, and quantities are summed. Throws if any
+        /// line has a non-positive quantity.
+        /// </summary>
+        internal static IList<PurchaseDetail> AggregateDuplicateLines(IList<PurchaseDetail> input)
+        {
+            var byProduct = new Dictionary<int, PurchaseDetail>();
+            var order = new List<int>();
+            foreach (var d in input)
+            {
+                if (d.Quantity <= 0)
+                {
+                    throw new ValidationException("Line quantity must be positive.");
+                }
+                if (d.UnitPrice < 0m)
+                {
+                    throw new ValidationException("Line unit price must be non-negative.");
+                }
+                if (byProduct.TryGetValue(d.ProductId, out var existing))
+                {
+                    existing.Quantity += d.Quantity;
+                    existing.UnitPrice = d.UnitPrice;
+                }
+                else
+                {
+                    byProduct[d.ProductId] = new PurchaseDetail
+                    {
+                        ProductId = d.ProductId,
+                        Quantity = d.Quantity,
+                        UnitPrice = d.UnitPrice
+                    };
+                    order.Add(d.ProductId);
+                }
+            }
+            return order.Select(pid => byProduct[pid]).ToList();
+        }
+
+        /// <summary>
+        /// Rounds each line's monetary fields to 2 decimal places using
+        /// banker's half-even (MidpointRounding.ToEven). Returns the same
+        /// input list (in-place rounding).
+        /// </summary>
+        internal static IList<PurchaseDetail> RoundLines(IList<PurchaseDetail> input)
+        {
+            foreach (var d in input)
+            {
+                d.UnitPrice = Math.Round(d.UnitPrice, 2, MidpointRounding.ToEven);
+                d.DiscountAmount = Math.Round(d.DiscountAmount, 2, MidpointRounding.ToEven);
+                d.TaxAmount = Math.Round(d.TaxAmount, 2, MidpointRounding.ToEven);
+            }
+            return input;
         }
     }
 }
