@@ -239,7 +239,8 @@ LIMIT @Limit";
                 new { Version = "004", FileName = "004_AddIndexes.sql", Description = "Add Performance Indexes" },
                 new { Version = "005", FileName = "005_MissingEntityTables.sql", Description = "Add Missing Entity Tables (Registrations, RemoteWarehouses, Subscriptions, DashboardWidgets)" },
                 new { Version = "006", FileName = "006_AlignSchemaWithEntities.sql", Description = "Align Schema With Entity Models (audit fields, column gaps, model-mismatched table rebuilds)" },
-                new { Version = "007", FileName = "007_AddMissingFKs.sql", Description = "Add Missing Foreign Keys for Audit Fields" }
+                new { Version = "007", FileName = "007_AddMissingFKs.sql", Description = "Add Missing Foreign Keys for Audit Fields" },
+                new { Version = "008", FileName = "008_InvoiceSequences.sql", Description = "Add InvoiceSequences table for atomic per-year invoice numbering" }
             };
 
             foreach (var known in knownMigrations)

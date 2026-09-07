@@ -21,7 +21,8 @@ namespace MMNextPOS.Application.Tests
 
         private ISalesService CreateService()
         {
-            return new SalesService(_saleRepoMock.Object, _saleDetailRepoMock.Object, _productRepoMock.Object, _unitOfWorkMock.Object);
+            var auditServiceMock = new Mock<IAuditService>();
+            return new SalesService(_saleRepoMock.Object, _saleDetailRepoMock.Object, _productRepoMock.Object, _unitOfWorkMock.Object, auditServiceMock.Object);
         }
 
         [Fact]

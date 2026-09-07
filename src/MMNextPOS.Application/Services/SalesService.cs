@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MMNextPOS.Domain.Models;
 using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
+using MMNextPOS.Application.Services;
 
 namespace MMNextPOS.Application.Services
 {
@@ -15,13 +16,15 @@ namespace MMNextPOS.Application.Services
         private readonly ISaleDetailRepository _saleDetailRepo;
         private readonly IProductRepository _productRepo;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
 
-        public SalesService(ISaleRepository saleRepo, ISaleDetailRepository saleDetailRepo, IProductRepository productRepo, IUnitOfWork unitOfWork)
+        public SalesService(ISaleRepository saleRepo, ISaleDetailRepository saleDetailRepo, IProductRepository productRepo, IUnitOfWork unitOfWork, IAuditService auditService)
         {
             _saleRepo = saleRepo ?? throw new ArgumentNullException(nameof(saleRepo));
             _saleDetailRepo = saleDetailRepo ?? throw new ArgumentNullException(nameof(saleDetailRepo));
             _productRepo = productRepo ?? throw new ArgumentNullException(nameof(productRepo));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
         }
 
         public async Task<Sale> CreateSaleAsync(Sale sale, IEnumerable<SaleDetail> details, CancellationToken cancellationToken = default)
@@ -58,6 +61,18 @@ namespace MMNextPOS.Application.Services
                 // Commit the transaction
                 await _unitOfWork.CommitAsync(cancellationToken);
 
+                // Audit log: sale created
+                await _auditService.LogAsync(
+                    entityName: nameof(Sale),
+                    entityId: createdSale.Id,
+                    action: "Create",
+                    oldValues: null,
+                    newValues: createdSale,
+                    userId: null,
+                    userName: null,
+                    description: $"Sale created with {details.Count()} details, total {createdSale.TotalAmount:C2}",
+                    cancellationToken: cancellationToken);
+
                 return createdSale;
             }
             catch
@@ -73,10 +88,59 @@ namespace MMNextPOS.Application.Services
             return _saleRepo.GetRecentAsync(count, cancellationToken);
         }
 
-        public Task<SaleDetail> AddSaleDetailAsync(int saleId, SaleDetail detail, CancellationToken cancellationToken = default)
+        public async Task<SaleDetail> AddSaleDetailAsync(int saleId, SaleDetail detail, CancellationToken cancellationToken = default)
         {
-            // Implementation could reuse CreateSaleAsync logic for a single detail.
-            throw new NotImplementedException();
+            // Create a minimal sale with the single detail (walk-in customer, current date).
+            var minimalSale = new Sale
+            {
+                CustomerId = 0, // walk-in / unspecified
+                SaleDate = DateTime.UtcNow,
+                TotalAmount = detail.UnitPrice * detail.Quantity
+            };
+
+            var details = new List<SaleDetail> { detail };
+
+            // Validate stock (same logic as CreateSaleAsync)
+            var product = await _productRepo.GetByIdAsync(detail.ProductId, cancellationToken);
+            if (product == null)
+                throw new ValidationException($"Product {detail.ProductId} not found.");
+            if (product.StockQuantity < detail.Quantity)
+                throw new InsufficientStockException($"Insufficient stock for product {product.Name}.");
+
+            // Begin transaction
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                // Create sale with details
+                var createdSale = await _saleRepo.CreateSaleWithDetailsAsync(minimalSale, details, cancellationToken);
+
+                // Update stock
+                product.StockQuantity -= detail.Quantity;
+                await _productRepo.UpdateAsync(product, cancellationToken);
+
+                // Commit
+                await _unitOfWork.CommitAsync(cancellationToken);
+
+                // Audit log
+                await _auditService.LogAsync(
+                    entityName: nameof(Sale),
+                    entityId: createdSale.Id,
+                    action: "Create",
+                    oldValues: null,
+                    newValues: createdSale,
+                    userId: null,
+                    userName: null,
+                    description: $"Sale detail added: {detail.ProductId}, Qty={detail.Quantity}",
+                    cancellationToken: cancellationToken);
+
+                return detail;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken);
+                throw;
+            }
         }
 
         public Task<Sale?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
