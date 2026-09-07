@@ -31,11 +31,10 @@ namespace MMNextPOS.Infrastructure.Repositories
                 throw new InvalidOperationException("No active transaction. Call IUnitOfWork.BeginTransactionAsync first.");
             }
 
-            const string saleSql = @"INSERT INTO Sales (CustomerId, SaleDate, TotalAmount, Status, LocationId) VALUES (@CustomerId, @SaleDate, @TotalAmount, @Status, @LocationId);
-                                         SELECT LAST_INSERT_ID();";
-            var saleId = await Connection.ExecuteScalarAsync<long>(saleSql, sale, Transaction).ConfigureAwait(false);
-            sale.Id = (int)saleId;
+            // Insert sale header using GenericRepository to ensure audit fields are handled consistently
+            await AddAsync(sale, cancellationToken);
 
+            // Insert sale details using the now-populated sale.Id
             const string detailSql = @"INSERT INTO SaleDetails (SaleId, ProductId, Quantity, UnitPrice) VALUES (@SaleId, @ProductId, @Quantity, @UnitPrice);
                                            SELECT LAST_INSERT_ID();";
 

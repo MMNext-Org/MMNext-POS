@@ -42,6 +42,7 @@ namespace MMNextPOS.Application
             services.AddScoped<IMenuRoleRepository, MenuRoleRepository>();
             services.AddScoped<ISupplierRepository, SupplierRepository>();
             services.AddScoped<ISaleTempRepository, SaleTempRepository>();
+            services.AddScoped<ISaleTempDetailRepository, SaleTempDetailRepository>();
             services.AddScoped<IEmailSettingRepository, EmailSettingRepository>();
             services.AddScoped<IInvoiceRepository, InvoiceRepository>();
             services.AddScoped<ISalesReturnRepository, SalesReturnRepository>();
@@ -114,6 +115,7 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.IMenuRoleService, Services.MenuRoleService>();
             services.AddScoped<Services.ISupplierService, Services.SupplierService>();
             services.AddScoped<Services.ISaleTempService, Services.SaleTempService>();
+            services.AddScoped<Services.ISaleTempDetailService, Services.SaleTempDetailService>();
             services.AddScoped<Services.IEmailSettingService, Services.EmailSettingService>();
             services.AddScoped<Services.IInvoiceService, Services.InvoiceService>();
             services.AddScoped<Services.ISalesReturnService, Services.SalesReturnService>();

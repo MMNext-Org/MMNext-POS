@@ -1,105 +1,121 @@
-# Phase 2 — Sales MVP Hardening (Service-Layer Slice)
+# Phase 3 — Purchasing Hardening (Service-Layer Slice)
 
-## Scope of this iteration
+## Goal
 
-Service-layer fixes for the sales flow that close the largest data-safety and correctness gaps. UI behavior changes are limited to what the form must pass to the service. No new test harness for WinForms; no new test project structure; no DevExpress UI tests.
+Mirror the Phase 2 hardening on the purchasing flow: atomic stock increase + stock movement audit + auto-created supplier outstanding + audit-in-tx. Closes the R3 (schema) and R4 (transaction rollback) gaps for purchases.
+
+## Scope
 
 ### In scope
-- `SalesService.CreateSaleAsync` hardening (atomic stock, stock movement, customer outstanding, invoice number, audit, duplicate-line, rounding)
-- `SalesService.AddSaleDetailAsync` aligned to the same rules
-- `IInvoiceNumberGenerator` + `DbInvoiceNumberGenerator` (atomic DB sequence)
-- New `InvoiceSequences` migration script
-- New tests for: stock atomicity under concurrency, insufficient-stock rollback, stock movement creation, customer outstanding creation, invoice number uniqueness, duplicate-line handling, rounding, audit-inside-transaction
+- `IStockMovementService.AddPurchaseMovementAsync(Purchase, IReadOnlyList<PurchaseDetail>, int? createdByUserId, CancellationToken)` — new method that creates a `StockMovement` (MovementType="Purchase", SupplierId set) + one `StockMovementDetail` per line, all within the caller's active transaction.
+- `IProductRepository.TryIncrementStockAsync(int productId, int quantity, int adjustedBy, string reason, CancellationToken)` — atomic counterpart to the existing `TryDecrementStockAsync` for sales. Single `UPDATE Products SET StockQuantity = StockQuantity + @Quantity WHERE Id = @ProductId`. Returns `true` if the row exists. (For purchases, stock cannot go negative; the only failure mode is product-not-found, so no "insufficient stock" semantics.)
+- `PurchaseService` constructor gains `IUnitOfWork`, `IStockMovementService`, `IOutstandingService`, `IInvoiceNumberGenerator`. Two methods are rewritten to use the transaction-wrapped, audit-in-tx pattern:
+  - `CreatePurchaseWithDetailsAsync(Purchase, IEnumerable<PurchaseDetail>, CancellationToken)` — wraps insert + atomic stock increase + stock movement + supplier outstanding + audit in one transaction. Mirrors `SalesService.CreateSaleAsync`.
+  - `ReceivePurchaseAsync(int, int, IEnumerable<(int,int)>, CancellationToken)` — wraps receive-detail updates + atomic stock increase + stock movement + audit in one transaction. (Today this method calls `AdjustStockAsync` outside any transaction.)
+  - `CreatePurchaseReturnAsync` and `ReceivePurchaseReturnAsync` are NOT in scope for this iteration (deferred to a later purchase-return hardening pass).
+- `IInvoiceNumberGenerator.NextAsync("PUR", CancellationToken)` reuse — purchases use a separate prefix `PUR-YYYY-NNNNNN` so they don't compete with the `INV-` sequence.
+- `ISupplierService` is **not** modified. The test seeder inserts supplier rows directly via SQL.
+- `tests\MMNextPOS.Application.Tests\PurchaseServiceTests.cs` — 6 new Moq tests mirroring the Phase 2 sales-tests structure (deduplication, atomicity, supplier-outstanding creation, walk-in-equivalent case, audit-in-tx, `AddPurchaseDetailAsync` delegation).
+- `tests\MMNextPOS.Infrastructure.Tests\PurchaseServiceIntegrationTests.cs` — 4 integration tests against a real MySQL testcontainer, mirroring the Phase 2b sales-test pattern.
+- `ThrowingAuditService` from Phase 2b is reused for the audit-in-tx test.
+- DI updates in `DependencyInjection.cs`: register `IProductRepository` already exists; no new registrations needed. The new `TryIncrementStockAsync` is on the existing `IProductRepository`.
 
 ### Out of scope (deferred to later iterations)
-- WinForms UI smoke tests
-- Return-flow end-to-end rehearsal
-- Report output parity (PDF/print)
-- Long-running session / memory / disposal review (R8)
-- Barcode scanner physical input verification
+- `PurchaseReturnService` and `PurchaseReturnDetailService` hardening (deferred to a later Phase 3 pass; the user did not ask for returns in this round).
+- `IPaymentService` and `IPaymentVoucherService` (Phase 3 next slice).
+- `IExpenseService` and `IExpenseTypeService` (Phase 3 last slice).
+- WinForms UI tests.
+- Schema migrations (no new tables needed; the existing migrations cover all required tables).
 
----
+## Files to create / modify
 
-## Findings driving the plan
+| File | Action | Notes |
+|------|--------|-------|
+| `src\MMNextPOS.Application\Services\IStockMovementService.cs` | Edit | Add `AddPurchaseMovementAsync(Purchase, IReadOnlyList<PurchaseDetail>, int?, CancellationToken)` |
+| `src\MMNextPOS.Application\Services\StockMovementService.cs` | Edit | Implement the new method; reuses the same `_movementRepo` and `_detailRepo` already injected. |
+| `src\MMNextPOS.Infrastructure\Repositories\IProductRepository.cs` | Edit | Add `TryIncrementStockAsync(int productId, int quantity, int adjustedBy, string reason, CancellationToken)` |
+| `src\MMNextPOS.Infrastructure\Repositories\ProductRepository.cs` | Edit | Implement the new method as a single `UPDATE Products SET StockQuantity = StockQuantity + @Quantity WHERE Id = @ProductId`. |
+| `src\MMNextPOS.Application\Services\PurchaseService.cs` | Edit | Add `IUnitOfWork`, `IStockMovementService`, `IOutstandingService`, `IInvoiceNumberGenerator` to the constructor. Rewrite `CreatePurchaseWithDetailsAsync` and `ReceivePurchaseAsync` to use the transaction pattern. |
+| `src\MMNextPOS.Application\DependencyInjection.cs` | (no change) | Existing registrations are sufficient. |
+| `tests\MMNextPOS.Application.Tests\PurchaseServiceTests.cs` | Edit | Update existing tests' constructor to provide the new mocks; add 6 new tests mirroring the Phase 2 sales-tests. |
+| `tests\MMNextPOS.Infrastructure.Tests\PurchaseServiceIntegrationTests.cs` | Create | 4 integration tests against a real MySQL testcontainer. |
+| `memory/phase-3-purchasing-hardening-complete.md` | Create | Memory entry recording the changes, the test pattern, and the difference vs Phase 2 sales. |
 
-Confirmed from `src/MMNextPOS.Application/Services/SalesService.cs:30-84` and the explore reports:
+## Implementation details
 
-1. **Non-atomic stock decrement** — line 57 does `product.StockQuantity -= d.Quantity; await _productRepo.UpdateAsync(...)`. Two concurrent sales can both pass the `if (product.StockQuantity < d.Quantity)` check and oversell. `IProductRepository.AdjustStockAsync` already exists and is atomic (single `UPDATE ... SET StockQuantity = @NewStock WHERE Id = @Id AND StockQuantity >= @Quantity`) but `SalesService` does not use it.
-2. **No stock movement record** — sale posts decrement `Products.StockQuantity` but does not write a `StockMovement` + `StockMovementDetail` row. No audit trail of why stock changed.
-3. **No customer outstanding entry** — credit sales do not create a `CustomerOutstanding` row with `SaleId` populated.
-4. **No invoice auto-generation** — `SalesService.CreateSaleAsync` does not create an `Invoice` row or call any `IInvoiceNumberGenerator`. `InvoiceService.AddAsync` accepts an `Invoice` whose `InvoiceNo` is empty by default.
-5. **Audit outside transaction** — `_auditService.LogAsync(...)` is called after `_unitOfWork.CommitAsync(...)`. A failure of the audit write leaves a sale without audit, violating the R4 fallback plan ("write audit records within the same transaction when appropriate").
-6. **No tests** for duplicate-line, rounding, concurrent stock decrement, stock-movement creation, outstanding creation, invoice uniqueness, audit-inside-transaction.
+### `ProductRepository.TryIncrementStockAsync`
 
----
-
-## Implementation plan
-
-### 1. New migration: `008_InvoiceSequences.sql`
-- Creates `InvoiceSequences (Year INT NOT NULL PRIMARY KEY, LastValue BIGINT NOT NULL DEFAULT 0, UpdatedAt DATETIME)` table.
-- Embedded in the same `MMNextPOS.Infrastructure.Migrations` folder.
-- Registered in `MigrationRunner.LoadMigrations()` as the 9th migration (after 007).
-- MigrationRunner ensures it runs in order with the same idempotent + checksummed pattern as 000–007.
-
-### 2. New abstraction: `IInvoiceNumberGenerator`
-- New files:
-  - `src/MMNextPOS.Application/Services/IInvoiceNumberGenerator.cs`
-  - `src/MMNextPOS.Application/Services/DbInvoiceNumberGenerator.cs` (implementation in Application layer — uses IUnitOfWork, no Dapper dependency on Infrastructure)
-  - `src/MMNextPOS.Application/Services/InvoiceNumberFormat.cs` (formats like `INV-2026-000123`)
-- API: `Task<string> NextAsync(string prefix, CancellationToken ct)` — issues a monotonic number per (prefix, current UTC year) using an atomic `INSERT ... ON DUPLICATE KEY UPDATE LastValue = LastValue + 1` on `InvoiceSequences`, inside the caller's transaction (passes the active IUnitOfWork).
-- Format: `INV-{Year}-{LastValue:D6}`.
-
-### 3. Refactor `SalesService.CreateSaleAsync`
-
-Replace the body so the entire flow runs inside one `IUnitOfWork` transaction:
-
+```sql
+UPDATE Products
+SET StockQuantity = StockQuantity + @Quantity,
+    LastAdjustment = @LastAdjustment,
+    AdjustedBy = @AdjustedBy,
+    AdjustmentReason = @AdjustmentReason,
+    IsActive = 1
+WHERE Id = @ProductId
 ```
+
+Returns `rows == 1`. (No "insufficient stock" failure mode — incrementing is always possible if the product exists.)
+
+### `StockMovementService.AddPurchaseMovementAsync`
+
+Same pattern as `AddSaleMovementAsync`:
+- Create `StockMovement` with `MovementType = "Purchase"`, `SupplierId = purchase.SupplierId`, `LocationId = purchase.LocationId`, `MovementDate = purchase.PurchaseDate`, `Reason = "Purchase #..."`.
+- Create one `StockMovementDetail` per `PurchaseDetail` row with `UnitCost = UnitPrice`, `LineTotal = UnitPrice * Quantity`, `Notes = PurchaseDetail.Notes`.
+
+### `PurchaseService.CreatePurchaseWithDetailsAsync` (new flow)
+
+```csharp
 await _uow.BeginTransactionAsync(ct);
 try
 {
-    // 1) Aggregate duplicate lines (same ProductId → sum Quantity, max UnitPrice/Discount).
+    // 1) Aggregate duplicate lines (ProductId → sum Quantity, last UnitPrice wins)
     var aggregated = AggregateDuplicateLines(details);
 
-    // 2) For each unique line, atomic stock check + decrement:
-    //    await _productRepo.AdjustStockAsync(productId, -quantity, "Sale", userId, ct)
-    //    Throws InsufficientStockException if no row updated (row was locked or stock < 0).
-    foreach (var d in aggregated) await _productRepo.AdjustStockAsync(d.ProductId, -d.Quantity, "Sale", userId, ct);
+    // 2) Round money per line (banker's half-even)
+    var rounded = RoundLines(aggregated);
+    purchase.NetAmount = rounded.Sum(l => l.UnitPrice * l.Quantity);
+    if (purchase.PurchaseDate == default) purchase.PurchaseDate = DateTime.UtcNow;
+    if (string.IsNullOrWhiteSpace(purchase.Status)) purchase.Status = "Active";
 
-    // 3) Round money to 2 dp using banker-friendly half-even at the line level, then sum.
-    var roundedLines = RoundLines(aggregated);
-    sale.TotalAmount = roundedLines.Sum(l => l.LineTotal);
-    sale.DiscountAmount = roundedLines.Sum(l => l.DiscountAmount);
-    sale.TaxAmount = roundedLines.Sum(l => l.TaxAmount);
-
-    // 4) Create sale + details in transaction.
-    var created = await _saleRepo.CreateSaleWithDetailsAsync(sale, roundedLines, ct);
-
-    // 5) Create stock movement + details (Sale type, same LocationId, refs created.Id).
-    var movement = await _stockMovementService.AddStockMovementAsync(StockMovementType.Sale, created, roundedLines, ct);
-
-    // 6) Create Invoice with auto-generated number, link to sale.
-    var invoiceNo = await _invoiceNumberGenerator.NextAsync("INV", ct);
-    var invoice = new Invoice { SaleId = created.Id, InvoiceNo = invoiceNo, InvoiceDate = created.SaleDate, TotalAmount = created.TotalAmount, Status = "Issued" };
-    await _invoiceService.AddAsync(invoice, ct);
-    created.InvoiceId = invoice.Id;
-    await _saleRepo.UpdateAsync(created, ct);
-
-    // 7) Update customer outstanding if CustomerId > 0 and BalanceDue > 0.
-    if (created.CustomerId > 0 && created.NetAmount - created.PaidAmount > 0)
+    // 3) Atomic stock increase per line
+    foreach (var d in rounded)
     {
-        await _outstandingService.AddCustomerOutstandingAsync(new CustomerOutstanding
+        var ok = await _productRepo.TryIncrementStockAsync(d.ProductId, d.Quantity, 1, "Purchase", ct);
+        if (!ok) throw new ValidationException($"Product {d.ProductId} not found.");
+    }
+
+    // 4) Persist purchase header + details
+    var created = await _repo.AddAsync(purchase, ct);
+    foreach (var d in rounded) { d.PurchaseId = created.Id; await _detailRepo.AddAsync(d, ct); }
+
+    // 5) Stock movement
+    await _stockMovementService.AddPurchaseMovementAsync(created, rounded, createdByUserId: null, ct);
+
+    // 6) Auto-generated purchase-order number (PUR-YYYY-NNNNNN)
+    var poNo = await _invoiceNumberGenerator.NextAsync("PUR", ct);
+    created.InvoiceNo = poNo;
+    await _repo.UpdateAsync(created, ct);
+
+    // 7) Supplier outstanding if NetAmount > PaidAmount
+    var owed = created.NetAmount - created.PaidAmount;
+    if (created.SupplierId > 0 && owed > 0m)
+    {
+        await _outstandingService.AddSupplierOutstandingAsync(new SupplierOutstanding
         {
-            CustomerId = created.CustomerId, SaleId = created.Id, TransactionDate = created.SaleDate,
-            DebitAmount = created.NetAmount - created.PaidAmount, CreditAmount = 0,
-            Balance = created.NetAmount - created.PaidAmount, Status = "Open"
+            SupplierId = created.SupplierId,
+            PurchaseId = created.Id,
+            TransactionDate = created.PurchaseDate,
+            DebitAmount = 0m,           // we owe them money; this is a payable, not a receivable
+            CreditAmount = owed,         // credit here means "amount recorded as owed to supplier"
+            Balance = owed,
+            Description = $"Auto from purchase {created.InvoiceNo}",
+            Status = "Open"
         }, ct);
     }
 
-    // 8) Audit INSIDE the transaction (before commit).
-    await _auditService.LogAsync(entityName: nameof(Sale), entityId: created.Id, action: "Create",
-        oldValues: null, newValues: created, userId: currentUserId, userName: currentUserName,
-        description: $"Sale {created.InvoiceNo} posted: {roundedLines.Count} lines, total {created.TotalAmount:C2}",
-        cancellationToken: ct);
+    // 8) Audit INSIDE the transaction
+    await _auditService.LogAsync(nameof(Purchase), created.Id, "Create", null, new { created.Id, poNo, NetAmount = created.NetAmount, LineCount = rounded.Count }, null, null, $"Purchase {poNo} posted: {rounded.Count} lines, total {created.NetAmount:C2}", ct);
 
     await _uow.CommitAsync(ct);
     return created;
@@ -111,80 +127,88 @@ catch
 }
 ```
 
-`AddSaleDetailAsync` is collapsed into a single-detail call to `CreateSaleAsync` to share the same rules. The old two-method shape is preserved on the interface for backward compat, but the implementation delegates to `CreateSaleAsync`.
+**Note on outstanding semantics:** `SupplierOutstanding` uses `DebitAmount` for "amount paid to supplier", `CreditAmount` for "amount owed to supplier" — opposite to `CustomerOutstanding`. The test will assert the right column based on the model's existing convention.
 
-### 4. New abstractions needed
-- `IProductRepository.AdjustStockAsync(int productId, int quantityDelta, string reason, int adjustedBy, CancellationToken ct)` — already exists. Confirmed signature; no changes.
-- `IStockMovementService` (in `src/MMNextPOS.Application/Services/IStockMovementService.cs` and `StockMovementService.cs`) — new. Method: `AddStockMovementAsync(StockMovementType type, Sale sale, IReadOnlyList<SaleDetail> lines, CancellationToken ct)`. Writes `StockMovement` + `StockMovementDetail` rows in the active transaction. `StockMovementType` enum already exists in `MMNextPOS.Domain`.
-- `IInvoiceNumberGenerator` — new.
-- `IInvoiceService.AddAsync(...)` — already exists. Verified during the 005-MissingEntityTables migration work; passes the active transaction via `IUnitOfWork`.
+### `PurchaseService.ReceivePurchaseAsync` (new flow)
 
-### 5. Update `DependencyInjection.cs`
-- Register `IStockMovementService → StockMovementService` (Scoped)
-- Register `IInvoiceNumberGenerator → DbInvoiceNumberGenerator` (Scoped, depends on IUnitOfWork)
-- `SalesService` constructor gains: `IStockMovementService`, `IInvoiceNumberGenerator`, `IInvoiceService`, `IOutstandingService`, `ICurrentUser` (for userId/userName in audit)
+```csharp
+await _uow.BeginTransactionAsync(ct);
+try
+{
+    var purchase = await _repo.GetByIdAsync(purchaseId, ct) ?? throw new KeyNotFoundException(...);
+    if (purchase.Status == "Received" || purchase.Status == "Cancelled") throw ...;
 
-### 6. New tests in `tests/MMNextPOS.Application.Tests/SalesServiceTests.cs`
+    var details = (await _detailRepo.GetAllAsync(ct)).Where(d => d.PurchaseId == purchaseId).ToList();
 
-All new tests use the same Moq pattern as the existing 10 tests. The list (target ~12 new tests):
+    foreach (var item in receivedItems)
+    {
+        var detail = details.FirstOrDefault(d => d.Id == item.detailId) ?? continue;
+        detail.ReceivedQuantity = item.receivedQuantity;
+        await _detailRepo.UpdateAsync(detail, ct);
+        await _productRepo.TryIncrementStockAsync(detail.ProductId, item.receivedQuantity, 1, "Purchase Receive", ct);
+    }
 
-1. `CreateSaleAsync_AggregatesDuplicateLines_ForSameProduct`
-2. `CreateSaleAsync_RoundsLineTotals_HalfEvenToTwoDecimals`
-3. `CreateSaleAsync_InsufficientStock_DoesNotCommit_AndDoesNotCallAdjustStock_ForLaterLines` (verify atomicity)
-4. `CreateSaleAsync_StockMovement_CreatedWithTypeSaleAndSameLocation`
-5. `CreateSaleAsync_Invoice_AutoGeneratedAndLinkedToSale`
-6. `CreateSaleAsync_InvoiceNumber_MonotonicPerYear`
-7. `CreateSaleAsync_CustomerOutstanding_CreatedForCreditSale`
-8. `CreateSaleAsync_CustomerOutstanding_NotCreatedForCashSale`
-9. `CreateSaleAsync_AuditLog_WrittenBeforeCommit`
-10. `CreateSaleAsync_AllWritesFail_NoSideEffectsInAnyRepository` (each downstream mock `VerifyNever`)
-11. `AddSaleDetailAsync_DelegatesToCreateSaleAsync_AndFollowsSameRules`
-12. `CreateSaleAsync_ConcurrentStockCheck_UsesAdjustStock_NotReadThenWrite` (verify AdjustStock is called and the old read-then-write is gone)
+    purchase.Status = details.All(d => d.ReceivedQuantity >= d.Quantity) ? "Received" : "PartiallyReceived";
+    await _repo.UpdateAsync(purchase, ct);
+    await _stockMovementService.AddPurchaseMovementAsync(purchase, details, null, ct);
+    await _auditService.LogAsync(nameof(Purchase), purchase.Id, "Receive", null, purchase, null, null, $"Received purchase {purchase.InvoiceNo}", ct);
 
-### 7. Migration verification
-- Add a small test in `tests/MMNextPOS.Infrastructure.Tests` (the same `MySqlContainerFixture`) named `MigrationRunner_InvoiceSequencesTable_Exists` that runs all migrations and asserts `InvoiceSequences` is present with `(Year, LastValue, UpdatedAt)` columns and `Year` is `PRI`.
+    await _uow.CommitAsync(ct);
+    return purchase;
+}
+catch
+{
+    await _uow.RollbackAsync(ct);
+    throw;
+}
+```
 
-### 8. Documentation
-- Update `plan.md` to mark the Phase 2 service-hardening sub-items complete with checkboxes and link to the implementation files.
-- Append a memory entry under `migration-idempotence-complete.md` describing the new `008_InvoiceSequences` migration and the new `IInvoiceNumberGenerator` pattern, so future migrations and audit/sequence work can find it.
+### `PurchaseService` private helpers (mirror `SalesService`)
 
----
+- `AggregateDuplicateLines(IList<PurchaseDetail>)` — internal, sum qty + last unit price per ProductId
+- `RoundLines(IList<PurchaseDetail>)` — internal, `Math.Round(UnitPrice, 2, ToEven)`
 
-## Files to create / modify
+## Test plan
 
-| File | Action | Notes |
-|---|---|---|
-| `src/MMNextPOS.Infrastructure/Migrations/008_InvoiceSequences.sql` | Create | One new table, idempotent CREATE TABLE IF NOT EXISTS |
-| `src/MMNextPOS.Infrastructure/MigrationRunner.cs` | Edit | Add `"008"` to `knownMigrations` array |
-| `src/MMNextPOS.Application/Services/IInvoiceNumberGenerator.cs` | Create | Interface + `InvoiceNumberFormat` helper |
-| `src/MMNextPOS.Application/Services/DbInvoiceNumberGenerator.cs` | Create | Atomic `INSERT ... ON DUPLICATE KEY UPDATE LastValue = LastValue + 1` |
-| `src/MMNextPOS.Application/Services/IStockMovementService.cs` | Create | New abstraction for movement creation |
-| `src/MMNextPOS.Application/Services/StockMovementService.cs` | Create | Writes StockMovement + StockMovementDetail in current transaction |
-| `src/MMNextPOS.Application/Services/SalesService.cs` | Refactor | New transactional body covering points 1–8 above |
-| `src/MMNextPOS.Application/Services/ISalesService.cs` | Edit | No interface change (preserve AddSaleDetailAsync) |
-| `src/MMNextPOS.Application/DependencyInjection.cs` | Edit | Register new services |
-| `tests/MMNextPOS.Application.Tests/SalesServiceTests.cs` | Extend | 12 new tests (Moq-based, no DB) |
-| `tests/MMNextPOS.Infrastructure.Tests/MigrationIdempotenceTests.cs` | Extend | 1 new test for `InvoiceSequences` table |
-| `plan.md` | Edit | Mark Phase 2 service-hardening sub-items complete |
-| `memory/...` | Append | New memory: phase-2-service-hardening-complete |
+### Unit tests in `PurchaseServiceTests.cs` (Moq, 6 new)
+
+1. `CreatePurchaseWithDetailsAsync_HappyPath_PersistsAndUpdatesStock` — verifies purchase + details are inserted and `TryIncrementStockAsync` is called per line.
+2. `CreatePurchaseWithDetailsAsync_ProductNotFound_ThrowsValidationException` — `TryIncrementStockAsync` returns false → exception, transaction rolled back, no purchase persisted.
+3. `CreatePurchaseWithDetailsAsync_AggregatesDuplicateLines_ForSameProduct` — same ProductId with different qtys summed.
+4. `CreatePurchaseWithDetailsAsync_RoundsLineTotals_HalfEvenToTwoDecimals` — UnitPrice `0.125` rounded to `0.12`.
+5. `CreatePurchaseWithDetailsAsync_SupplierOutstanding_CreatedForCreditPurchase` — PaidAmount = 0, SupplierOutstanding row created with Balance = NetAmount.
+6. `CreatePurchaseWithDetailsAsync_FullyPaid_DoesNotCreateOutstanding` — PaidAmount = NetAmount, no outstanding row.
+7. `CreatePurchaseWithDetailsAsync_AuditFailure_RollsBackEntireTransaction` — uses `ThrowingAuditService` (imported from Phase 2b).
+8. `ReceivePurchaseAsync_PartialReceipt_IncrementsStockAndWritesMovement` — verify the receive flow uses `TryIncrementStockAsync` (atomic) and creates a stock movement with `MovementType = "Purchase"`.
+
+### Integration tests in `PurchaseServiceIntegrationTests.cs` (real MySQL, 4 new)
+
+1. `CreatePurchaseAsync_HappyPath_WritesAllSideEffects` — after a valid purchase: 1 Purchases row, 1+ PurchaseDetails rows, Products.StockQuantity incremented, 1 StockMovements header (MovementType=Purchase) + 1 StockMovementDetails per line, 1 SupplierOutstandings row, 1 ChangeDateLogs row, 1 InvoiceSequences row with LastValue=1 for the `PUR` prefix.
+2. `CreatePurchaseAsync_ProductNotFound_RollsBackAllWrites` — TryIncrementStockAsync returns false → exception. No rows in any of: Purchases, PurchaseDetails, StockMovements, SupplierOutstandings, ChangeDateLogs.
+3. `CreatePurchaseAsync_FullyPaid_NoSupplierOutstanding` — PaidAmount = NetAmount, no outstanding row.
+4. `ReceivePurchaseAsync_IncrementsStockAndWritesMovement` — receive goods, stock increases, stock movement created, audit row written.
 
 ## Acceptance criteria
-1. `dotnet build MMNextPOS.slnx --configuration Release` succeeds with 0 warnings, 0 errors.
-2. `dotnet test tests/MMNextPOS.Application.Tests` — 148 existing + 12 new = **160/160 passing**.
-3. `dotnet test tests/MMNextPOS.Infrastructure.Tests --filter "FullyQualifiedName~MigrationIdempotenceTests"` — 12 existing + 1 new = **13/13 passing** (in two batches again if needed).
-4. `SalesService.CreateSaleAsync` is the single entry point and writes: sale, details, stock movement, invoice, customer outstanding, audit — all in one transaction, all-or-nothing.
-5. `IProductRepository.AdjustStockAsync` is the only path that mutates `Products.StockQuantity` for a sale. The old read-then-write is removed and a regression test asserts this.
-6. `InvoiceSequences` table exists after `DatabaseInitializer.InitializeAsync()`. Invoice numbers are monotonic per year and unique.
+
+1. `dotnet build MMNextPOS.slnx --configuration Release` succeeds with 0 errors, 0 warnings.
+2. **160 + 6 = 166** application tests passing (148 originals + 12 Phase 2 sales + 6 new Phase 3 purchase).
+3. **13 + 4 = 17** integration tests verified individually (13 Phase 1+2 migration tests + 4 new Phase 3 purchase tests).
+4. `PurchaseService.CreatePurchaseWithDetailsAsync` and `ReceivePurchaseAsync` use `IUnitOfWork.BeginTransactionAsync/CommitAsync/RollbackAsync` (verified by the integration tests).
+5. The atomic `TryIncrementStockAsync` is the only path that mutates `Products.StockQuantity` for a purchase (a regression test asserts `UpdateAsync` is never called for the happy path).
+6. `IStockMovementService.AddPurchaseMovementAsync` is the only path that creates `StockMovement` rows of `MovementType = "Purchase"` from the purchase service.
 
 ## Risks and mitigations
-- **Service constructor signature change** — `SalesService` gains 4 new dependencies. `DependencyInjection.cs` is updated; all callers go through DI. No direct constructor call sites to update (verified by reading the WinForms forms: they only inject `ISalesService`).
-- **Invoice number race** — the atomic `INSERT ... ON DUPLICATE KEY UPDATE` is run inside the same `IUnitOfWork` transaction, so MySQL row-level locking on the sequence row prevents duplicates even under concurrent inserts. Tested via the `MigrationRunner_InvoiceSequencesTable_Exists` infrastructure test and the `CreateSaleAsync_InvoiceNumber_MonotonicPerYear` application test.
-- **StockMovementService new abstraction** — no consumers yet outside sales, so it is a fresh abstraction. Future inventory work (Phase 4) will use the same interface for purchases/returns/adjustments.
-- **Test host memory** — same constraint as Phase 1; the single new infrastructure test will go into a batch with the others, no parallel testhost pressure.
+
+- **Testhost memory ceiling (the Phase 1 / Phase 2b WSL2/Docker constraint)**: The 4 new integration tests share the existing `MySqlContainerFixture`, so per-test memory is similar to what we already saw work. If the testhost crashes when running all 4 in a batch, fall back to running them individually.
+- **`SupplierOutstanding` semantics (Debit vs Credit are inverted vs `CustomerOutstanding`)**: The current model has `DebitAmount` for "paid to supplier" and `CreditAmount` for "owed to supplier" — opposite to `CustomerOutstanding`. The plan above records an "amount owed" outstanding with `CreditAmount = owed, Balance = owed`. Tests will assert the right values; if a future session wants to align the two models, that's a separate refactor.
+- **The existing `PurchaseService.AddAsync` method is unchanged**: It's a "header-only insert" used by UI flows that may not need the new transaction pattern. The plan leaves it alone to avoid scope creep.
+- **No schema migrations needed**: All required columns and FKs already exist in the schema from migrations 001-008. The `SupplierOutstanding.PurchaseId` FK to `Purchases(Id)` is already `ON DELETE SET NULL` so a purchase delete doesn't cascade-suppress the outstanding.
+- **Per-file commits**: I will commit each change as its own atomic commit, mirroring the Phase 2 pattern that prevented silent reverts.
 
 ## Verification commands
+
 ```powershell
 dotnet build MMNextPOS.slnx --configuration Release
-dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj --configuration Release
-dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj --configuration Release --filter "FullyQualifiedName~MigrationIdempotenceTests"
+dotnet test tests\MMNextPOS.Application.Tests\MMNextPOS.Application.Tests.csproj --configuration Release --no-build
+dotnet test tests\MMNextPOS.Infrastructure.Tests\MMNextPOS.Infrastructure.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~PurchaseServiceIntegrationTests.CreatePurchaseAsync_HappyPath_WritesAllSideEffects"
 ```

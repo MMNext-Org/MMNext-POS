@@ -21,6 +21,7 @@ namespace MMNextPOS.WinForms
     {
         private readonly ISalesService _salesService;
         private readonly ISaleTempService _saleTempService;
+        private readonly ISaleTempDetailService _saleTempDetailService;
         private readonly IProductService _productService;
         private readonly ICustomerService _customerService;
 
@@ -48,11 +49,13 @@ namespace MMNextPOS.WinForms
         public NewSaleForm(
             ISalesService salesService,
             ISaleTempService saleTempService,
+            ISaleTempDetailService saleTempDetailService,
             IProductService productService,
             ICustomerService customerService)
         {
             _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
             _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
+            _saleTempDetailService = saleTempDetailService ?? throw new ArgumentNullException(nameof(saleTempDetailService));
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
 
@@ -64,9 +67,10 @@ namespace MMNextPOS.WinForms
         public NewSaleForm(
             ISalesService salesService,
             ISaleTempService saleTempService,
+            ISaleTempDetailService saleTempDetailService,
             IProductService productService,
             ICustomerService customerService,
-            SaleTemp draft) : this(salesService, saleTempService, productService, customerService)
+            SaleTemp draft) : this(salesService, saleTempService, saleTempDetailService, productService, customerService)
         {
             _currentDraft = draft ?? throw new ArgumentNullException(nameof(draft));
             _isResumingDraft = true;
@@ -371,12 +375,33 @@ namespace MMNextPOS.WinForms
                     _customerLookup.EditValue = _currentDraft.CustomerId.Value;
                 }
 
-                // Load sale temp details (would need a detail service - for now we'll simulate)
-                // In a real implementation, you'd load from SaleTempDetail table
-                // For now, we'll just set the basic info
+                // Load sale temp details using the detail service
+                var details = await _saleTempDetailService.GetBySaleTempIdAsync(_currentDraft.Id, CancellationToken);
+                
+                // Convert SaleTempDetails to SaleDetailViewModel and add to line items
+                foreach (var detail in details)
+                {
+                    // Get product info for display
+                    var product = _allProducts.FirstOrDefault(p => p.Id == detail.ProductId);
+                    if (product != null)
+                    {
+                        var line = new SaleDetailViewModel
+                        {
+                            ProductId = detail.ProductId,
+                            ProductName = product.Name,
+                            Sku = product.Sku,
+                            Quantity = detail.Quantity,
+                            UnitPrice = detail.UnitPrice,
+                            AvailableStock = product.StockQuantity
+                        };
+                        _lineItems.Add(line);
+                    }
+                }
 
                 _totalLabel.Text = $"Total: {_currentDraft.NetAmount:C2}";
                 _printButton.Enabled = true;
+                _detailsView.BestFitColumns();
+                UpdateTotal();
             }
             catch (Exception ex)
             {
@@ -563,9 +588,10 @@ namespace MMNextPOS.WinForms
                 // Create sale via service
                 var createdSale = await _salesService.CreateSaleAsync(sale, details, CancellationToken);
 
-                // If we had a draft, delete it
+                // If we had a draft, delete it and its details
                 if (_currentDraft != null)
                 {
+                    await _saleTempDetailService.DeleteBySaleTempIdAsync(_currentDraft.Id, CancellationToken);
                     await _saleTempService.DeleteAsync(_currentDraft.Id, CancellationToken);
                     _currentDraft = null;
                 }
@@ -623,6 +649,9 @@ namespace MMNextPOS.WinForms
                     // Update existing draft
                     draft.Id = _currentDraft.Id;
                     await _saleTempService.UpdateAsync(draft, CancellationToken);
+                    
+                    // Delete existing details
+                    await _saleTempDetailService.DeleteBySaleTempIdAsync(draft.Id, CancellationToken);
                     ShowInfo("Draft updated successfully.");
                 }
                 else
@@ -632,6 +661,22 @@ namespace MMNextPOS.WinForms
                     _currentDraft = createdDraft;
                     _isResumingDraft = true;
                     ShowInfo("Draft saved successfully.");
+                }
+
+                // Save line items as SaleTempDetails
+                foreach (var line in _lineItems)
+                {
+                    var detail = new SaleTempDetail
+                    {
+                        SaleTempId = _currentDraft.Id,
+                        ProductId = line.ProductId,
+                        Quantity = line.Quantity,
+                        UnitPrice = line.UnitPrice,
+                        DiscountAmount = 0,
+                        TaxAmount = 0,
+                        LineTotal = line.LineTotal
+                    };
+                    await _saleTempDetailService.AddAsync(detail, CancellationToken);
                 }
 
                 _printButton.Enabled = true;
