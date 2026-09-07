@@ -135,6 +135,11 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.IPurchaseReceiptService, Services.PurchaseReceiptService>();
             services.AddScoped<Services.IPaymentVoucherService, Services.PaymentVoucherService>();
 
+            // Phase 2: Sales hardening — atomic stock reservation, stock-movement audit, invoice numbering, customer outstanding
+            services.AddScoped<Services.IStockMovementService, Services.StockMovementService>();
+            services.AddScoped<Services.IInvoiceNumberGenerator, Services.DbInvoiceNumberGenerator>();
+            services.AddScoped<Services.IOutstandingService, Services.OutstandingService>();
+
             // Admin/Cross-cutting services
             services.AddScoped<Services.ISystemSettingService, Services.SystemSettingService>();
             services.AddScoped<Services.IBackupService, Services.BackupService>();
