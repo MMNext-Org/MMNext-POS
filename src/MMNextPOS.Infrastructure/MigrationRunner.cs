@@ -74,11 +74,19 @@ LIMIT 1";
             var startTime = DateTime.UtcNow;
             var result = new MigrationResult();
             var pendingMigrations = await GetPendingMigrationsAsync(cancellationToken).ConfigureAwait(false);
+            var appliedVersions = await GetAppliedVersionsAsync(cancellationToken).ConfigureAwait(false);
+
+            Console.WriteLine($"[MigrationRunner] RunMigrationsAsync: found {pendingMigrations.Count} pending migrations, {appliedVersions.Count} already applied");
+            foreach (var m in pendingMigrations)
+            {
+                Console.WriteLine($"[MigrationRunner] Pending: {m.Version} - {m.Description}");
+            }
 
             if (!pendingMigrations.Any())
             {
-                _logger.LogInformation("No pending migrations to apply");
+                _logger.LogInformation("No pending migrations to apply. {Count} migrations already applied.", appliedVersions.Count);
                 result.Success = true;
+                result.MigrationsSkipped = appliedVersions.Count;
                 result.Duration = DateTime.UtcNow - startTime;
                 return result;
             }
@@ -167,7 +175,7 @@ LIMIT 1";
             const string sql = @"
 SELECT Id, Version, Description, AppliedAt, AppliedBy, Checksum, Success, ErrorMessage
 FROM SchemaVersions
-ORDER BY AppliedAt DESC
+ORDER BY AppliedAt DESC, Id DESC
 LIMIT @Limit";
 
             var result = await _unitOfWork.Connection
@@ -190,7 +198,7 @@ LIMIT @Limit";
             result.MissingMigrations = pendingMigrations.Select(m => m.Version).ToList();
 
             var failedMigrations = await GetFailedMigrationsAsync(cancellationToken).ConfigureAwait(false);
-            result.FailedMigrations = failedMigrations;
+            result.FailedMigrations = failedMigrations.ToList();
 
             result.IsValid = !result.MissingMigrations.Any() && !result.FailedMigrations.Any();
 
@@ -215,57 +223,61 @@ LIMIT @Limit";
         {
             var migrations = new List<MigrationInfo>();
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceNames = assembly.GetManifestResourceNames()
-                .Where(n => n.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
-                .Where(n => n.Contains("Migrations.", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(n => n)
-                .ToList();
 
-            _logger.LogInformation("Found {Count} migration resources: {Names}", resourceNames.Count, string.Join(", ", resourceNames));
+            // Debug: List all manifest resources
+            var allResources = assembly.GetManifestResourceNames();
+            Console.WriteLine($"[MigrationRunner] All manifest resources: {string.Join(", ", allResources)}");
+            _logger.LogInformation("All manifest resources: {Resources}", string.Join(", ", allResources));
 
-            foreach (var resourceName in resourceNames)
+            // Hardcode the known migrations to avoid resource name parsing issues
+            var knownMigrations = new[]
             {
+                new { Version = "000", FileName = "000_BaselineSchemaVersions.sql", Description = "Create SchemaVersions table for tracking applied migrations" },
+                new { Version = "001", FileName = "001_InitialSchema.sql", Description = "Initial Schema - All Core Tables" },
+                new { Version = "002", FileName = "002_SeedDefaultData.sql", Description = "Seed Default Data" },
+                new { Version = "003", FileName = "003_AddSalesColumns.sql", Description = "Add Missing Columns to Sales Table" },
+                new { Version = "004", FileName = "004_AddIndexes.sql", Description = "Add Performance Indexes" },
+                new { Version = "005", FileName = "005_MissingEntityTables.sql", Description = "Add Missing Entity Tables (Registrations, RemoteWarehouses, Subscriptions, DashboardWidgets)" },
+                new { Version = "006", FileName = "006_AlignSchemaWithEntities.sql", Description = "Align Schema With Entity Models (audit fields, column gaps, model-mismatched table rebuilds)" },
+                new { Version = "007", FileName = "007_AddMissingFKs.sql", Description = "Add Missing Foreign Keys for Audit Fields" }
+            };
+
+            foreach (var known in knownMigrations)
+            {
+                var resourceName = $"MMNextPOS.Infrastructure.Migrations.{known.FileName}";
+
+                Console.WriteLine($"[MigrationRunner] Looking for resource: {resourceName}");
+                _logger.LogInformation("Looking for resource: {ResourceName}", resourceName);
+                var exists = allResources.Any(r => r.Equals(resourceName, StringComparison.OrdinalIgnoreCase));
+                Console.WriteLine($"[MigrationRunner] Resource exists: {exists}");
+                _logger.LogInformation("Resource exists: {Exists}", exists);
+
                 using var stream = assembly.GetManifestResourceStream(resourceName);
-                if (stream == null) continue;
+                if (stream == null)
+                {
+                    Console.WriteLine($"[MigrationRunner] ERROR: Migration resource not found: {resourceName}");
+                    _logger.LogError("Migration resource not found: {ResourceName}", resourceName);
+                    continue;
+                }
 
                 using var reader = new StreamReader(stream, Encoding.UTF8);
                 var content = reader.ReadToEnd();
-
-                // Extract version from resource name (e.g., "MMNextPOS.Infrastructure.Migrations.001_InitialSchema.sql")
-                // Find "Migrations." and get everything after it
-                var migrationsIndex = resourceName.IndexOf("Migrations.", StringComparison.OrdinalIgnoreCase);
-                var fileName = migrationsIndex >= 0 
-                    ? resourceName.Substring(migrationsIndex + "Migrations.".Length)
-                    : resourceName.Substring(resourceName.LastIndexOf('.') + 1);
-                
-                _logger.LogInformation("Processing migration: resourceName={ResourceName}, fileName={FileName}", resourceName, fileName);
-                
-                var version = ExtractVersionFromFileName(fileName);
 
                 var checksum = ComputeChecksum(content);
 
                 migrations.Add(new MigrationInfo
                 {
-                    Version = version,
-                    Description = ExtractDescription(content),
-                    FileName = fileName,
+                    Version = known.Version,
+                    Description = known.Description,
+                    FileName = known.FileName,
+                    ResourceName = resourceName,
                     Checksum = checksum
                 });
             }
 
+            Console.WriteLine($"[MigrationRunner] Loaded {migrations.Count} migrations: {string.Join(", ", migrations.Select(m => m.Version))}");
+            _logger.LogInformation("Loaded {Count} migrations: {Versions}", migrations.Count, string.Join(", ", migrations.Select(m => m.Version)));
             return migrations;
-        }
-
-        private string ExtractVersionFromFileName(string fileName)
-        {
-            // fileName format: "001_InitialSchema.sql" or "000_BaselineSchemaVersions.sql"
-            // Extract version from before the first underscore
-            var parts = fileName.Split('_', 2);
-            if (parts.Length >= 1 && int.TryParse(parts[0], out _))
-            {
-                return parts[0];
-            }
-            return fileName;
         }
 
         private string ExtractDescription(string sqlContent)
@@ -327,7 +339,7 @@ CREATE TABLE IF NOT EXISTS SchemaVersions (
             return result.AsList();
         }
 
-        private async Task<List<string>> GetFailedMigrationsAsync(CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<string>> GetFailedMigrationsAsync(CancellationToken cancellationToken)
         {
             const string sql = "SELECT Version FROM SchemaVersions WHERE Success = 0";
             var result = await _unitOfWork.Connection
@@ -345,6 +357,7 @@ CREATE TABLE IF NOT EXISTS SchemaVersions (
                 Description = migration.Description
             };
 
+            Console.WriteLine($"[MigrationRunner] Applying migration {migration.Version}: {migration.Description}");
             _logger.LogInformation("Applying migration {Version}: {Description}", migration.Version, migration.Description);
 
             try
@@ -370,9 +383,11 @@ CREATE TABLE IF NOT EXISTS SchemaVersions (
                 {
                     // Split SQL into individual statements and execute
                     var statements = SplitSqlStatements(content);
+                    Console.WriteLine($"[MigrationRunner] Migration {migration.Version}: executing {statements.Count} statements");
                     foreach (var statement in statements)
                     {
                         if (string.IsNullOrWhiteSpace(statement)) continue;
+                        Console.WriteLine($"[MigrationRunner] Executing: {statement.Substring(0, Math.Min(100, statement.Length))}...");
                         await _unitOfWork.Connection.ExecuteAsync(statement, transaction: _unitOfWork.Transaction).ConfigureAwait(false);
                     }
 
@@ -384,6 +399,7 @@ CREATE TABLE IF NOT EXISTS SchemaVersions (
                     stepResult.Success = true;
                     stepResult.Duration = DateTime.UtcNow - stepStartTime;
 
+                    Console.WriteLine($"[MigrationRunner] Migration {migration.Version} applied successfully in {stepResult.Duration.TotalMilliseconds}ms");
                     _logger.LogInformation("Migration {Version} applied successfully in {Duration}ms", migration.Version, stepResult.Duration.TotalMilliseconds);
                 }
                 catch
@@ -408,6 +424,7 @@ CREATE TABLE IF NOT EXISTS SchemaVersions (
                     _logger.LogError(recordEx, "Failed to record migration failure for {Version}", migration.Version);
                 }
 
+                Console.WriteLine($"[MigrationRunner] Migration {migration.Version} failed: {ex.Message}");
                 _logger.LogError(ex, "Migration {Version} failed: {Error}", migration.Version, ex.Message);
             }
 
@@ -417,6 +434,20 @@ CREATE TABLE IF NOT EXISTS SchemaVersions (
         private string GetMigrationContent(string fileName)
         {
             var assembly = Assembly.GetExecutingAssembly();
+            // First try to find by exact resource name (stored in MigrationInfo.ResourceName)
+            // We need to find the migration by fileName first to get its ResourceName
+            var migration = _migrations.FirstOrDefault(m => m.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+            if (migration != null && !string.IsNullOrEmpty(migration.ResourceName))
+            {
+                using var stream = assembly.GetManifestResourceStream(migration.ResourceName);
+                if (stream != null)
+                {
+                    using var reader = new StreamReader(stream, Encoding.UTF8);
+                    return reader.ReadToEnd();
+                }
+            }
+
+            // Fallback: try to find by EndsWith
             var resourceName = assembly.GetManifestResourceNames()
                 .FirstOrDefault(n => n.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
 
@@ -426,11 +457,11 @@ CREATE TABLE IF NOT EXISTS SchemaVersions (
                 return string.Empty;
             }
 
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            if (stream == null) return string.Empty;
+            using var stream2 = assembly.GetManifestResourceStream(resourceName);
+            if (stream2 == null) return string.Empty;
 
-            using var reader = new StreamReader(stream, Encoding.UTF8);
-            return reader.ReadToEnd();
+            using var reader2 = new StreamReader(stream2, Encoding.UTF8);
+            return reader2.ReadToEnd();
         }
 
         private List<string> SplitSqlStatements(string sql)

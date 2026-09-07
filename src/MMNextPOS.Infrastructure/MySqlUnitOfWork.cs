@@ -18,7 +18,20 @@ namespace MMNextPOS.Infrastructure
 
         public MySqlUnitOfWork(string connectionString)
         {
-            _connection = new MySqlConnection(connectionString);
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentException("Connection string must not be null or empty.", nameof(connectionString));
+            }
+
+            // Schema migrations use MySQL user variables (e.g. SET @sql = ...) for idempotent
+            // ALTER statements, which require the AllowUserVariables option to be enabled.
+            var builder = new MySqlConnectionStringBuilder(connectionString);
+            if (!builder.AllowUserVariables)
+            {
+                builder.AllowUserVariables = true;
+            }
+
+            _connection = new MySqlConnection(builder.ConnectionString);
         }
 
         public MySqlConnection Connection => _connection;

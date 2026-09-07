@@ -25,6 +25,29 @@ namespace MMNextPOS.Infrastructure.Repositories
             _hasIsDeleted = typeof(T).GetProperty("IsDeleted") != null;
         }
 
+        /// <summary>
+        /// Returns true when the property maps to a database column.
+        /// Navigation/complex/collection properties and [NotMapped] members are skipped so
+        /// reflection-based INSERT/UPDATE statements only contain real columns.
+        /// </summary>
+        private static bool IsColumnProperty(PropertyInfo prop)
+        {
+            if (!prop.CanRead || !prop.CanWrite) return false;
+            if (prop.GetIndexParameters().Length > 0) return false;
+            if (prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute>() != null) return false;
+
+            var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            return type.IsPrimitive
+                || type.IsEnum
+                || type == typeof(string)
+                || type == typeof(decimal)
+                || type == typeof(DateTime)
+                || type == typeof(DateTimeOffset)
+                || type == typeof(TimeSpan)
+                || type == typeof(Guid)
+                || type == typeof(byte[]);
+        }
+
         public virtual async Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
         {
             var sql = $"INSERT INTO {_tableName} SET ";
@@ -35,6 +58,7 @@ namespace MMNextPOS.Infrastructure.Repositories
             foreach (var prop in props)
             {
                 if (prop.Name == "Id") continue; // Skip Id for insert
+                if (!IsColumnProperty(prop)) continue; // Skip navigation/complex properties
 
                 columns.Add($"{prop.Name} = @{prop.Name}");
                 parameters[prop.Name] = prop.GetValue(entity);
@@ -70,6 +94,7 @@ namespace MMNextPOS.Infrastructure.Repositories
                     id = (int?)prop.GetValue(entity);
                     continue;
                 }
+                if (!IsColumnProperty(prop)) continue; // Skip navigation/complex properties
 
                 updates.Add($"{prop.Name} = @{prop.Name}");
                 parameters[prop.Name] = prop.GetValue(entity);

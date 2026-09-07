@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MMNextPOS.Domain.Models
 {
@@ -15,6 +16,7 @@ namespace MMNextPOS.Domain.Models
         public int CustomerId { get; set; }
 
         // Not mapped to DB column; populated via JOIN or lookup for display
+        [NotMapped]
         public string? CustomerName { get; set; }
 
         public DateTime SaleDate { get; set; } = DateTime.UtcNow;

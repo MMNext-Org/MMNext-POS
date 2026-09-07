@@ -34,17 +34,25 @@ namespace MMNextPOS.Infrastructure.Tests
             await _container.StartAsync();
 
             // Load configuration with the container's connection string
+            var connectionString = _container.GetConnectionString();
+            // Add Allow User Variables=true to support PREPARE statements with user variables
+            if (!connectionString.Contains("Allow User Variables"))
+            {
+                connectionString += ";Allow User Variables=true";
+            }
+
             _configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:Default"] = _container.GetConnectionString()
+                    ["ConnectionStrings:Default"] = connectionString
                 })
                 .Build();
 
             // Build DI container
             var services = new ServiceCollection();
+            services.AddLogging();
             services.AddApplication(_configuration);
             services.AddScoped<ISalesService, SalesService>();
             _serviceProvider = services.BuildServiceProvider();

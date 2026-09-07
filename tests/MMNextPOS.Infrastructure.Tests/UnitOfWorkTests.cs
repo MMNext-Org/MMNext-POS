@@ -29,10 +29,16 @@ namespace MMNextPOS.Infrastructure.Tests
                 .Build();
             await _container.StartAsync();
             _connectionString = _container.GetConnectionString();
+            // Add Allow User Variables=true to support PREPARE statements with user variables
+            if (!_connectionString.Contains("Allow User Variables"))
+            {
+                _connectionString += ";Allow User Variables=true";
+            }
 
             // Ensure schema exists
             var uow = new MySqlUnitOfWork(_connectionString);
-            var initializer = new DatabaseInitializer(uow);
+            var initializer = new DatabaseInitializer(new MigrationRunner(uow, new Microsoft.Extensions.Logging.Abstractions.NullLogger<MigrationRunner>(), Microsoft.Extensions.Options.Options.Create(new ConnectionStringOptions { Default = _connectionString })),
+                new Microsoft.Extensions.Logging.Abstractions.NullLogger<DatabaseInitializer>());
             await initializer.InitializeAsync();
             await uow.DisposeAsync();
         }

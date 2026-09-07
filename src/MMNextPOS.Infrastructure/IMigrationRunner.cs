@@ -39,6 +39,11 @@ namespace MMNextPOS.Infrastructure
         /// Validates that the database schema matches expected state (no drift).
         /// </summary>
         Task<SchemaValidationResult> ValidateSchemaAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets all failed migration versions.
+        /// </summary>
+        Task<IReadOnlyList<string>> GetFailedMigrationsAsync(CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -49,6 +54,7 @@ namespace MMNextPOS.Infrastructure
         public string Version { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
+        public string ResourceName { get; set; } = string.Empty;
         public string Checksum { get; set; } = string.Empty;
     }
 

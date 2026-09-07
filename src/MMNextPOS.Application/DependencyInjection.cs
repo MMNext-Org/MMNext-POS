@@ -90,8 +90,8 @@ namespace MMNextPOS.Application
             // Register MigrationRunner as scoped (uses IUnitOfWork which is scoped)
             services.AddScoped<IMigrationRunner, MigrationRunner>();
 
-            // Register DatabaseInitializer as singleton (run once at startup)
-            services.AddSingleton<DatabaseInitializer>();
+            // Register DatabaseInitializer as scoped (depends on IMigrationRunner which is scoped)
+            services.AddScoped<DatabaseInitializer>();
 
             // Register application services
             services.AddScoped<Services.ISalesService, Services.SalesService>();
