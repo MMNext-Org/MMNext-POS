@@ -73,6 +73,8 @@ namespace MMNextPOS.Application
             services.AddScoped<IThemeRepository, ThemeRepository>();
             services.AddScoped<ILanguageRepository, LanguageRepository>();
             services.AddScoped<IChangeDateLogRepository, ChangeDateLogRepository>();
+            services.AddScoped<ICustomerOutstandingRepository, CustomerOutstandingRepository>();
+            services.AddScoped<ISupplierOutstandingRepository, SupplierOutstandingRepository>();
 
             // Admin/Cross-cutting repositories
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISystemSettingRepository, MMNextPOS.Infrastructure.Repositories.SystemSettingRepository>();
@@ -139,6 +141,13 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.IStockMovementService, Services.StockMovementService>();
             services.AddScoped<Services.IInvoiceNumberGenerator, Services.DbInvoiceNumberGenerator>();
             services.AddScoped<Services.IOutstandingService, Services.OutstandingService>();
+
+            // Phase 2b: IAuditService is consumed by ISalesService (and the various
+            // supporting services it composes). It must be registered so the DI
+            // container can resolve ISalesService. Phase 2 introduced the dependency
+            // but missed the registration; the audit-failure integration test in
+            // SalesServiceIntegrationTests surfaces this.
+            services.AddScoped<Services.IAuditService, Services.AuditService>();
 
             // Admin/Cross-cutting services
             services.AddScoped<Services.ISystemSettingService, Services.SystemSettingService>();
