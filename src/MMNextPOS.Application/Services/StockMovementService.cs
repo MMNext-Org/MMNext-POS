@@ -70,5 +70,50 @@ namespace MMNextPOS.Application.Services
 
             return created;
         }
+
+        public async Task<StockMovement> AddPurchaseMovementAsync(
+            Purchase purchase,
+            IReadOnlyList<PurchaseDetail> details,
+            int? createdByUserId,
+            CancellationToken cancellationToken = default)
+        {
+            if (purchase == null) throw new ArgumentNullException(nameof(purchase));
+            if (details == null) throw new ArgumentNullException(nameof(details));
+
+            var totalQty = details.Sum(d => d.Quantity);
+            var movementNo = $"SM-{purchase.PurchaseDate:yyyyMMddHHmmss}-P-{purchase.Id}";
+
+            var movement = new StockMovement
+            {
+                MovementNo = movementNo,
+                MovementType = "Purchase",
+                MovementDate = purchase.PurchaseDate == default ? DateTime.UtcNow : purchase.PurchaseDate,
+                LocationId = purchase.LocationId,
+                SupplierId = purchase.SupplierId > 0 ? purchase.SupplierId : (int?)null,
+                Quantity = totalQty,
+                Status = "Active",
+                CreatedByUserId = createdByUserId,
+                Reason = $"Purchase #{purchase.Id} ({purchase.InvoiceNo})",
+                IsActive = true
+            };
+
+            var created = await _movementRepo.AddAsync(movement, cancellationToken).ConfigureAwait(false);
+
+            foreach (var d in details)
+            {
+                var detailRow = new StockMovementDetail
+                {
+                    StockMovementId = created.Id,
+                    ProductId = d.ProductId,
+                    Quantity = d.Quantity,
+                    UnitCost = d.UnitPrice,
+                    LineTotal = d.Quantity * d.UnitPrice,
+                    Notes = d.Notes ?? (d.Id == 0 ? null : $"PurchaseDetail {d.Id}")
+                };
+                await _detailRepo.AddAsync(detailRow, cancellationToken).ConfigureAwait(false);
+            }
+
+            return created;
+        }
     }
 }

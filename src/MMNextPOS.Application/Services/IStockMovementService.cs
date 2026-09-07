@@ -22,5 +22,17 @@ namespace MMNextPOS.Application.Services
             IReadOnlyList<SaleDetail> details,
             int? createdByUserId,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Persist a stock movement header and one detail row per purchase line.
+        /// MovementType is "Purchase". Returns the created movement header with
+        /// its assigned Id. The header records the SupplierId from the purchase
+        /// so the supplier linkage is preserved on every movement row.
+        /// </summary>
+        Task<StockMovement> AddPurchaseMovementAsync(
+            Purchase purchase,
+            IReadOnlyList<PurchaseDetail> details,
+            int? createdByUserId,
+            CancellationToken cancellationToken = default);
     }
 }
