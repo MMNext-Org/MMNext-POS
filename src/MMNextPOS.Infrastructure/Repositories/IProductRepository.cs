@@ -24,5 +24,13 @@ namespace MMNextPOS.Infrastructure.Repositories
         /// only one unit is left.
         /// </summary>
         Task<bool> TryDecrementStockAsync(int productId, int quantity, int adjustedBy, string reason, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Atomically increases stock for a purchase / receive / return. Returns
+        /// true if the product exists and the UPDATE affected one row, false if
+        /// the product does not exist. There is no insufficient-stock failure
+        /// mode (incrementing is always possible when the row exists).
+        /// </summary>
+        Task<bool> TryIncrementStockAsync(int productId, int quantity, int adjustedBy, string reason, CancellationToken cancellationToken = default);
     }
 }
