@@ -67,7 +67,8 @@ namespace MMNextPOS.Infrastructure.Repositories
             sql += string.Join(", ", columns);
             sql += "; SELECT LAST_INSERT_ID();";
 
-            var id = await Connection.ExecuteScalarAsync<long>(sql, parameters, Transaction, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var id = await Connection.ExecuteScalarAsync<long>(
+                new CommandDefinition(sql, parameters, transaction: Transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
 
             // Set the Id property
             var idProp = typeof(T).GetProperty("Id");
@@ -117,7 +118,8 @@ namespace MMNextPOS.Infrastructure.Repositories
             sql += " WHERE Id = @Id";
             parameters["Id"] = id.Value;
 
-            await Connection.ExecuteAsync(sql, parameters, Transaction, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await Connection.ExecuteAsync(
+                new CommandDefinition(sql, parameters, transaction: Transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
 
         public virtual async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -126,15 +128,17 @@ if (_hasIsDeleted)
                 {
                     // Soft delete
                     var sql = $"UPDATE {_tableName} SET IsDeleted = 1 WHERE Id = @Id";
-                    await Connection.ExecuteAsync(sql, new { Id = id }, Transaction,
-                        commandTimeout: null, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await Connection.ExecuteAsync(
+                        new CommandDefinition(sql, new { Id = id }, transaction: Transaction,
+                            commandTimeout: null, cancellationToken: cancellationToken)).ConfigureAwait(false);
                 }
                 else
                 {
                     // Hard delete
                     var sql = $"DELETE FROM {_tableName} WHERE Id = @Id";
-                    await Connection.ExecuteAsync(sql, new { Id = id }, Transaction,
-                        commandTimeout: null, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await Connection.ExecuteAsync(
+                        new CommandDefinition(sql, new { Id = id }, transaction: Transaction,
+                            commandTimeout: null, cancellationToken: cancellationToken)).ConfigureAwait(false);
                 }
         }
 
@@ -145,8 +149,9 @@ if (_hasIsDeleted)
             {
                 sql += " AND IsDeleted = 0";
             }
-            return await Connection.QuerySingleOrDefaultAsync<T>(sql, new { Id = id }, Transaction,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+            return await Connection.QuerySingleOrDefaultAsync<T>(
+                new CommandDefinition(sql, new { Id = id }, transaction: Transaction,
+                    cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
 
         public virtual async Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -156,8 +161,8 @@ if (_hasIsDeleted)
             {
                 sql += " WHERE IsDeleted = 0";
             }
-            var result = await Connection.QueryAsync<T>(sql, transaction: Transaction,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+            var result = await Connection.QueryAsync<T>(
+                new CommandDefinition(sql, transaction: Transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
             return result.AsList();
         }
 
@@ -174,8 +179,8 @@ if (_hasIsDeleted)
                 countSql += " WHERE IsDeleted = 0";
             }
 
-            var totalCount = await Connection.ExecuteScalarAsync<int>(countSql, transaction: Transaction,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+            var totalCount = await Connection.ExecuteScalarAsync<int>(
+                new CommandDefinition(countSql, transaction: Transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
 
             var sql = $"SELECT * FROM {_tableName}";
             if (_hasIsDeleted)
@@ -185,8 +190,8 @@ if (_hasIsDeleted)
             sql += $" ORDER BY Id LIMIT @Limit OFFSET @Offset";
 
             var parameters = new { Limit = pageSize, Offset = offset };
-            var result = await Connection.QueryAsync<T>(sql, parameters, Transaction,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+            var result = await Connection.QueryAsync<T>(
+                new CommandDefinition(sql, parameters, transaction: Transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
 
             return new PagedResult<T>
             {
