@@ -54,5 +54,40 @@ namespace MMNextPOS.Infrastructure.Repositories
                 ProductId = productId
             }, Transaction).ConfigureAwait(false);
         }
+
+        public async Task<bool> TryDecrementStockAsync(int productId, int quantity, int adjustedBy, string reason, CancellationToken cancellationToken = default)
+        {
+            if (quantity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Quantity must be positive for a decrement.");
+            }
+
+            // Single atomic UPDATE: only succeeds when Id matches AND stock is sufficient.
+            // Returns rows-affected so the caller can tell "no such product" from
+            // "insufficient stock" by checking the row's existence separately if needed.
+            const string sql = @"
+UPDATE Products
+SET StockQuantity = StockQuantity - @Quantity,
+    LastAdjustment = @LastAdjustment,
+    AdjustedBy = @AdjustedBy,
+    AdjustmentReason = @AdjustmentReason,
+    IsActive = 1
+WHERE Id = @ProductId AND StockQuantity >= @Quantity";
+
+            var rows = await Connection.ExecuteAsync(
+                new CommandDefinition(sql,
+                    new
+                    {
+                        Quantity = quantity,
+                        LastAdjustment = DateTime.UtcNow,
+                        AdjustedBy = adjustedBy,
+                        AdjustmentReason = reason ?? "Stock adjustment",
+                        ProductId = productId
+                    },
+                    transaction: Transaction,
+                    cancellationToken: cancellationToken)).ConfigureAwait(false);
+
+            return rows == 1;
+        }
     }
 }
