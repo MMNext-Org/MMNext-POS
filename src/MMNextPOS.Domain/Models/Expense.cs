@@ -15,6 +15,7 @@ namespace MMNextPOS.Domain.Models
         public int? VendorId { get; set; } // Optional supplier link
         public string? Description { get; set; }
         public string? ReceiptPath { get; set; }
+        public string? Notes { get; set; }
         public string Status { get; set; } = "Active";
         public int? CreatedByUserId { get; set; }
     }

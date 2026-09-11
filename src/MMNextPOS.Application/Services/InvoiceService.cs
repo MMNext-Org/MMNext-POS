@@ -49,5 +49,10 @@ namespace MMNextPOS.Application.Services
             await _repo.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
             await _auditService.LogAsync(nameof(Invoice), id, "Delete", existing, null, 1, "System", $"Deleted invoice {existing?.InvoiceNo ?? id.ToString()}", cancellationToken).ConfigureAwait(false);
         }
+
+        public Task<IReadOnlyList<Invoice>> GetBySaleIdAsync(int saleId, CancellationToken cancellationToken = default)
+        {
+            return _repo.GetBySaleIdAsync(saleId, cancellationToken);
+        }
     }
 }

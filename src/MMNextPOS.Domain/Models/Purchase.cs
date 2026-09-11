@@ -17,5 +17,10 @@ namespace MMNextPOS.Domain.Models
         public int? LocationId { get; set; }
         public int? CreatedByUserId { get; set; }
         public string? Notes { get; set; }
+
+        /// <summary>
+        /// Navigation property for purchase line items
+        /// </summary>
+        public ICollection<PurchaseDetail> PurchaseDetails { get; set; } = new List<PurchaseDetail>();
     }
 }

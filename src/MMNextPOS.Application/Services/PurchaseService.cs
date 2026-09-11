@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
 using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
+using MMNextPOS.Application.Services;
 
 namespace MMNextPOS.Application.Services
 {
@@ -22,6 +22,7 @@ namespace MMNextPOS.Application.Services
         private readonly IStockMovementService _stockMovementService;
         private readonly IInvoiceNumberGenerator _invoiceNumberGenerator;
         private readonly IOutstandingService _outstandingService;
+        private readonly IPaymentService _paymentService;
 
         public PurchaseService(
             IPurchaseRepository repo,
@@ -33,7 +34,8 @@ namespace MMNextPOS.Application.Services
             IAuditService auditService,
             IStockMovementService stockMovementService,
             IInvoiceNumberGenerator invoiceNumberGenerator,
-            IOutstandingService outstandingService)
+            IOutstandingService outstandingService,
+            IPaymentService paymentService)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _detailRepo = detailRepo ?? throw new ArgumentNullException(nameof(detailRepo));
@@ -45,6 +47,7 @@ namespace MMNextPOS.Application.Services
             _stockMovementService = stockMovementService ?? throw new ArgumentNullException(nameof(stockMovementService));
             _invoiceNumberGenerator = invoiceNumberGenerator ?? throw new ArgumentNullException(nameof(invoiceNumberGenerator));
             _outstandingService = outstandingService ?? throw new ArgumentNullException(nameof(outstandingService));
+            _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
         }
 
         public Task<Purchase?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -204,6 +207,26 @@ namespace MMNextPOS.Application.Services
                     userName: null,
                     description: $"Purchase {poNo} posted: {rounded.Count} lines, total {created.NetAmount:C2}",
                     cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                // 9) Create payment record for the purchase amount (cash payment on receipt).
+                //    This links the payment to the purchase so the accountant can track
+                //    what was paid to suppliers.
+                if (created.NetAmount > 0m && created.SupplierId > 0)
+                {
+                    var payment = new Payment
+                    {
+                        PaymentNo = $"PUR-{poNo}",
+                        PaymentType = "Supplier",
+                        PurchaseId = created.Id,
+                        SupplierId = created.SupplierId,
+                        Amount = created.NetAmount,
+                        Method = "Cash",
+                        PaymentDate = created.PurchaseDate,
+                        Status = "Completed",
+                        Description = $"Payment for purchase {poNo}"
+                    };
+                    await _paymentService.AddAsync(payment, cancellationToken).ConfigureAwait(false);
+                }
 
                 await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return created;

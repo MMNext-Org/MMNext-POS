@@ -115,5 +115,96 @@ namespace MMNextPOS.Application.Services
 
             return created;
         }
+
+        public async Task<StockMovement> AddReturnMovementAsync(
+            int returnId,
+            int productId,
+            int quantity,
+            decimal unitCost,
+            int? locationId,
+            int? createdByUserId,
+            string? reason,
+            CancellationToken cancellationToken = default)
+        {
+            if (quantity <= 0)
+                throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Quantity must be positive for a return movement.");
+            if (unitCost < 0m)
+                throw new ArgumentOutOfRangeException(nameof(unitCost), unitCost, "Unit cost must be non-negative.");
+
+            var movementNo = $"SM-RET-{DateTime.UtcNow:yyyyMMddHHmmss}-R-{returnId}";
+
+            var movement = new StockMovement
+            {
+                MovementNo = movementNo,
+                MovementType = "Return",
+                MovementDate = DateTime.UtcNow,
+                LocationId = locationId,
+                Quantity = quantity,
+                Status = "Active",
+                CreatedByUserId = createdByUserId,
+                Reason = reason ?? $"Return #{returnId}",
+                IsActive = true
+            };
+
+            var created = await _movementRepo.AddAsync(movement, cancellationToken).ConfigureAwait(false);
+
+            var detailRow = new StockMovementDetail
+            {
+                StockMovementId = created.Id,
+                ProductId = productId,
+                Quantity = quantity,
+                UnitCost = unitCost,
+                LineTotal = quantity * unitCost,
+                Notes = $"ReturnDetail for Return #{returnId}"
+            };
+            await _detailRepo.AddAsync(detailRow, cancellationToken).ConfigureAwait(false);
+
+            return created;
+        }
+
+        public async Task<StockMovement> AddVoidMovementAsync(
+            int saleId,
+            int productId,
+            int quantity,
+            decimal unitCost,
+            int? locationId,
+            int? createdByUserId,
+            string? reason,
+            CancellationToken cancellationToken = default)
+        {
+            var movementNo = $"SM-VOID-{DateTime.UtcNow:yyyyMMddHHmmss}-S-{saleId}";
+
+            var movement = new StockMovement
+            {
+                MovementNo = movementNo,
+                MovementType = "Void",
+                MovementDate = DateTime.UtcNow,
+                LocationId = locationId,
+                Quantity = quantity,
+                Status = "Active",
+                CreatedByUserId = createdByUserId,
+                Reason = reason ?? $"Void Sale #{saleId}",
+                IsActive = true
+            };
+
+            var created = await _movementRepo.AddAsync(movement, cancellationToken).ConfigureAwait(false);
+
+            // Only add detail row if we have a specific product
+            if (productId > 0 && quantity > 0)
+            {
+                var detailRow = new StockMovementDetail
+                {
+                    StockMovementId = created.Id,
+                    ProductId = productId,
+                    Quantity = quantity,
+                    UnitCost = unitCost,
+                    LineTotal = quantity * unitCost,
+                    Notes = $"VoidDetail for Sale #{saleId}"
+                };
+                await _detailRepo.AddAsync(detailRow, cancellationToken).ConfigureAwait(false);
+            }
+
+            return created;
+        }
     }
 }

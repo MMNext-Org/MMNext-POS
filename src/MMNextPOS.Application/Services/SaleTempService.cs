@@ -29,5 +29,8 @@ namespace MMNextPOS.Application.Services
 
         public Task UpdateAsync(SaleTemp saleTemp, CancellationToken cancellationToken = default)
             => _repo.UpdateAsync(saleTemp, cancellationToken);
+
+        public Task<IReadOnlyList<SaleTemp>> GetDraftsByStatusAsync(string status, CancellationToken cancellationToken = default)
+            => _repo.GetDraftsByStatusAsync(status, cancellationToken);
     }
 }

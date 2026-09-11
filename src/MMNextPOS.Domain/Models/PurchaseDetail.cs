@@ -14,5 +14,10 @@ namespace MMNextPOS.Domain.Models
         public decimal TaxAmount { get; set; }
         public decimal LineTotal { get; set; }
         public string? Notes { get; set; }
+
+        /// <summary>
+        /// Navigation property for the product
+        /// </summary>
+        public Product? Product { get; set; }
     }
 }

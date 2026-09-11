@@ -21,5 +21,6 @@ namespace MMNextPOS.Domain.Models
         public string Status { get; set; } = "Cleared"; // Pending, Cleared, Bounced, Cancelled
         public int? ReceivedByUserId { get; set; }
         public string? Notes { get; set; }
+        public string? Description { get; set; }
     }
 }

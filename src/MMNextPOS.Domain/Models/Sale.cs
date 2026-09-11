@@ -34,5 +34,16 @@ namespace MMNextPOS.Domain.Models
         /// Optional location/branch identifier for multi-location support
         /// </summary>
         public int? LocationId { get; set; }
+
+        /// <summary>
+        /// Auto-generated invoice number (e.g., "INV-2026-000042")
+        /// </summary>
+        [MaxLength(50)]
+        public string? InvoiceNo { get; set; }
+
+        /// <summary>
+        /// Navigation property for sale line items
+        /// </summary>
+        public ICollection<SaleDetail> SaleDetails { get; set; } = new List<SaleDetail>();
     }
 }

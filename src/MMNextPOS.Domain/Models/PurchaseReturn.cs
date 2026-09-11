@@ -14,5 +14,10 @@ namespace MMNextPOS.Domain.Models
         public string Status { get; set; } = "Active"; // Active, Cancelled
         public int? CreatedByUserId { get; set; }
         public string? Notes { get; set; }
+
+        /// <summary>
+        /// Navigation property for purchase return line items
+        /// </summary>
+        public ICollection<PurchaseReturnDetail> PurchaseReturnDetails { get; set; } = new List<PurchaseReturnDetail>();
     }
 }

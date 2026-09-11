@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,9 +16,14 @@ namespace MMNextPOS.Application.Services
         Task UpdateAsync(Payment payment, CancellationToken cancellationToken = default);
         Task DeleteAsync(int id, CancellationToken cancellationToken = default);
 
-        // Payment filtering
+        // Payment by reference
+        Task<IReadOnlyList<Payment>> GetBySaleAsync(int saleId, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<Payment>> GetByPurchaseAsync(int purchaseId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Payment>> GetByCustomerAsync(int customerId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Payment>> GetBySupplierAsync(int supplierId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Payment>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
+
+        // Payment processing
+        Task<Payment> ProcessPaymentAsync(Payment payment, CancellationToken cancellationToken = default);
     }
 }

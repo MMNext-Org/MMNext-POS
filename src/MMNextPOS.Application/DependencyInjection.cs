@@ -142,6 +142,7 @@ namespace MMNextPOS.Application
             // Phase 2: Sales hardening — atomic stock reservation, stock-movement audit, invoice numbering, customer outstanding
             services.AddScoped<Services.IStockMovementService, Services.StockMovementService>();
             services.AddScoped<Services.IInvoiceNumberGenerator, Services.DbInvoiceNumberGenerator>();
+            services.AddScoped<Services.IReturnNumberGenerator, Services.DbReturnNumberGenerator>();
             services.AddScoped<Services.IOutstandingService, Services.OutstandingService>();
 
             // Phase 2b: IAuditService is consumed by ISalesService (and the various
@@ -156,6 +157,7 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.IBackupService, Services.BackupService>();
             services.AddScoped<Services.IMigrationService, Services.MigrationService>();
             services.AddScoped<Services.ISuperAdminService, Services.SuperAdminService>();
+            services.AddScoped<Services.ITurnstileVerificationService, Services.CloudflareTurnstileVerificationService>();
 
             return services;
         }

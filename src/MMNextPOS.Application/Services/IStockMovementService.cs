@@ -34,5 +34,35 @@ namespace MMNextPOS.Application.Services
             IReadOnlyList<PurchaseDetail> details,
             int? createdByUserId,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Persist a stock movement header and one detail row per return line.
+        /// MovementType is "Return". Returns the created movement header with
+        /// its assigned Id.
+        /// </summary>
+        Task<StockMovement> AddReturnMovementAsync(
+            int returnId,
+            int productId,
+            int quantity,
+            decimal unitCost,
+            int? locationId,
+            int? createdByUserId,
+            string? reason,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Persist a stock movement header for a void operation.
+        /// MovementType is "Void". Returns the created movement header with
+        /// its assigned Id.
+        /// </summary>
+        Task<StockMovement> AddVoidMovementAsync(
+            int saleId,
+            int productId,
+            int quantity,
+            decimal unitCost,
+            int? locationId,
+            int? createdByUserId,
+            string? reason,
+            CancellationToken cancellationToken = default);
     }
 }

@@ -48,5 +48,14 @@ namespace MMNextPOS.Application.Services
             await _repo.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
             await _auditService.LogAsync(nameof(Expense), id, "Delete", existing, null, 1, "System", $"Deleted expense {existing?.ExpenseNo ?? id.ToString()}", cancellationToken).ConfigureAwait(false);
         }
+
+        public async Task<IReadOnlyList<Expense>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default)
+        {
+            var allExpenses = await _repo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            return allExpenses
+                .Where(e => e.ExpenseDate >= fromDate && e.ExpenseDate <= toDate)
+                .OrderBy(e => e.ExpenseDate)
+                .ToList();
+        }
     }
 }

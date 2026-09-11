@@ -50,7 +50,7 @@ namespace MMNextPOS.Infrastructure.Tests
             // Assert - No exception thrown, verify schema version is set
             var currentVersion = await migrationRunner.GetCurrentVersionAsync();
             Assert.NotNull(currentVersion);
-            Assert.Equal("008", currentVersion); // Latest migration version
+            Assert.Equal("010", currentVersion); // Latest migration version
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace MMNextPOS.Infrastructure.Tests
             // Assert - All migrations should be skipped (already applied)
             Assert.True(result.Success);
             Assert.Equal(0, result.MigrationsApplied);
-            Assert.Equal(9, result.MigrationsSkipped); // 000..008
+            Assert.Equal(11, result.MigrationsSkipped); // 000..010
             Assert.Equal(0, result.MigrationsFailed);
         }
 
@@ -135,8 +135,8 @@ namespace MMNextPOS.Infrastructure.Tests
             Assert.True(validation.IsValid);
             Assert.Empty(validation.MissingMigrations);
             Assert.Empty(validation.FailedMigrations);
-            Assert.Equal("008", validation.CurrentVersion);
-            Assert.Equal("008", validation.ExpectedVersion);
+            Assert.Equal("010", validation.CurrentVersion);
+            Assert.Equal("010", validation.ExpectedVersion);
         }
 
         [Fact]
@@ -158,7 +158,7 @@ namespace MMNextPOS.Infrastructure.Tests
 
             // Assert
             Assert.Null(versionBefore); // No migrations applied yet
-            Assert.Equal("008", versionAfter); // Latest version after full run
+            Assert.Equal("010", versionAfter); // Latest version after full run
         }
 
         [Fact]
@@ -176,16 +176,16 @@ namespace MMNextPOS.Infrastructure.Tests
             var history = await migrationRunner.GetMigrationHistoryAsync(20);
 
             // Assert
-            Assert.Equal(9, history.Count); // 9 migrations total (000-008)
+            Assert.Equal(11, history.Count); // 11 migrations total (000-010)
 
             // Should be ordered by AppliedAt DESC (newest first). Because DATETIME has second
             // precision, adjacent migrations can share a timestamp, so verify the set and
             // relative order robustly rather than asserting a single exact sequence.
             var versions = history.Select(h => h.Version).ToList();
             Assert.Equal(
-                new[] { "008", "007", "006", "005", "004", "003", "002", "001", "000" },
+                new[] { "010", "009", "008", "007", "006", "005", "004", "003", "002", "001", "000" },
                 versions.OrderByDescending(v => v).ToArray());
-            Assert.Contains(versions, v => v == "008");
+            Assert.Contains(versions, v => v == "010");
 
             // All should be successful
             Assert.All(history, entry => Assert.True(entry.Success));
@@ -350,10 +350,10 @@ ORDER BY ORDINAL_POSITION";
             var updatedAtCol = columns.First(c => c.COLUMN_NAME == "UpdatedAt");
             Assert.Equal("datetime", ((string)updatedAtCol.DATA_TYPE).ToLowerInvariant());
 
-            // Current version is 008 after the full run
+            // Current version is 010 after the full run
             var migrationRunner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
             var currentVersion = await migrationRunner.GetCurrentVersionAsync();
-            Assert.Equal("008", currentVersion);
+            Assert.Equal("010", currentVersion);
         }
     }
 }

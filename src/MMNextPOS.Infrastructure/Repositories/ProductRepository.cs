@@ -18,7 +18,7 @@ namespace MMNextPOS.Infrastructure.Repositories
         public async Task<IReadOnlyList<Product>> GetLowStockProductsAsync(CancellationToken cancellationToken = default, int? minStockAlertLevel = null)
         {
             var level = minStockAlertLevel ?? 5;  // Default value if not provided
-            const string sql = "SELECT * FROM Products WHERE IsActive = 1 AND StockQuantity <= @MinStockAlertLevel";
+            const string sql = "SELECT * FROM Products WHERE IsDeleted = 0 AND IsActive = 1 AND StockQuantity <= @MinStockAlertLevel";
             var result = await Connection.QueryAsync<Product>(sql, new { MinStockAlertLevel = level }, Transaction).ConfigureAwait(false);
             return result.AsList();
         }

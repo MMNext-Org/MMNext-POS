@@ -61,6 +61,7 @@ namespace MMNextPOS.Infrastructure.Repositories
             const string sql = @"SELECT s.*, c.Name AS CustomerName 
                                     FROM Sales s 
                                     LEFT JOIN Customers c ON s.CustomerId = c.Id 
+                                    WHERE s.IsDeleted = 0
                                     ORDER BY s.SaleDate DESC 
                                     LIMIT @Count";
             var result = await Connection.QueryAsync<Sale>(sql, new { Count = count }, Transaction).ConfigureAwait(false);

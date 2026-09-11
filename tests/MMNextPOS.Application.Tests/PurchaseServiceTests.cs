@@ -24,6 +24,7 @@ namespace MMNextPOS.Application.Tests
         private readonly Mock<IStockMovementService> _stockMovementMock = new();
         private readonly Mock<IInvoiceNumberGenerator> _invoiceNumberMock = new();
         private readonly Mock<IOutstandingService> _outstandingMock = new();
+        private readonly Mock<IPaymentService> _paymentMock = new();
 
         private IPurchaseService CreateService()
         {
@@ -37,7 +38,8 @@ namespace MMNextPOS.Application.Tests
                 _auditServiceMock.Object,
                 _stockMovementMock.Object,
                 _invoiceNumberMock.Object,
-                _outstandingMock.Object);
+                _outstandingMock.Object,
+                _paymentMock.Object);
         }
 
         private void SetupHappyPath(int productId = 1, int initialStock = 0, int supplierId = 5, decimal price = 10m, string invoiceNo = "PUR-2026-000001")

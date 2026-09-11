@@ -12,5 +12,6 @@ namespace MMNextPOS.Application.Services
         Task<Expense> AddAsync(Expense expense, CancellationToken cancellationToken = default);
         Task UpdateAsync(Expense expense, CancellationToken cancellationToken = default);
         Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<Expense>> GetByDateRangeAsync(DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
     }
 }

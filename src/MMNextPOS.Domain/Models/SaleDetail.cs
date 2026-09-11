@@ -22,5 +22,24 @@ namespace MMNextPOS.Domain.Models
 
         [Range(0, double.MaxValue)]
         public decimal UnitPrice { get; set; }
+
+        public decimal DiscountAmount { get; set; }
+
+        public decimal TaxAmount { get; set; }
+
+        public decimal LineTotal { get; set; }
+
+        /// <summary>
+        /// Navigation property for the product
+        /// </summary>
+        public Product? Product { get; set; }
+
+        /// <summary>
+        /// Calculates the line total: Quantity * UnitPrice - DiscountAmount + TaxAmount
+        /// </summary>
+        public decimal CalculateLineTotal()
+        {
+            return Quantity * UnitPrice - DiscountAmount + TaxAmount;
+        }
     }
 }
