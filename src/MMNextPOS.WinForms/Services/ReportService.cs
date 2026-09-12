@@ -120,6 +120,33 @@ namespace MMNextPOS.WinForms.Services
             return stream.ToArray();
         }
 
+        // Spike: Minimal report generation methods
+        public async Task<byte[]> GenerateSaleReceiptAsync(int saleId, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Create report instance with DI services
+            var report = new SaleReceiptReport(
+                _serviceProvider.GetRequiredService<ISalesService>(),
+                _serviceProvider.GetRequiredService<IProductService>(),
+                _serviceProvider.GetRequiredService<ICustomerService>());
+
+            return await report.GenerateReceiptAsync(saleId, cancellationToken);
+        }
+
+        public async Task<byte[]> GenerateDailySaleSummaryAsync(DateTime reportDate, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Create report instance with DI services
+            var report = new DailySaleSummaryReport(
+                _serviceProvider.GetRequiredService<ISalesService>(),
+                _serviceProvider.GetRequiredService<IProductService>(),
+                _serviceProvider.GetRequiredService<ICustomerService>());
+
+            return await report.GenerateSummaryAsync(reportDate, cancellationToken);
+        }
+
         private XtraReport? LoadReportFromFile(string fileName)
         {
             try

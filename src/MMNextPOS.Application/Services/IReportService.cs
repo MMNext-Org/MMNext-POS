@@ -28,5 +28,9 @@ namespace MMNextPOS.Application.Services
 
         // Generic Report Generation
         Task<byte[]> GenerateReportAsync(string reportName, Dictionary<string, object> parameters, CancellationToken cancellationToken = default);
+
+        // Spike: Minimal report generation methods
+        Task<byte[]> GenerateSaleReceiptAsync(int saleId, CancellationToken cancellationToken = default);
+        Task<byte[]> GenerateDailySaleSummaryAsync(DateTime reportDate, CancellationToken cancellationToken = default);
     }
 }

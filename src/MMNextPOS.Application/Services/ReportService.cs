@@ -160,5 +160,17 @@ namespace MMNextPOS.Application.Services
 
             return System.Text.Encoding.UTF8.GetBytes(json);
         }
+
+        // Spike: Minimal report generation - not implemented in base Application layer
+        // WinForms layer provides the DevExpress implementation
+        public Task<byte[]> GenerateSaleReceiptAsync(int saleId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("DevExpress report generation only available in WinForms layer. Use WinFormsReportService.");
+        }
+
+        public Task<byte[]> GenerateDailySaleSummaryAsync(DateTime reportDate, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("DevExpress report generation only available in WinForms layer. Use WinFormsReportService.");
+        }
     }
 }
