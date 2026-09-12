@@ -51,8 +51,11 @@ namespace MMNextPOS.WinForms
 
         protected override async Task OnEditAsync(Expense entity)
         {
-            // TODO: Implement ExpenseEditForm
-            await Task.CompletedTask;
+            using var form = new ExpenseEditForm(entity);
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                await _service.UpdateAsync(entity, CancellationToken);
+            }
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)

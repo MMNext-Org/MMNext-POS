@@ -9,17 +9,17 @@ using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using Microsoft.Extensions.DependencyInjection;
+using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
-using MMNextPOS.Infrastructure.Repositories;
 
 namespace MMNextPOS.WinForms
 {
     /// <summary>
-    /// List page for Payments entity using the generic repository.
+    /// List page for Payments entity using the generic ListPage base class.
     /// </summary>
-    public partial class PaymentsListPage : ListPage<Payment, IPaymentRepository>
+    public partial class PaymentsListPage : ListPage<Payment, IPaymentService>
     {
-        public PaymentsListPage(IPaymentRepository service, IServiceProvider serviceProvider)
+        public PaymentsListPage(IPaymentService service, IServiceProvider serviceProvider)
             : base(service, serviceProvider)
         {
         }
@@ -32,17 +32,16 @@ namespace MMNextPOS.WinForms
             view.Columns.AddRange(new[]
             {
                 new GridColumn { FieldName = "Id", Caption = "ID", Width = 60, Visible = true },
-                new GridColumn { FieldName = "PaymentNo", Caption = "Payment #", Width = 150, Visible = true },
+                new GridColumn { FieldName = "PaymentNo", Caption = "Payment #", Width = 120, Visible = true },
                 new GridColumn { FieldName = "PaymentType", Caption = "Type", Width = 100, Visible = true },
+                new GridColumn { FieldName = "Method", Caption = "Method", Width = 100, Visible = true },
+                new GridColumn { FieldName = "Amount", Caption = "Amount", Width = 120, Visible = true, DisplayFormat = { FormatString = "c2", FormatType = DevExpress.Utils.FormatType.Numeric } },
+                new GridColumn { FieldName = "PaymentDate", Caption = "Date", Width = 120, Visible = true, DisplayFormat = { FormatString = "g", FormatType = DevExpress.Utils.FormatType.DateTime } },
+                new GridColumn { FieldName = "SaleId", Caption = "Sale", Width = 100, Visible = true },
+                new GridColumn { FieldName = "PurchaseId", Caption = "Purchase", Width = 100, Visible = true },
                 new GridColumn { FieldName = "CustomerId", Caption = "Customer", Width = 100, Visible = true },
                 new GridColumn { FieldName = "SupplierId", Caption = "Supplier", Width = 100, Visible = true },
-                new GridColumn { FieldName = "SaleId", Caption = "Sale", Width = 80, Visible = true },
-                new GridColumn { FieldName = "PurchaseId", Caption = "Purchase", Width = 80, Visible = true },
-                new GridColumn { FieldName = "PaymentDate", Caption = "Date", Width = 120, Visible = true, DisplayFormat = { FormatString = "g", FormatType = DevExpress.Utils.FormatType.DateTime } },
-                new GridColumn { FieldName = "Amount", Caption = "Amount", Width = 120, Visible = true, DisplayFormat = { FormatString = "c2", FormatType = DevExpress.Utils.FormatType.Numeric } },
-                new GridColumn { FieldName = "Method", Caption = "Method", Width = 100, Visible = true },
-                new GridColumn { FieldName = "Status", Caption = "Status", Width = 100, Visible = true },
-                new GridColumn { FieldName = "Notes", Caption = "Notes", Width = 200, Visible = true }
+                new GridColumn { FieldName = "Status", Caption = "Status", Width = 100, Visible = true }
             });
         }
 
@@ -53,8 +52,12 @@ namespace MMNextPOS.WinForms
 
         protected override async Task OnEditAsync(Payment entity)
         {
-            // TODO: Implement PaymentEditForm
-            await Task.CompletedTask;
+            // Open the payment edit form
+            using var form = new PaymentEditForm(entity);
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                await _service.UpdateAsync(entity, CancellationToken);
+            }
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)

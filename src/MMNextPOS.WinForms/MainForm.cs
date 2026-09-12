@@ -34,6 +34,7 @@ namespace MMNextPOS.WinForms
         private readonly IStockTransferRepository _stockTransferRepository;
         private readonly IExpenseService _expenseService;
         private readonly IExpenseTypeService _expenseTypeService;
+        private readonly IPaymentService _paymentService = null!;
         private readonly IPaymentRepository _paymentRepository;
         private readonly IPurchaseReturnRepository _purchaseReturnRepository;
 
@@ -119,6 +120,7 @@ namespace MMNextPOS.WinForms
                     IStockTransferRepository stockTransferRepository,
                     IExpenseService expenseService,
                     IExpenseTypeService expenseTypeService,
+                    IPaymentService paymentService,
                     IPaymentRepository paymentRepository,
                     IPurchaseReturnRepository purchaseReturnRepository,
                     ICategoryService categoryService,
@@ -154,6 +156,7 @@ namespace MMNextPOS.WinForms
             _stockTransferRepository = stockTransferRepository ?? throw new ArgumentNullException(nameof(stockTransferRepository));
             _expenseService = expenseService ?? throw new ArgumentNullException(nameof(expenseService));
             _expenseTypeService = expenseTypeService ?? throw new ArgumentNullException(nameof(expenseTypeService));
+            _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _purchaseReturnRepository = purchaseReturnRepository ?? throw new ArgumentNullException(nameof(purchaseReturnRepository));
 
@@ -271,7 +274,7 @@ namespace MMNextPOS.WinForms
             // Core modules
             _productsListPage = new ProductsListPage(_productService, _serviceProvider);
             _customersListPage = new CustomersListPage(_customerService, _serviceProvider);
-            _salesListPage = new SalesListPage(_salesService, _serviceProvider);
+            _salesListPage = new SalesListPage(_salesService, _saleTempService, _serviceProvider);
             _outstandingListPage = new OutstandingListPage(_outstandingService, _serviceProvider, _supplierService, _customerService);
 
             // Master data
@@ -301,7 +304,7 @@ namespace MMNextPOS.WinForms
             _stockTransfersListPage = new StockTransfersListPage(_stockTransferRepository, _serviceProvider);
             _expensesListPage = new ExpensesListPage(_expenseService, _serviceProvider);
             _expenseTypesListPage = new ExpenseTypesListPage(_expenseTypeService, _serviceProvider);
-            _paymentsListPage = new PaymentsListPage(_paymentRepository, _serviceProvider);
+            _paymentsListPage = new PaymentsListPage(_paymentService, _serviceProvider);
 
             // Reports
             _reportsViewerForm = new ReportsViewerForm(_reportService, _serviceProvider);

@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
@@ -14,6 +14,7 @@ using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.WinForms.Reports;
 
 namespace MMNextPOS.WinForms
 {
@@ -27,14 +28,17 @@ namespace MMNextPOS.WinForms
         private readonly ISalesService _salesService;
         private readonly IProductService _productService;
         private readonly ICustomerService _customerService;
+        private readonly IPaymentService _paymentService;
+        private readonly IInvoiceService _invoiceService;
 
         // UI Controls
         private LookUpEdit _customerLookup = null!;
         private DevExpress.XtraGrid.GridControl _detailsGrid = null!;
         private GridView _detailsView = null!;
         private LabelControl _totalLabel = null!;
-        private SimpleButton _printButton = null!;
         private BindingList<SaleDetailViewModel> _lineItems = new();
+        private DevExpress.XtraEditors.ComboBoxEdit _paymentMethodCombo = null!;
+        private SimpleButton _printButton = null!;
 
         // Cache for products
         private List<Product> _allProducts = new();
@@ -46,12 +50,16 @@ namespace MMNextPOS.WinForms
             ISaleTempService saleTempService,
             ISalesService salesService,
             IProductService productService,
-            ICustomerService customerService)
+            ICustomerService customerService,
+            IPaymentService paymentService,
+            IInvoiceService invoiceService)
         {
             _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
             _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
+            _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
+            _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
 
             InitializeComponent();
             this.Load += async (s, e) => await LoadReferenceDataAsync();
@@ -79,7 +87,7 @@ namespace MMNextPOS.WinForms
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));  // Total
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));  // Buttons
 
-            // Header panel (Customer)
+            // Header panel (Customer + Payment method)
             var headerPanel = new PanelControl
             {
                 Dock = DockStyle.Fill,
@@ -110,10 +118,25 @@ namespace MMNextPOS.WinForms
             _customerLookup.Properties.Columns.Add(new LookUpColumnInfo("Name", "Name"));
             _customerLookup.Properties.Columns.Add(new LookUpColumnInfo("Phone", "Phone"));
 
-            headerPanel.Controls.Add(customerLabel);
-            headerPanel.Controls.Add(_customerLookup);
+            var paymentLabel = new LabelControl
+            {
+                Text = "Payment:",
+                Location = new Point(420, 15),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(80, 25)
+            };
 
-            // Details Grid
+            _paymentMethodCombo = new DevExpress.XtraEditors.ComboBoxEdit
+            {
+                Location = new Point(510, 12),
+                Width = 180
+            };
+            _paymentMethodCombo.Properties.Items.AddRange(new[] { "Cash", "Card", "Store Credit", "Gift Card" });
+            _paymentMethodCombo.Text = "Cash";
+
+            headerPanel.Controls.Add(_paymentMethodCombo);
+
+// Details Grid
             _detailsGrid = new DevExpress.XtraGrid.GridControl
             {
                 Dock = DockStyle.Fill
@@ -324,9 +347,15 @@ namespace MMNextPOS.WinForms
                 SetWaitCursor(true);
                 _printButton.Enabled = false;
 
-                // Generate receipt using the draft data
-                var receipt = GenerateReceiptText();
-                XtraMessageBox.Show(this, receipt, $"Receipt - Sale #{_currentDraft.Id}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // Generate receipt using report service
+                var report = new SaleReceiptReport(_salesService, _productService, _customerService);
+                await report.PopulateAsync(_currentDraft.Id, CancellationToken);
+                using var stream = new MemoryStream();
+                report.ExportToPdf(stream);
+                var receiptBytes = stream.ToArray();
+                // Show receipt in a message box (simplified for read-only form)
+                var receiptText = await GenerateReceiptTextAsync(_currentDraft.Id);
+                XtraMessageBox.Show(this, receiptText, $"Receipt - Sale #{_currentDraft.Id}", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -337,6 +366,30 @@ namespace MMNextPOS.WinForms
                 SetWaitCursor(false);
                 _printButton.Enabled = true;
             }
+        }
+
+        private async Task<string> GenerateReceiptTextAsync(int saleId)
+        {
+            var report = new SaleReceiptReport(_salesService, _productService, _customerService);
+            await report.PopulateAsync(saleId, CancellationToken);
+            using var stream = new MemoryStream();
+            report.ExportToPdf(stream);
+            // Generate simple text representation
+            var lines = new List<string>
+            {
+                "MMNext POS - Receipt",
+                "====================",
+                $"Sale #: {saleId}",
+                $"Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+                $"Customer: Walk-in",
+                "----------------------------"
+            };
+            // We don't have line items in this context, so just show total
+            lines.Add("----------------------------");
+            lines.Add($"Total: {_currentDraft?.NetAmount:C2}");
+            lines.Add("====================");
+            lines.Add("Thank you for your purchase!");
+            return string.Join(Environment.NewLine, lines);
         }
 
         private string GenerateReceiptText()

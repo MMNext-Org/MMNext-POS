@@ -678,4 +678,82 @@ namespace MMNextPOS.WinForms
 
         #endregion
     }
+
+    /// <summary>
+    /// Dialog for selecting a product from a list of matches.
+    /// </summary>
+    public class ProductSelectorForm : XtraForm
+    {
+        public Product? SelectedProduct { get; private set; }
+
+        private readonly DevExpress.XtraGrid.GridControl _grid = new();
+        private readonly GridView _view = new();
+        private readonly SimpleButton _okButton = new();
+        private readonly SimpleButton _cancelButton = new();
+
+        public ProductSelectorForm(IEnumerable<Product> products)
+        {
+            this.Text = "Select Product";
+            this.Size = new Size(700, 400);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                Padding = new Padding(10)
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+
+            _grid.Dock = DockStyle.Fill;
+            _view.GridControl = _grid;
+            _view.OptionsBehavior.Editable = false;
+            _view.OptionsSelection.MultiSelect = false;
+            _view.Columns.AddRange(new[]
+            {
+                new DevExpress.XtraGrid.Columns.GridColumn { FieldName = "Id", Caption = "Product #", Width = 80 },
+                new DevExpress.XtraGrid.Columns.GridColumn { FieldName = "Name", Caption = "Name", Width = 250 },
+                new DevExpress.XtraGrid.Columns.GridColumn { FieldName = "Sku", Caption = "SKU", Width = 120 },
+                new DevExpress.XtraGrid.Columns.GridColumn { FieldName = "Price", Caption = "Price", Width = 100, DisplayFormat = { FormatString = "c2" } },
+                new DevExpress.XtraGrid.Columns.GridColumn { FieldName = "StockQuantity", Caption = "Stock", Width = 80 }
+            });
+            _grid.DataSource = products.ToList();
+            _grid.MainView = _view;
+            _grid.ViewCollection.Add(_view);
+            _view.DoubleClick += (s, e) => { if (_view.FocusedRowHandle >= 0) AcceptSelection(); };
+
+            var buttonPanel = new PanelControl { Dock = DockStyle.Fill, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            _okButton.Text = "Select";
+            _okButton.Location = new Point(10, 10);
+            _okButton.Width = 100;
+            _okButton.Height = 30;
+            _okButton.Click += (s, e) => AcceptSelection();
+
+            _cancelButton.Text = "Cancel";
+            _cancelButton.Location = new Point(120, 10);
+            _cancelButton.Width = 100;
+            _cancelButton.Height = 30;
+            _cancelButton.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
+
+            buttonPanel.Controls.Add(_okButton);
+            buttonPanel.Controls.Add(_cancelButton);
+
+            layout.Controls.Add(_grid, 0, 0);
+            layout.Controls.Add(buttonPanel, 0, 1);
+            this.Controls.Add(layout);
+        }
+
+        private void AcceptSelection()
+        {
+            var row = _view.GetRow(_view.FocusedRowHandle) as Product;
+            if (row != null)
+            {
+                SelectedProduct = row;
+                this.DialogResult = DialogResult.OK;
+            }
+        }
+    }
 }
