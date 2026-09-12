@@ -373,12 +373,12 @@ Phase B (Data Model)     ████████████ 100%  ✅ Complete
 Phase C (Repo Layer)     ████████     80%   In Progress
 Phase D (App Layer)      ████         40%   In Progress
 Phase E (Presentation)   ████████████ 100%  ✅ Complete
-Phase F (Sales)          ██           15%   Not Started
-Phase G (Contacts/Purch) ██           10%   Not Started
+Phase F (Sales)          ████████           35%   Partially Implemented
+Phase G (Contacts/Purch) ██████               25%   Partially Implemented
 Phase H (Inventory/Wh)   ██           10%   Not Started
 Phase I (Reports/Print)  ██           0%    Not Started
-Phase J (Admin)          ██           5%    Not Started
-Phase K (QA)             ██           0%    Not Started
+Phase J (Admin)          ████████           35%   Partially Implemented
+Phase K (QA)             ████               25%   Partially Implemented
 Phase L (Release)        ██           0%    Not Started
 
 Overall: ~35% to full FusionPOS parity
@@ -394,3 +394,5 @@ Overall: ~35% to full FusionPOS parity
 4. **Phase F**: Complete Sales module (History, Returns, Hold, Live Edit)
 5. **Phase I**: Implement XtraReport definitions for ~96 reports
 6. **Phase L**: Create WiX MSI installer
+7. **Phase J (Admin)**: Turnstile CAPTCHA on LoginForm + SuperAdminForm (✅ Implemented via WebView2 + CloudflareTurnstileVerificationService)
+8. **Phase K (QA)**: CI/CD pipeline with Docker MySQL validation (✅ GitHub Actions workflow at `.github/workflows/ci.yml` + `docker-compose.yml` + `run-docker-tests.ps1`)

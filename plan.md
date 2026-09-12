@@ -90,9 +90,9 @@ This replaces the previous “create the foundation” step because the foundati
 
 **Exit criteria:** Schema initialization is idempotent, transactional workflows roll back correctly, and a representative legacy dataset can be mapped without data loss assumptions.
 
-**Status (2026-09-07): Items 1–4 complete.**
-- Migration/version tracking: `IMigrationRunner` + 8 ordered migrations `000_BaselineSchemaVersions` through `007_AddMissingFKs` are idempotent, version-tracked, and checksum-verified. The 8th migration, `008_InvoiceSequences`, has also been added (Phase 2 precursor — see Phase 2 status note below). All 12 migration tests (now 13 with the Phase 2 `MigrationRunner_InvoiceSequencesTable_Exists_AfterFullRun` test) pass via a shared xUnit CollectionFixture that runs a single MySQL testcontainer per test session.
-- 148 application tests passing.
+**Status (2026-09-08): Items 1–4 complete.**
+- Migration/version tracking: `IMigrationRunner` + ordered migrations `000_BaselineSchemaVersions` through `009_AddInvoiceNoToSales` (9 tracked in HEAD `000`–`008`, 10 with `009` in the current working tree) are idempotent, version-tracked, and checksum-verified. The Phase 2 precursors `008_InvoiceSequences` and `009_AddInvoiceNoToSales` are committed at HEAD and the working tree respectively. The 13 `MigrationIdempotenceTests` `[Fact]`s pass against the `000`–`009` chain (version `"009"`, 10 skipped, 0 failed) via a shared xUnit CollectionFixture running a single MySQL testcontainer per test session.
+- Application tests: count not audited in this pass (needs verification); see `docs/baseline/BUILD-TEST-BASELINE.md`.
 
 ### Phase 2 — Sales MVP Hardening
 
@@ -104,20 +104,15 @@ This replaces the previous “create the foundation” step because the foundati
 
 **Exit criteria:** A cashier can complete, hold, resume, print, return, and void a sale through the UI with correct stock, payment, audit, and rollback behavior.
 
-**Status (2026-09-07): Partial.**
-- Service-layer slice (approved plan) was implemented in a 2026-09-07 session and verified to pass all 13 migration tests plus 160/160 application tests, but the working tree was reverted by an external sync before the session ended. The following artefacts survived and are in the tree:
-  - `src/MMNextPOS.Infrastructure/Migrations/008_InvoiceSequences.sql` — atomic per-year invoice-number sequence table.
-  - `src/MMNextPOS.Application/Services/IInvoiceNumberGenerator.cs`, `DbInvoiceNumberGenerator.cs`, `InvoiceNumberFormat.cs` — atomic `INSERT ... ON DUPLICATE KEY UPDATE LastValue = LastValue + 1` invoice number generator.
-  - `src/MMNextPOS.Infrastructure/MigrationRunner.cs` — registered migration `008` in the `knownMigrations` array.
-  - `tests/MMNextPOS.Infrastructure.Tests/MigrationIdempotenceTests.cs` — added `MigrationRunner_InvoiceSequencesTable_Exists_AfterFullRun` and bumped the existing test assertions from `007` to `008` migration count.
-  - `tests/MMNextPOS.Infrastructure.Tests/MySqlContainerFixture.cs` — xUnit CollectionFixture that shares a single MySQL container across the migration tests (introduced to stop testhost memory crashes from concurrent testcontainers).
-- The following service-layer changes were lost and must be re-applied:
-  - `src/MMNextPOS.Application/Services/SalesService.cs` — replace the read-then-write stock path with `IProductRepository.TryDecrementStockAsync`, add stock movement creation, auto-generated invoice number, customer outstanding entry for credit sales, audit-inside-transaction, and duplicate-line / rounding rules.
-  - `src/MMNextPOS.Application/Services/IStockMovementService.cs` + `StockMovementService.cs` — new abstraction (the files are missing from the tree).
-  - `src/MMNextPOS.Infrastructure/Repositories/ProductRepository.cs` + `IProductRepository.cs` — add the atomic `TryDecrementStockAsync(int productId, int quantity, int adjustedBy, string reason, CancellationToken)` that issues `UPDATE Products SET StockQuantity = StockQuantity - @Quantity WHERE Id = @ProductId AND StockQuantity >= @Quantity` and returns the affected row count.
-  - `src/MMNextPOS.Application/DependencyInjection.cs` — register the new `IStockMovementService`, `IInvoiceNumberGenerator`, and `IOutstandingService` services.
-  - `tests/MMNextPOS.Application.Tests/SalesServiceTests.cs` — extend the test class to use the new constructor and add 12 new tests covering aggregation, rounding, atomicity, stock movement, invoice auto-generation, customer outstanding for credit/cash sales, audit-inside-transaction, and the `AddSaleDetailAsync` delegation contract.
-- See `memory/phase-2-status-2026-09-07.md` for the full revert report and the next-session checklist.
+**Status: Implemented—needs QA.**
+- The Phase 2 sales-hardening slice is committed across the phase2 / phase2b / phase3 commit series and continues in the current working tree:
+  - `SalesService.CreateSaleAsync` consumes `IProductRepository.TryDecrementStockAsync` for atomic stock reservation, emits an audit record inside the `IUnitOfWork` transaction, aggregates duplicate lines (summing `Quantity`, `DiscountAmount`, `TaxAmount`), rounds with `MidpointRounding.ToEven`, computes `LineTotal`, and raises the sale `InvoiceNo` via `IInvoiceNumberGenerator` (per-year `InvoiceSequences` table).
+  - `ISalesService` now exposes `ProcessReturnAsync`, `VoidSaleAsync`, `RoundLines`, and `AggregateDuplicateLines`; `IStockMovementService`/`StockMovementService` emit `Purchase`/`Return`/`Void` movements.
+  - `IInvoiceNumberGenerator` + `DbInvoiceNumberGenerator` + `InvoiceNumberFormat` give atomic per-year numbering, and `IOutstandingService` records `CustomerOutstanding` for credit sales.
+- `IProductRepository.TryDecrementStockAsync` (guarded `UPDATE Products SET StockQuantity = StockQuantity - @Quantity WHERE Id = @Id AND StockQuantity >= @Quantity`, returns affected rows) is present in HEAD.
+- `SalesService.VoidSaleAsync` and `ProcessReturnAsync` are implemented in the **current working tree** (`src/MMNextPOS.Application/Services/SalesService.cs`) and exercised by the extended `SalesServiceTests`; the dedicated MigrationIdempotenceTests assert the `000`–`009` (10-migration) chain. (Note: these two methods are in the working tree; the `009` migration is also in the working tree. Both await commit to HEAD.)
+- Current migration count: **10 migrations (000–009)**, all idempotent, version `"009"`.
+- See `docs/baseline/BUILD-TEST-BASELINE.md` and `docs/parity/Sales-Hardening-Parity.md` (to be created) for the scenario catalogue.
 
 ### Phase 3 — Purchasing, Contacts, Payments, and Expenses
 
