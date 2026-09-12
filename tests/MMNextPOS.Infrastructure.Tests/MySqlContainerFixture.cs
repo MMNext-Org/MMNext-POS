@@ -17,30 +17,47 @@ namespace MMNextPOS.Infrastructure.Tests
     /// duration of the test collection. This avoids resource exhaustion from spinning
     /// up many parallel MySQL containers (the heavy migration 007 alone runs 282
     /// statements, so each new container adds significant memory pressure).
+    /// Supports using an external MySQL via MMNEXTPOS_CONNECTION_STRING env var (CI).
     /// </summary>
     public sealed class MySqlContainerFixture : IAsyncLifetime
     {
-        public MySqlContainer Container { get; private set; } = null!;
+        public MySqlContainer? Container { get; private set; }
         public IConfiguration Configuration { get; private set; } = null!;
         public IServiceProvider ServiceProvider { get; private set; } = null!;
         public string ConnectionString { get; private set; } = string.Empty;
 
         public async Task InitializeAsync()
         {
-            Container = new MySqlBuilder()
-                .WithDatabase("mmnextpos_migration_test")
-                .WithUsername("test")
-                .WithPassword("test")
-                .WithImage("mysql:8.0")
-                .WithCleanUp(true)
-                .Build();
-            await Container.StartAsync();
-
-            ConnectionString = Container.GetConnectionString();
-            // MySqlConnector requires "Allow User Variables=true" for SET @var / PREPARE statements
-            if (!ConnectionString.Contains("Allow User Variables", StringComparison.OrdinalIgnoreCase))
+            // Option A: Honor external MySQL connection string if provided (CI)
+            var external = Environment.GetEnvironmentVariable("MMNEXTPOS_CONNECTION_STRING");
+            if (!string.IsNullOrWhiteSpace(external))
             {
-                ConnectionString += ";Allow User Variables=true";
+                ConnectionString = external;
+                // MySqlConnector requires "Allow User Variables=true" for SET @var / PREPARE statements
+                if (!ConnectionString.Contains("Allow User Variables", StringComparison.OrdinalIgnoreCase))
+                {
+                    ConnectionString += ";Allow User Variables=true";
+                }
+                Container = null; // No container to manage
+            }
+            else
+            {
+                // Fallback: spin up local Testcontainers MySQL
+                Container = new MySqlBuilder()
+                    .WithDatabase("mmnextpos_migration_test")
+                    .WithUsername("test")
+                    .WithPassword("test")
+                    .WithImage("mysql:8.0")
+                    .WithCleanUp(true)
+                    .Build();
+                await Container.StartAsync();
+
+                ConnectionString = Container.GetConnectionString();
+                // MySqlConnector requires "Allow User Variables=true" for SET @var / PREPARE statements
+                if (!ConnectionString.Contains("Allow User Variables", StringComparison.OrdinalIgnoreCase))
+                {
+                    ConnectionString += ";Allow User Variables=true";
+                }
             }
 
             Configuration = new ConfigurationBuilder()
