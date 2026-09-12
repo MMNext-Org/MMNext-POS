@@ -4,13 +4,14 @@ using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Web.WebView2.WinForms;
 using MMNextPOS.Application.Services;
 using MMNextPOS.WinForms;
 
 namespace MMNextPOS.WinForms
 {
     /// <summary>
-    /// Login form with DevExpress styling and async authentication.
+    /// Login form with DevExpress styling, Turnstile bot protection, and async authentication.
     /// </summary>
     public partial class LoginForm : AsyncFormBase
     {
@@ -18,6 +19,7 @@ namespace MMNextPOS.WinForms
         private readonly IUserSession _userSession;
         private readonly IUserRoleService _userRoleService;
         private readonly IRoleService _roleService;
+        private readonly ITurnstileVerificationService _turnstileService;
 
         // UI Controls
         private PanelControl _mainPanel = null!;
@@ -31,18 +33,103 @@ namespace MMNextPOS.WinForms
         private LabelControl _versionLabel = null!;
         private LabelControl _statusLabel = null!;
 
+        // Turnstile WebView2
+        private WebView2 _turnstileWebView = null!;
+        private string _turnstileToken = string.Empty;
+        private bool _turnstileCompleted = false;
+
         public LoginForm(
             IUserService userService,
             IUserSession userSession,
             IUserRoleService userRoleService,
-            IRoleService roleService)
+            IRoleService roleService,
+            ITurnstileVerificationService turnstileService)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
             _userRoleService = userRoleService ?? throw new ArgumentNullException(nameof(userRoleService));
             _roleService = roleService ?? throw new ArgumentNullException(nameof(roleService));
+            _turnstileService = turnstileService ?? throw new ArgumentNullException(nameof(turnstileService));
 
             InitializeComponent();
+            _ = InitializeTurnstileAsync();
+        }
+
+        private async Task InitializeTurnstileAsync()
+        {
+            try
+            {
+                // Ensure WebView2 runtime is available
+                await _turnstileWebView.EnsureCoreWebView2Async(null);
+
+                // Build Turnstile widget HTML with SiteKey from config
+                var siteKey = GetSiteKeyFromConfig();
+
+                var html = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <script src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer></script>
+    <style>
+        body {{ margin: 0; padding: 10px; font-family: 'Segoe UI', sans-serif; background: #f8f9fa; }}
+        .container {{ display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }}
+        .turnstile-box {{ margin-bottom: 15px; }}
+        .status {{ font-size: 12px; color: #666; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='turnstile-box'>
+            <div class='cf-turnstile' data-sitekey='{siteKey}' data-callback='turnstileCallback' data-theme='light'></div>
+        </div>
+        <div class='status' id='status'>Verifying...</div>
+    </div>
+    <script>
+        function turnstileCallback(token) {{
+            window.chrome.webview.postMessage(JSON.stringify({{ action: 'turnstile_token', token: token }}));
+            document.getElementById('status').innerText = 'Verification complete';
+            document.getElementById('status').style.color = '#28a745';
+        }}
+    </script>
+</body>
+</html>";
+
+                _turnstileWebView.CoreWebView2.NavigateToString(html);
+                _turnstileWebView.WebMessageReceived += OnTurnstileMessageReceived;
+            }
+            catch (Exception ex)
+            {
+                // WebView2 not available - fall back to simplified verification
+                System.Diagnostics.Debug.WriteLine($"Turnstile WebView2 init failed: {ex.Message}");
+            }
+        }
+
+        private string GetSiteKeyFromConfig()
+        {
+            // In a real app, this would come from configuration
+            // For now, return placeholder
+            return "YOUR_SITE_KEY";
+        }
+
+        private void OnTurnstileMessageReceived(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                var message = e.WebMessageAsJson;
+                var doc = System.Text.Json.JsonDocument.Parse(message);
+                if (doc.RootElement.TryGetProperty("action", out var actionProp) &&
+                    actionProp.GetString() == "turnstile_token" &&
+                    doc.RootElement.TryGetProperty("token", out var tokenProp))
+                {
+                    _turnstileToken = tokenProp.GetString() ?? string.Empty;
+                    _turnstileCompleted = true;
+                }
+            }
+            catch
+            {
+                // Ignore parsing errors
+            }
         }
 
         private void InitializeComponent()
@@ -101,6 +188,24 @@ namespace MMNextPOS.WinForms
                 BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
             };
             _mainPanel.Controls.Add(spacer1);
+
+            // Turnstile WebView2 (Bot protection)
+            _turnstileWebView = new WebView2
+            {
+                Dock = DockStyle.Top,
+                Height = 120,
+                Visible = true
+            };
+            _mainPanel.Controls.Add(_turnstileWebView);
+
+            // Spacer after Turnstile
+            var turnstileSpacer = new PanelControl
+            {
+                Dock = DockStyle.Top,
+                Height = 15,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
+            };
+            _mainPanel.Controls.Add(turnstileSpacer);
 
             // Username label
             var usernameLabel = new LabelControl
@@ -296,6 +401,25 @@ namespace MMNextPOS.WinForms
             {
                 ShowStatus("Please enter your password", true);
                 _passwordEdit.Focus();
+                return;
+            }
+
+            // Verify Turnstile token (bot protection)
+            if (string.IsNullOrWhiteSpace(_turnstileToken) || !_turnstileCompleted)
+            {
+                ShowStatus("Please complete the security verification", true);
+                return;
+            }
+
+            var isValid = await _turnstileService.VerifyAsync(_turnstileToken);
+            if (!isValid)
+            {
+                ShowStatus("Security verification failed. Please try again.", true);
+                // Reset Turnstile for retry
+                _turnstileToken = string.Empty;
+                _turnstileCompleted = false;
+                await Task.Delay(500);
+                await InitializeTurnstileAsync();
                 return;
             }
 
