@@ -242,7 +242,8 @@ LIMIT @Limit";
                 new { Version = "007", FileName = "007_AddMissingFKs.sql", Description = "Add Missing Foreign Keys for Audit Fields" },
                 new { Version = "008", FileName = "008_InvoiceSequences.sql", Description = "Add InvoiceSequences table for atomic per-year invoice numbering" },
                 new { Version = "009", FileName = "009_AddInvoiceNoToSales.sql", Description = "Add InvoiceNo column to Sales table for auto-generated invoice numbers" },
-                new { Version = "010", FileName = "010_ReturnSequences.sql", Description = "Add ReturnSequences table for atomic per-year return numbering" }
+                new { Version = "010", FileName = "010_ReturnSequences.sql", Description = "Add ReturnSequences table for atomic per-year return numbering" },
+                new { Version = "011", FileName = "011_AddCustomerTypeToCustomer.sql", Description = "Add CustomerType column to Customers table for tax jurisdiction lookup" }
             };
 
             foreach (var known in knownMigrations)
