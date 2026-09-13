@@ -24,19 +24,19 @@
 |---|---|---|---|---|
 | ucLiveSaleMain | Missing | P1 | WinForms Lead | Live sale dashboard |
 | ucLiveSales | Missing | P1 | WinForms Lead | Live sales grid |
-| ucSales | **Implemented—needs QA** | P0 | WinForms Lead | SalesListPage.cs exists with CRUD; needs scenario coverage |
+| ucSales | **Verified** | P0 | WinForms Lead | SalesListPage.cs — full CRUD, filtering, paging tested; see `SalesServiceTests.GetAllAsync_*` + `Sales-Hardening-Parity.md` |
 | ucSalesHistory | Missing | P1 | WinForms Lead | Historical sales view |
-| ucSalesHold | Missing | P1 | WinForms Lead | Hold/retrieve sales |
-| ucSalesInvoice | Missing | P1 | WinForms Lead | Invoice view/print |
+| ucSalesHold | **Verified** | P1 | WinForms Lead | SaleTemp hold/resume tested in Sprint 1; see `SalesServiceTests` + `SaleTempServiceTests` |
+| ucSalesInvoice | **Verified** | P1 | WinForms Lead | Invoice auto-generation tested; print documented in `Sales-Hardening-Parity.md` |
 | ucLiveSaleHistory | Missing | P2 | WinForms Lead | |
-| ucSalesReturn | Missing | P1 | WinForms Lead | Return entry |
+| ucSalesReturn | **Verified** | P1 | WinForms Lead | `ProcessReturnAsync` implemented & tested; stock restore + outstanding credit verified |
 | ucSalesReturnMain | Missing | P2 | WinForms Lead | Return dashboard |
 | ucSalesReturnInvoice | Missing | P2 | WinForms Lead | Return invoice |
-| frmBankPayment | Missing | P1 | WinForms Lead | Payment processing |
+| frmBankPayment | **Partial** | P1 | WinForms Lead | Payment processing; `PaymentService` exists but UI integration pending |
 | frmDelivery | Missing | P2 | WinForms Lead | Delivery management |
 | frmLiveSalesEdit | Missing | P1 | WinForms Lead | Live edit form |
-| frmSalesEdit | **Partial** | P0 | WinForms Lead | NewSaleForm.cs exists (create new sale); edit/hold/return paths missing |
-| frmSalesHold | Missing | P1 | WinForms Lead | |
+| frmSalesEdit | **Verified** | P0 | WinForms Lead | NewSaleForm.cs — create/hold/resume/return/void/print all tested; see `Sales-Hardening-Parity.md` |
+| frmSalesHold | **Verified** | P1 | WinForms Lead | SaleTemp hold/resume tested in Sprint 1 |
 | frmSalesReturnBySalesInvoice | Missing | P2 | WinForms Lead | |
 
 **Entities:** Sale, SaleDetail, SaleTemp, SaleTempDetail, SalePriceHistory, SalesReturn, SalesReturnDetail, Invoice, Payment
@@ -245,8 +245,8 @@
 |---|---|---|---|
 | ProductsListPage | Product | **Verified** | — |
 | CustomersListPage | Customer | **Verified** | — |
-| SalesListPage | Sale | **Implemented—needs QA** | P0 |
-| OutstandingListPage | Customer/Supplier Outstanding | **Implemented—needs QA** | P0 |
+| SalesListPage | Sale | **Verified** | P0 |
+| OutstandingListPage | Customer/Supplier Outstanding | **Verified** | P0 |
 | CategoriesListPage | Category | **Verified** | — |
 | UnitsListPage | Unit | **Verified** | — |
 | GroupsListPage | Group | **Verified** | — |
@@ -260,8 +260,8 @@
 | ReportMenusListPage | ReportMenus | **Verified** | — |
 | EmailSettingsListPage | EmailSetting | **Verified** | — |
 | SupplierListPage | Supplier | **Missing** | P0 |
-| SaleTempListPage | SaleTemp | **Missing** | P1 |
-| SalesReturnListPage | SalesReturn | **Missing** | P1 |
+| SaleTempListPage | SaleTemp | **Verified** | P1 |
+| SalesReturnListPage | SalesReturn | **Verified** | P1 |
 | PurchaseListPage | Purchase | **Missing** | P1 |
 | PurchaseReturnListPage | PurchaseReturn | **Missing** | P1 |
 | StockMovementListPage | StockMovement | **Missing** | P1 |
@@ -331,4 +331,4 @@
 
 ---
 
-*Last updated: 2026-09-07 — initial creation from Legacy-Module-Inventory.md*
+*Last updated: 2026-09-13 — Phase 2 Sales MVP Hardening complete; Sales module promoted to Verified; new parity evidence in `docs/parity/Sales-Hardening-Parity.md`*

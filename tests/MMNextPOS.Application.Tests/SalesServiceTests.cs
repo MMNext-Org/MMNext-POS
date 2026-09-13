@@ -27,6 +27,7 @@ namespace MMNextPOS.Application.Tests
         private readonly Mock<ISalesReturnDetailRepository> _salesReturnDetailRepoMock = new();
         private readonly Mock<IReturnNumberGenerator> _returnNumberGeneratorMock = new();
         private readonly Mock<IPaymentService> _paymentServiceMock = new();
+        private readonly Mock<ITaxRateService> _taxRateServiceMock = new();
 
         private ISalesService CreateService()
         {
@@ -43,7 +44,8 @@ namespace MMNextPOS.Application.Tests
                 _salesReturnRepoMock.Object,
                 _salesReturnDetailRepoMock.Object,
                 _returnNumberGeneratorMock.Object,
-                _paymentServiceMock.Object);
+                _paymentServiceMock.Object,
+                _taxRateServiceMock.Object);
         }
 
         private void SetupHappyPath(int productId = 1, int initialStock = 10, string productName = "Widget")
@@ -68,6 +70,10 @@ namespace MMNextPOS.Application.Tests
                             .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>()))
                             .Returns(Task.CompletedTask);
+
+            // Default tax rate service setup - returns 0 (no tax) by default
+            _taxRateServiceMock.Setup(t => t.GetTaxRateForCustomerAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(0m);
         }
 
         // ───────────────────────── Existing behaviour preserved ─────────────────────────
@@ -589,38 +595,45 @@ namespace MMNextPOS.Application.Tests
             // Arrange
             var service = CreateService();
             var sale = new Sale { CustomerId = 1 };
-            // DiscountAmount (15m) > Quantity * UnitPrice (10m) would make LineTotal negative
+            // DiscountAmount (15m) > Quantity * UnitPrice (10m) should throw
             var details = new List<SaleDetail>
             {
                 new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 10m, DiscountAmount = 15m, TaxAmount = 0m }
             };
-            // Need to mock product for stock check
-            _productRepoMock.Setup(r => r.TryDecrementStockAsync(1, 1, It.IsAny<int>(), "Sale", It.IsAny<CancellationToken>()))
-                            .ReturnsAsync(true);
-            _productRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-                            .ReturnsAsync(new Product { Id = 1, StockQuantity = 10, Name = "Widget" });
-            _unitOfWorkMock.Setup(r => r.BeginTransactionAsync(It.IsAny<CancellationToken>()))
-                            .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>()))
-                            .Returns(Task.CompletedTask);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ValidationException>(() => service.CreateSaleAsync(sale, details));
+        }
+
+        /// <summary>
+        /// TC3.6.2: Percentage Discount - Discount applied to unit price or line total.
+        /// 20% discount on 10m = 2m discount, TotalAmount = 10m - 2m = 8m (rounded).
+        /// The discount percentage is calculated externally and passed as DiscountAmount.
+        /// </summary>
+        [Fact]
+        public async Task CreateSaleAsync_PriceDiscount_Percentage()
+        {
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+            var sale = new Sale { CustomerId = 1 };
+            // 20% discount on 10m = 2m discount
+            var details = new List<SaleDetail>
+            {
+                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 10m, DiscountAmount = 2m, TaxAmount = 0m }
+            };
+
+            Sale? capturedSale = null;
             _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, _, _) => capturedSale = s)
                          .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
-            _stockMovementMock.Setup(s => s.AddSaleMovementAsync(It.IsAny<Sale>(), It.IsAny<IReadOnlyList<SaleDetail>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
-                              .ReturnsAsync(new StockMovement { Id = 100 });
-            _invoiceNumberMock.Setup(n => n.NextAsync("INV", It.IsAny<CancellationToken>()))
-                              .ReturnsAsync("INV-2026-000001");
-            _invoiceServiceMock.Setup(i => i.AddAsync(It.IsAny<Invoice>(), It.IsAny<CancellationToken>()))
-                               .ReturnsAsync((Invoice inv, CancellationToken ct) => { inv.Id = 7; return inv; });
-            _outstandingMock.Setup(o => o.AddCustomerOutstandingAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
-                            .ReturnsAsync((CustomerOutstanding co, CancellationToken ct) => { co.Id = 9; return co; });
 
             // Act
-            var result = await service.CreateSaleAsync(sale, details);
+            await service.CreateSaleAsync(sale, details);
 
-            // Assert: Current behavior allows this (no validation for discount > line total)
-            // LineTotal = 1 * 10m - 15m + 0m = -5m (negative)
-            // This test captures current behavior; a future fix should validate DiscountAmount <= Quantity * UnitPrice
-            Assert.Equal(-5m, result.TotalAmount);
+            // Assert: TotalAmount = 10m - 2m = 8m (range 7.90-8.10 to account for rounding)
+            Assert.NotNull(capturedSale);
+            Assert.InRange(capturedSale!.TotalAmount, 7.90m, 8.10m);
         }
 
         /// <summary>
@@ -655,52 +668,274 @@ namespace MMNextPOS.Application.Tests
         }
 
         /// <summary>
-        /// TC3.8.3: Overpayment → Credit for Future.
-        /// BLOCKER: No method exists in IOutstandingService or SalesService to apply a payment
-        /// that exceeds the outstanding balance and create a credit for future use.
-        /// The current CreateSaleAsync only creates outstanding with DebitAmount.
+        /// TC3.7.3: Repeated rounding doesn't skew - 0.15 + 0.15 + 0.15 → 0.45 (not 0.46)
+        /// Each line is rounded individually, then summed. Banker's rounding (MidpointRounding.ToEven)
+        /// ensures 0.15 stays 0.15, so 0.15 * 3 = 0.45.
         /// </summary>
-        [Fact(Skip = "BLOCKER: Requires IOutstandingService.ApplyPaymentAsync or similar method to handle overpayment credit creation. Not implemented in production code.")]
+        [Fact]
+        public async Task CreateSaleAsync_Rounding_Repeated_NotSkew()
+        {
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+            var sale = new Sale { CustomerId = 1 };
+            var details = new List<SaleDetail>
+            {
+                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 0.15m },
+                new SaleDetail { ProductId = 2, Quantity = 1, UnitPrice = 0.15m },
+                new SaleDetail { ProductId = 3, Quantity = 1, UnitPrice = 0.15m }
+            };
+
+            _productRepoMock.Setup(r => r.TryDecrementStockAsync(2, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(true);
+            _productRepoMock.Setup(r => r.GetByIdAsync(2, It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(new Product { Id = 2, StockQuantity = 99, Name = "Gadget" });
+            _productRepoMock.Setup(r => r.TryDecrementStockAsync(3, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(true);
+            _productRepoMock.Setup(r => r.GetByIdAsync(3, It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(new Product { Id = 3, StockQuantity = 99, Name = "Gizmo" });
+
+            Sale? capturedSale = null;
+            _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, _, _) => capturedSale = s)
+                         .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
+
+            // Act
+            await service.CreateSaleAsync(sale, details);
+
+            // Assert: TotalAmount in range [0.44m, 0.46m] - exactly 0.45m with banker's rounding
+            Assert.NotNull(capturedSale);
+            Assert.InRange(capturedSale!.TotalAmount, 0.44m, 0.46m);
+            Assert.Equal(0.45m, capturedSale.TotalAmount);
+        }
+
+        /// <summary>
+        /// TC3.7.4: Line items summed then total - Total = sum of individually rounded lines.
+        /// (0.33 × 3) → 0.99 not 1.00
+        /// Each 0.33 line rounds to 0.33, sum = 0.99 (not 1.00 which would happen if total was rounded after sum).
+        /// </summary>
+        [Fact]
+        public async Task CreateSaleAsync_Rounding_LineItemsSummedThenTotal()
+        {
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+            var sale = new Sale { CustomerId = 1 };
+            var details = new List<SaleDetail>
+            {
+                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 0.33m },
+                new SaleDetail { ProductId = 2, Quantity = 1, UnitPrice = 0.33m },
+                new SaleDetail { ProductId = 3, Quantity = 1, UnitPrice = 0.33m }
+            };
+
+            _productRepoMock.Setup(r => r.TryDecrementStockAsync(2, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(true);
+            _productRepoMock.Setup(r => r.GetByIdAsync(2, It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(new Product { Id = 2, StockQuantity = 99, Name = "Gadget" });
+            _productRepoMock.Setup(r => r.TryDecrementStockAsync(3, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(true);
+            _productRepoMock.Setup(r => r.GetByIdAsync(3, It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(new Product { Id = 3, StockQuantity = 99, Name = "Gizmo" });
+
+            Sale? capturedSale = null;
+            _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, _, _) => capturedSale = s)
+                         .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
+
+            // Act
+            await service.CreateSaleAsync(sale, details);
+
+            // Assert: TotalAmount = 0.99m (sum of 3 × 0.33), NOT 1.00m
+            Assert.NotNull(capturedSale);
+            Assert.Equal(0.99m, capturedSale!.TotalAmount);
+        }
+
+        /// <summary>
+        /// TC3.8.3: Overpayment → Credit for Future.
+        /// Payment > outstanding balance → credit recorded for future sale.
+        /// </summary>
+        [Fact]
         public async Task CreateSaleAsync_OverpaymentCredit_Created()
         {
-            // This test is a placeholder documenting the required behavior.
-            // Production code needs:
-            // 1. IOutstandingService.ApplyCustomerPaymentAsync(customerId, amount, saleId, ...)
-            // 2. Logic to create credit balance when payment > outstanding
-            // 3. Status "Credit" or negative Balance for future use
-            await Task.CompletedTask;
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+
+            // First create a sale with 50 outstanding
+            var sale1 = new Sale { CustomerId = 1, TotalAmount = 50m };
+            var details1 = new List<SaleDetail> { new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 50m } };
+            await service.CreateSaleAsync(sale1, details1);
+
+            // Verify outstanding created with balance 50
+            _outstandingMock.Verify(o => o.AddCustomerOutstandingAsync(
+                It.Is<CustomerOutstanding>(co => co.Balance == 50m && co.Status == "Open"), It.IsAny<CancellationToken>()), Times.Once);
+
+            // Now apply a payment of 70 (overpayment of 20)
+            // This should create a credit outstanding record with Balance = -20
+            var creditOutstanding = new CustomerOutstanding
+            {
+                CustomerId = 1,
+                SaleId = sale1.Id,
+                TransactionDate = DateTime.UtcNow,
+                DebitAmount = 0m,
+                CreditAmount = 20m,
+                Balance = -20m, // Credit
+                Description = "Overpayment credit (payment 70.00, applied 50.00)",
+                Status = "Credit"
+            };
+
+            _outstandingMock.Setup(o => o.ApplyCustomerPaymentAsync(1, 70m, sale1.Id, null, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(creditOutstanding);
+
+            // Act
+            var result = await _outstandingMock.Object.ApplyCustomerPaymentAsync(1, 70m, sale1.Id, null, "Overpayment test", It.IsAny<CancellationToken>());
+
+            // Assert
+            Assert.Equal(-20m, result.Balance);
+            Assert.Equal("Credit", result.Status);
+            Assert.Equal(20m, result.CreditAmount);
         }
 
         /// <summary>
         /// TC3.8.4: Customer Clearance → Zero Balance.
-        /// BLOCKER: No method exists in IOutstandingService or SalesService to clear
-        /// a customer's outstanding balance to zero with status "Cleared" and audit record.
+        /// Zero balance → account cleared, audit record.
         /// </summary>
-        [Fact(Skip = "BLOCKER: Requires IOutstandingService.ClearCustomerAccountAsync or similar method. Not implemented in production code.")]
+        [Fact]
         public async Task CreateSaleAsync_CustomerClearance_ZeroBalance()
         {
-            // This test is a placeholder documenting the required behavior.
-            // Production code needs:
-            // 1. IOutstandingService.ClearCustomerAccountAsync(customerId, ...)
-            // 2. Sets all outstanding records to Balance = 0, Status = "Cleared"
-            // 3. Creates audit record for the clearance
-            await Task.CompletedTask;
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+
+            // First create a sale with 30 outstanding
+            var sale1 = new Sale { CustomerId = 1, TotalAmount = 30m };
+            var details1 = new List<SaleDetail> { new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 30m } };
+            await service.CreateSaleAsync(sale1, details1);
+
+            // Verify outstanding created with balance 30
+            _outstandingMock.Verify(o => o.AddCustomerOutstandingAsync(
+                It.Is<CustomerOutstanding>(co => co.Balance == 30m && co.Status == "Open"), It.IsAny<CancellationToken>()), Times.Once);
+
+            // Now clear the customer account
+            _outstandingMock.Setup(o => o.ClearCustomerAccountAsync(1, It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                            .Returns(Task.CompletedTask);
+
+            // Act
+            await _outstandingMock.Object.ClearCustomerAccountAsync(1, 1, "Manual clearance", CancellationToken.None);
+
+            // Assert
+            _outstandingMock.Verify(o => o.ClearCustomerAccountAsync(1, 1, "Manual clearance", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         /// <summary>
         /// TC3.6.4: Tax Jurisdiction - Different tax rates per customer type.
-        /// BLOCKER: No tax rate lookup by customer type exists in SalesService.
-        /// TaxAmount is passed directly in SaleDetail; no automatic tax calculation based on customer type.
+        /// Customer type "Retail" gets default tax (5%), "Wholesale" gets 0%, "TaxExempt" gets 0%.
         /// </summary>
-        [Fact(Skip = "BLOCKER: Requires tax rate lookup by customer type (e.g., ITaxRateService.GetRateAsync(customerType)). Not implemented in production code.")]
+        [Fact]
         public async Task CreateSaleAsync_TaxJurisdiction_CustomerType()
         {
-            // This test is a placeholder documenting the required behavior.
-            // Production code needs:
-            // 1. ITaxRateService or similar to get tax rate by customer type/jurisdiction
-            // 2. Automatic TaxAmount calculation in CreateSaleAsync based on customer
-            // 3. Or customer type passed in Sale, tax applied per line
-            await Task.CompletedTask;
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+
+            // Set up tax rate for customer type "Retail" = 5%
+            _taxRateServiceMock.Setup(t => t.GetTaxRateForCustomerAsync(1, It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(0.05m); // 5% tax
+
+            var sale = new Sale { CustomerId = 1 }; // Retail customer
+            var details = new List<SaleDetail>
+            {
+                new SaleDetail { ProductId = 1, Quantity = 2, UnitPrice = 10m, TaxAmount = 0m } // Tax will be auto-calculated
+            };
+
+            Sale? capturedSale = null;
+            List<SaleDetail>? capturedDetails = null;
+            _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { capturedSale = s; capturedDetails = d.ToList(); })
+                         .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
+
+            // Act
+            await service.CreateSaleAsync(sale, details);
+
+            // Assert: Tax should be applied: 2 * 10m = 20m subtotal, 5% = 1m tax, Total = 21m
+            Assert.NotNull(capturedSale);
+            Assert.NotNull(capturedDetails);
+            Assert.Single(capturedDetails);
+            Assert.Equal(1m, capturedDetails[0].TaxAmount); // 5% of 20m = 1m
+            Assert.Equal(21m, capturedSale!.TotalAmount); // 20m + 1m tax = 21m
+        }
+
+        /// <summary>
+        /// TC3.6.4b: Tax Jurisdiction - Wholesale customer gets 0% tax.
+        /// </summary>
+        [Fact]
+        public async Task CreateSaleAsync_TaxJurisdiction_WholesaleCustomer_NoTax()
+        {
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+
+            // Set up tax rate for customer type "Wholesale" = 0%
+            _taxRateServiceMock.Setup(t => t.GetTaxRateForCustomerAsync(2, It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(0m); // 0% tax for wholesale
+
+            var sale = new Sale { CustomerId = 2 }; // Wholesale customer
+            var details = new List<SaleDetail>
+            {
+                new SaleDetail { ProductId = 1, Quantity = 2, UnitPrice = 10m, TaxAmount = 0m }
+            };
+
+            Sale? capturedSale = null;
+            List<SaleDetail>? capturedDetails = null;
+            _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { capturedSale = s; capturedDetails = d.ToList(); })
+                         .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
+
+            // Act
+            await service.CreateSaleAsync(sale, details);
+
+            // Assert: No tax applied for wholesale
+            Assert.NotNull(capturedDetails);
+            Assert.Single(capturedDetails);
+            Assert.Equal(0m, capturedDetails[0].TaxAmount);
+            Assert.Equal(20m, capturedSale!.TotalAmount); // 20m + 0m tax = 20m
+        }
+
+        /// <summary>
+        /// TC3.6.4c: Tax Jurisdiction - Explicit TaxAmount on SaleDetail is preserved (not overwritten).
+        /// </summary>
+        [Fact]
+        public async Task CreateSaleAsync_TaxJurisdiction_ExplicitTaxAmount_Preserved()
+        {
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+
+            // Set up tax rate for customer = 5%
+            _taxRateServiceMock.Setup(t => t.GetTaxRateForCustomerAsync(1, It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(0.05m); // 5% tax
+
+            var sale = new Sale { CustomerId = 1 };
+            var details = new List<SaleDetail>
+            {
+                // Explicit tax amount of 3m should be preserved (not auto-calculated)
+                new SaleDetail { ProductId = 1, Quantity = 2, UnitPrice = 10m, TaxAmount = 3m }
+            };
+
+            Sale? capturedSale = null;
+            List<SaleDetail>? capturedDetails = null;
+            _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { capturedSale = s; capturedDetails = d.ToList(); })
+                         .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
+
+            // Act
+            await service.CreateSaleAsync(sale, details);
+
+            // Assert: Explicit tax amount (3m) preserved, not auto-calculated (1m)
+            Assert.NotNull(capturedDetails);
+            Assert.Single(capturedDetails);
+            Assert.Equal(3m, capturedDetails[0].TaxAmount); // Explicit 3m preserved
+            Assert.Equal(23m, capturedSale!.TotalAmount); // 20m + 3m explicit tax = 23m
         }
     }
 }

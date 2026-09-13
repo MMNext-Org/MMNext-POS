@@ -28,6 +28,12 @@ namespace MMNextPOS.Domain.Models
         [MaxLength(100)]
         public string? Email { get; set; }
 
+        /// <summary>
+        /// Customer type for tax jurisdiction: Retail, Wholesale, TaxExempt, Government, Export
+        /// </summary>
+        [MaxLength(20)]
+        public string? CustomerType { get; set; }
+
         public bool IsActive { get; set; } = true;
     }
 }

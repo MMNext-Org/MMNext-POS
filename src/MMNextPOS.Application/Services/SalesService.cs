@@ -25,6 +25,7 @@ namespace MMNextPOS.Application.Services
         private readonly ISalesReturnDetailRepository _salesReturnDetailRepo;
         private readonly IReturnNumberGenerator _returnNumberGenerator;
         private readonly IPaymentService _paymentService;
+        private readonly ITaxRateService _taxRateService;
 
         public SalesService(
             ISaleRepository saleRepo,
@@ -39,7 +40,8 @@ namespace MMNextPOS.Application.Services
             ISalesReturnRepository salesReturnRepo,
             ISalesReturnDetailRepository salesReturnDetailRepo,
             IReturnNumberGenerator returnNumberGenerator,
-            IPaymentService paymentService)
+            IPaymentService paymentService,
+            ITaxRateService taxRateService)
         {
             _saleRepo = saleRepo ?? throw new ArgumentNullException(nameof(saleRepo));
             _saleDetailRepo = saleDetailRepo ?? throw new ArgumentNullException(nameof(saleDetailRepo));
@@ -54,7 +56,8 @@ namespace MMNextPOS.Application.Services
             _salesReturnDetailRepo = salesReturnDetailRepo ?? throw new ArgumentNullException(nameof(salesReturnDetailRepo));
             _returnNumberGenerator = returnNumberGenerator ?? throw new ArgumentNullException(nameof(returnNumberGenerator));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
-            }
+            _taxRateService = taxRateService ?? throw new ArgumentNullException(nameof(taxRateService));
+        }
 
         /// <inheritdoc />
         public Task AggregateDuplicateLines(IEnumerable<SaleDetail> details)
@@ -70,7 +73,7 @@ namespace MMNextPOS.Application.Services
         {
             var list = details as IList<SaleDetail> ?? details.ToList();
             RoundLines(list);
-return Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         public async Task<Sale> CreateSaleAsync(Sale sale, IEnumerable<SaleDetail> details, CancellationToken cancellationToken = default)
@@ -91,7 +94,29 @@ return Task.CompletedTask;
                 // 1) Aggregate duplicate lines (same ProductId → sum Quantity, last UnitPrice wins).
                 var aggregated = AggregateDuplicateLines(detailList);
 
-                // 2) Atomic stock reservation per line. InsufficientStockException
+                // 2) Apply tax rates based on customer type/jurisdiction if not explicitly set.
+                //    Only applies when TaxAmount is 0 (not explicitly provided by scanner/override).
+                if (sale.CustomerId > 0)
+                {
+                    var taxRate = await _taxRateService.GetTaxRateForCustomerAsync(sale.CustomerId, cancellationToken).ConfigureAwait(false);
+                    if (taxRate > 0m)
+                    {
+                        foreach (var d in aggregated)
+                        {
+                            if (d.TaxAmount == 0m)
+                            {
+                                // Calculate tax on (Quantity * UnitPrice - DiscountAmount)
+                                var taxableAmount = d.Quantity * d.UnitPrice - d.DiscountAmount;
+                                if (taxableAmount > 0m)
+                                {
+                                    d.TaxAmount = Math.Round(taxableAmount * taxRate, 2, MidpointRounding.ToEven);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3) Atomic stock reservation per line. InsufficientStockException
                 //    on any line rolls the whole transaction back; no later lines run.
                 foreach (var d in aggregated)
                 {
@@ -314,6 +339,12 @@ return Task.CompletedTask;
                 {
                     throw new ValidationException("Line tax amount must be non-negative.");
                 }
+                // Reject >100% discount (discount exceeds line subtotal before tax)
+                var lineSubtotal = d.Quantity * d.UnitPrice;
+                if (d.DiscountAmount > lineSubtotal)
+                {
+                    throw new ValidationException($"Line discount amount ({d.DiscountAmount:C2}) cannot exceed line subtotal ({lineSubtotal:C2}).");
+                }
                 if (byProduct.TryGetValue(d.ProductId, out var existing))
                 {
                     existing.Quantity += d.Quantity;
@@ -459,7 +490,7 @@ return Task.CompletedTask;
                         returnRequest.CreatedByUserId ?? 0,
                         returnLine.Reason ?? returnRequest.Reason ?? "Customer return",
                         cancellationToken).ConfigureAwait(false);
-                    
+
                     if (!incrementSuccess)
                     {
                         throw new ValidationException($"Failed to restore stock for product {returnLine.ProductId}. Product may not exist.");

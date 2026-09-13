@@ -20,5 +20,9 @@ namespace MMNextPOS.Application.Services
         Task<SupplierOutstanding> AddSupplierOutstandingAsync(SupplierOutstanding outstanding, CancellationToken cancellationToken = default);
         Task UpdateSupplierOutstandingAsync(SupplierOutstanding outstanding, CancellationToken cancellationToken = default);
         Task DeleteSupplierOutstandingAsync(int id, CancellationToken cancellationToken = default);
+
+        // Payment application and clearance
+        Task<CustomerOutstanding> ApplyCustomerPaymentAsync(int customerId, decimal amount, int? saleId, int? paymentId, string? description, CancellationToken cancellationToken = default);
+        Task ClearCustomerAccountAsync(int customerId, int? clearedByUserId, string? reason, CancellationToken cancellationToken = default);
     }
 }

@@ -152,6 +152,9 @@ namespace MMNextPOS.Application
             // SalesServiceIntegrationTests surfaces this.
             services.AddScoped<Services.IAuditService, Services.AuditService>();
 
+            // Tax rate service for automatic tax calculation by customer type/jurisdiction
+            services.AddScoped<Services.ITaxRateService, Services.TaxRateService>();
+
             // Admin/Cross-cutting services
             services.AddScoped<Services.ISystemSettingService, Services.SystemSettingService>();
             services.AddScoped<Services.IBackupService, Services.BackupService>();
