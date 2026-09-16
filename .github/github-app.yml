@@ -1,4 +1,10 @@
 auto_open_in_browser: false
+# Agent automation settings - controlled via MANUS_CONFIG_PATH or environment
 automation:
+  # Auto-create issue sessions when agents start working
   auto_issue_session: false
+  # Allow remote control of agent sessions via CLI
   remote_control: false
+  # Maximum duration (minutes) for an agent session before auto-timeout
+  # Set to null or 0 for no timeout
+  # max_session_duration: null
