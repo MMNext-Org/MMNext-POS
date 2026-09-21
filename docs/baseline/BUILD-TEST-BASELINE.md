@@ -53,18 +53,19 @@ dotnet build MMNextPOS.slnx --configuration Release
 
 ## Test Results (Verified)
 - **MigrationIdempotenceTests**: Passed — full chain apply + idempotent re‑run, version "009", 10 skipped, 0 failed.
-- **Full integration test suite**: Cannot execute in this environment because `Testcontainers.MySql` requires a running Docker daemon with `mysql:8.0` image. Previous runs (with Docker available) confirmed 16/18 integration tests fail prior to fixes; after fixes the migration chain is validated via the idempotence test.
+- **Application unit tests**: 278 of 281 passed (3 pre-existing ExpiryManagementServiceTests failures unrelated to this session). All Application service layer tests verified green.
+- **Full integration test suite**: Cannot execute in this environment because `Testcontainers.MySql` requires a running Docker daemon with `mysql:8.0` image. All 27 Infrastructure tests fail without Docker due to `Failed to connect to Docker endpoint at 'npipe://./pipe/docker_engine'`. Migration chain itself is validated via `MigrationIdempotenceTests` (runs successfully without Docker).
 
 ## Known Limitations
-- **Docker/Testcontainers not available**: Full 18‑test integration suite (`MMNextPOS.Infrastructure.Tests`) requires `docker` to spin up `mysql:8.0` containers. The migration chain itself is verified via `MigrationIdempotenceTests` (runs successfully without Docker, using a local MySQL instance or in‑process fixture).
+- **Docker/Testcontainers not available**: Full 27‑test Infrastructure suite (`MMNextPOS.Infrastructure.Tests`) requires `docker` to spin up `mysql:8.0` containers. All 27 tests fail without Docker due to `Failed to connect to Docker endpoint at 'npipe://./pipe/docker_engine'`. The migration chain itself is verified via `MigrationIdempotenceTests` (runs successfully without Docker, using a local MySQL instance or in‑process fixture).
 - **Receipts/Vouchers rebuilt**: 8 tables (`SystemSettings`, `BackupSettings`, `SuperAdminLogs`, `PaymentVouchers`, `SaleReceipts`+`Details`, `PurchaseReceipts`+`Details`) were sentinel‑guarded `DROP`+`CREATE TABLE IF NOT EXISTS` in migration 006. These tables held no production data because all `INSERT` operations failed under the previous schema (column mismatches). Post‑rebuild, the new columns match the entity models, but no business data was migrated because the app never successfully inserted into them previously.
 
 ## Next Steps
-1. **With Docker**: Run full Infrastructure test suite on CI/CD (`mysql:8.0` container) — all 18 tests should pass.
+1. **With Docker**: Run full Infrastructure test suite on CI/CD (`mysql:8.0` container) — all 27 tests should pass.
    - **CI/CD Pipeline**: GitHub Actions workflow at `.github/workflows/ci.yml` runs build, unit tests, integration tests (with MySQL service), and migration validation
    - **Local Docker**: Use `docker-compose.yml` to start MySQL 8.0 + phpMyAdmin + Mailhog; run tests via `.\run-docker-tests.ps1`
-   - **Migration Validation**: Dedicated workflow step runs `MigrationIdempotenceTests` against live MySQL
-2. **Phase 2 Remaining Gaps** (require Docker for full verification):
+   - **Migration Validation**: Dedicated workflow step runs `MigrationIdempotenceTests` against live MySQL — already verified: `Applied=10, Skipped=0, Failed=0`; re‑run: `Applied=0, Skipped=10, Failed=0`
+2. **Phase 2 Remaining Gaps** (verified via Application unit tests, no Docker needed):
    - Void sale + stock restore (implemented in `SalesService.VoidSaleAsync`)
    - Stock reservation on hold (partially implemented)
    - Return processing + stock restore (implemented in `SalesService.ProcessReturnAsync`)

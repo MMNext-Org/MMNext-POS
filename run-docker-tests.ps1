@@ -120,7 +120,10 @@ function Run-Tests {
 
     $connStr = "Server=127.0.0.1;Port=3307;Database=$DatabaseName;User ID=root;Password=$RootPassword;Allow User Variables=true;"
 
-    $env:ConnectionStrings__Default = $connStr
+    # MySqlContainerFixture reads this variable to target an external MySQL
+    # instead of spinning its own Testcontainer (UnitOfWorkTests always uses
+    # its own Testcontainer, so Docker must be running either way).
+    $env:MMNEXTPOS_CONNECTION_STRING = $connStr
 
     $testProject = "tests\MMNextPOS.Infrastructure.Tests\MMNextPOS.Infrastructure.Tests.csproj"
 

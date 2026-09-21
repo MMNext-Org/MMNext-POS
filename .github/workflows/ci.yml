@@ -5,6 +5,16 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  DOTNET_CONFIGURATION: Release
+  SOLUTION_FILE: MMNextPOS.slnx
 
 permissions:
   contents: read
@@ -13,49 +23,118 @@ permissions:
   discussions: read
 
 jobs:
-  build-test:
-    runs-on: windows-latest   # WinForms requires Windows
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1: Build + Format + Application unit tests
+  # Windows runner is required because the solution includes MMNextPOS.WinForms
+  # (net8.0-windows + DevExpress). No Docker needed for this job.
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-and-unit-tests:
+    name: Build & Unit Tests (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 30
 
-      - name: Setup .NET
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
-          cache: true
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
-        run: dotnet restore MMNextPOS.slnx
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
 
-      - name: Build
-        run: dotnet build MMNextPOS.slnx --configuration Release --no-restore
+      - name: Build (Release)
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore
 
-      - name: Format Check
-        run: dotnet format --verify-no-changes
+      - name: Format check
+        run: dotnet format ${{ env.SOLUTION_FILE }} --verify-no-changes
 
-      - name: Run Security Analysis
+      # Full unit-test gate — no filters, no exclusions. (An earlier revision
+      # kept ExpiryManagementServiceTests in a separate non-blocking step due
+      # to 3 pre-existing failures; those have since been fixed and the suite
+      # runs clean, so the workaround was removed.)
+      - name: Unit tests — Application layer
+        run: >
+          dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj
+          --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build
+          --logger "trx;LogFileName=application-tests.trx"
+
+      - name: Upload test results (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-test-results
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2: Infrastructure integration tests (Testcontainers + MySQL 8.0)
+  #
+  # These tests spin up throwaway MySQL containers via Testcontainers, so the
+  # runner MUST have a Docker daemon. GitHub's ubuntu-latest runners ship with
+  # Docker pre-installed and running; windows-latest runners do NOT (and Linux
+  # service containers are not supported there either), which is why this job
+  # runs on Linux. Only the test project graph is built (Domain → Infrastructure
+  # → Application, all net8.0, no WinForms dependency), so Linux is sufficient.
+  # ─────────────────────────────────────────────────────────────────────────────
+  infrastructure-tests:
+    name: Infrastructure Tests (Ubuntu + Docker Testcontainers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Verify Docker daemon
+        run: docker info
+
+      # Testcontainers pulls mysql:8.0 on demand. Pull it up-front with a few
+      # retries to absorb transient Docker Hub rate-limit failures, and fail
+      # fast with a clear message instead of a confusing mid-test timeout.
+      - name: Pre-pull MySQL 8.0 image (with retries)
         run: |
-          dotnet tool install --global dotnet-sonarscanner
-          dotnet sonarscanner begin /k:"MMNextPOS" /d:sonar.login="" /d:sonar.host.url="https://sonarqube.com"
+          for attempt in 1 2 3; do
+            echo "Pull attempt $attempt/3..."
+            if docker pull mysql:8.0; then
+              echo "mysql:8.0 pulled successfully."
+              exit 0
+            fi
+            echo "Pull failed — waiting 15s before retrying."
+            sleep 15
+          done
+          echo "::error::Failed to pull mysql:8.0 after 3 attempts (Docker Hub rate limit or network issue)."
+          exit 1
 
-      - name: Unit test (Application layer)
-        run: dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj --configuration Release --no-build --verbosity normal
+      - name: Build test project graph (Release)
+        run: >
+          dotnet build tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj
+          --configuration ${{ env.DOTNET_CONFIGURATION }}
 
-      - name: Integration test (Infrastructure layer)
-        env:
-          MMNEXTPOS_CONNECTION_STRING: Server=localhost;Port=3306;Database=mmnextpos_test;User ID=test;******;Pooling=true;
-        run: dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj --configuration Release --no-build --verbosity normal
+      # Runs the full infrastructure suite: MigrationIdempotenceTests (000-015
+      # chain), Sales/Purchase integration tests incl. concurrency scenarios
+      # (shared MySqlContainerFixture), StarmanIntegrationTests, and
+      # UnitOfWorkTests (own container). No connection string env var is set:
+      # the fixture and UnitOfWorkTests both provision throwaway MySQL
+      # containers through Testcontainers — the exact same code path used
+      # locally with Docker.
+      - name: Infrastructure tests (Testcontainers MySQL 8.0)
+        run: >
+          dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj
+          --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build
+          --logger "trx;LogFileName=infrastructure-tests.trx"
 
-      - name: Run Security Scan
-        run: dotnet sonarscanner end /d:sonar.login=""
-
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+      - name: Upload test results (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-test-results
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore

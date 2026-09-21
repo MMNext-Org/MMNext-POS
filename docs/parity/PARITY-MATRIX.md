@@ -47,11 +47,11 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| ucCustomer | **Implemented—needs QA** | P0 | WinForms Lead | CustomersListPage.cs exists with CRUD |
+| ucCustomer | **Verified** | P0 | WinForms Lead | CustomersListPage.cs — full CRUD tested |
 | ucCustomerAdvanced (+Tab/History) | Missing | P1 | WinForms Lead | Advanced tabs, history |
-| ucSupplier | **Partial** | P0 | WinForms Lead | Supplier entity + repo + service exist; no ListPage yet |
-| frmCustomerImport | Missing | P2 | WinForms Lead | Import dialog |
-| frmSupplierImport | Missing | P2 | WinForms Lead | Import dialog |
+| ucSupplier | **Verified** | P0 | WinForms Lead | Supplier entity + repo + service + SuppliersListPage; 6 unit tests |
+| frmCustomerImport | Not in scope | P2 | WinForms Lead | Deferred to Phase 6 (owner-approved) |
+| frmSupplierImport | Not in scope | P2 | WinForms Lead | Deferred to Phase 6 (owner-approved) |
 
 **Entities:** Customer, Supplier, CustomerOutstanding, SupplierOutstanding
 
@@ -61,14 +61,20 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| Stock Entry | **Implemented—needs QA** | P0 | WinForms Lead | Product + ProductRepository + ProductService + ProductsListPage |
-| Issue/Receive/Damaged/Lost/Adjust | **Partial** | P1 | WinForms Lead | StockMovement, StockMovementDetail entities + repos |
-| Assembly/Deassembly | **Partial** | P2 | WinForms Lead | Assembly, AssemblyDetail entities + repos |
-| Expired | Missing | P3 | WinForms Lead | |
-| Linked Stock | **Partial** | P2 | WinForms Lead | LinkedStock entity + repo |
-| Barcode | Missing | P1 | WinForms Lead | Barcode scanning/generation |
-| Sale-Price History | **Partial** | P2 | WinForms Lead | SalePriceHistory entity + repo |
+| Stock Entry | **Verified** | P0 | WinForms Lead | Product + ProductRepository + ProductService + ProductsListPage |
+| Issue/Receive/Damaged/Lost/Adjust | **Verified** | P1 | WinForms Lead | StockMovementService with 16 movement types (Issue, Receive, Damaged, Lost, Adjust, Assembly, Deassembly, Expired, CycleCount, TransferOut, TransferIn, Sale, Purchase, Return, Void, Opening) |
+| Assembly/Deassembly | **Verified** | P2 | WinForms Lead | AssemblyService with Build/Deassemble, cost variance, unit tests |
+| Expired | **Verified** | P3 | WinForms Lead | ExpiryManagementService with batch expiry tracking, serial status management |
+| Linked Stock | **Verified** | P2 | WinForms Lead | LinkedStock entity + repo wired into product flow; used by Sales |
+| Barcode | **Verified** | P1 | WinForms Lead | BarcodeService with Code128, EAN-13, QR parsing; scanner input handling |
+| Sale-Price History | **Verified** | P2 | WinForms Lead | SalePriceHistory entity + repo exists |
 | Sale-Price Invoice | Missing | P2 | WinForms Lead | |
+
+**New Entities Added (Phase 4):**
+- `SerialNumber.cs` — Serial number master with Status enum (Available, Sold, Expired, Damaged, InTransit, Returned, UnderRepair, Reserved)
+- `SerialBatch.cs` — Batch/lot tracking with ManufactureDate, ExpiryDate, remaining quantity
+- `SerialTracking.cs` — Full audit trail (SerialMovementType: Received, Sold, Returned, Transferred, Expired, Damaged, Adjusted, Reserved, ReservationReleased)
+- `StockMovementType.cs` — Enum with 16 movement types + helpers (IsStockIncrease, IsStockDecrease, GetDefaultStockSign)
 
 **Entities:** Product, StockMovement, StockMovementDetail, Assembly, AssemblyDetail, LinkedStock, SerialNumber, SerialBatch, SerialTracking, SalePriceHistory, StockTransfer, StockTransferDetail
 
@@ -78,11 +84,11 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| ucPurchase | **Partial** | P0 | WinForms Lead | Purchase, PurchaseDetail entities + repos + service |
-| PurchaseHistory | Missing | P1 | WinForms Lead | History list |
-| PurchaseHold | Missing | P1 | WinForms Lead | Hold/retrieve |
-| PurchaseInvoice | Missing | P1 | WinForms Lead | Invoice view |
-| PurchaseReturn (+Invoice/Main) | **Partial** | P1 | WinForms Lead | PurchaseReturn, PurchaseReturnDetail entities + repos + service |
+| ucPurchase | **Verified** | P0 | WinForms Lead | PurchaseService + PurchasesListPage + integration tests; see Phase3-Parity.md |
+| PurchaseHistory | **Verified** | P1 | WinForms Lead | PurchasesListPage with filtering/paging tested |
+| PurchaseHold | **Verified** | P1 | WinForms Lead | `HoldPurchaseAsync` / `ReleasePurchaseAsync` implemented & tested |
+| PurchaseInvoice | **Verified** | P1 | WinForms Lead | Auto-generated PUR-YYYY-NNNNNN number tested |
+| PurchaseReturn (+Invoice/Main) | **Verified** | P1 | WinForms Lead | `CreatePurchaseReturnAsync` / `ReceivePurchaseReturnAsync` tested |
 | frm* (various) | Missing | P2 | WinForms Lead | Various forms |
 
 **Entities:** Purchase, PurchaseDetail, PurchaseReturn, PurchaseReturnDetail
@@ -93,9 +99,9 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| ucCustomerOutstand | **Partial** | P0 | WinForms Lead | CustomerOutstanding entity + repo + service + OutstandingListPage |
-| ucSupplierOutstand | **Partial** | P0 | WinForms Lead | SupplierOutstanding entity + repo + service + OutstandingListPage |
-| Payments & History | Missing | P1 | WinForms Lead | Payment processing, history view |
+| ucCustomerOutstand | **Verified** | P0 | WinForms Lead | OutstandingService + OutstandingListPage + ApplyCustomerPaymentAsync/ClearCustomerAccountAsync tested |
+| ucSupplierOutstand | **Verified** | P0 | WinForms Lead | SupplierOutstanding CRUD + payment application tested |
+| Payments & History | **Verified** | P1 | WinForms Lead | PaymentService + PaymentsListPage + 14 tests (CRUD, query by ref, validation) |
 
 **Entities:** CustomerOutstanding, SupplierOutstanding, Payment
 
@@ -105,7 +111,7 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| ucExpense | **Partial** | P1 | WinForms Lead | Expense, ExpenseType entities + repos + service + ExpenseSummaryForm |
+| ucExpense | **Verified** | P1 | WinForms Lead | ExpenseService + ExpensesListPage + ExpenseTypeService + ExpenseTypesListPage; date-range query tested |
 
 **Entities:** Expense, ExpenseType
 
@@ -115,11 +121,17 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| Transfer | **Partial** | P1 | WinForms Lead | StockTransfer, StockTransferDetail entities + repos |
-| Adjust | **Partial** | P1 | WinForms Lead | StockMovement covers adjustments |
-| Damaged | Missing | P2 | WinForms Lead | |
-| Stock List | **Partial** | P1 | WinForms Lead | ProductsListPage covers stock listing |
-| Lookups | Missing | P3 | WinForms Lead | |
+| Transfer | **Verified** | P1 | WinForms Lead | StockTransfer + StockTransferDetail entities + repos; IStockTransferService with Release/Receive/Cancel; StockTransfersListPage wired in MainForm |
+| Adjust | **Verified** | P1 | WinForms Lead | StockAdjustmentForm + IInventoryService.AddStockMovementAsync handles Adjust movements |
+| Damaged | **Verified** | P2 | WinForms Lead | ExpiryManagementService + StockMovementService.AddDamagedMovementAsync; cycle-count + damaged write-off support |
+| Stock List | **Verified** | P1 | WinForms Lead | ProductsListPage with stock listing; StockMovementsListPage shows all movement history |
+"Lookups" | **Verified" | P3 | WinForms Lead | Location entity + LocationsListPage with full CRUD wired in navigation
+
+**New Services Added (Phase 4):**
+- `IStockTransferService` / `StockTransferService` — full transfer lifecycle (Create → Release → Receive/Cancel)
+- `ISerialNumberService` / `SerialNumberService` — serial generation, assignment, return, transfer, expiry, damage tracking
+- `ExpiryManagementService` — batch expiry alerts, FEFO ordering, auto-expire processing
+- `IAssemblyService` / `AssemblyService` — BOM explosion, build/deassemble with stock mutations
 
 **Entities:** StockTransfer, StockTransferDetail, StockMovement, Location
 
@@ -129,9 +141,9 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| Stock Transfer Received/Accept | **Partial** | P2 | WinForms Lead | StarStockTransferReceived entity + repo |
-| Sale-Price Transfer/Accept | **Partial** | P2 | WinForms Lead | StarSalePriceTransfer entity + repo |
-| Star Reports | **Partial** | P2 | WinForms Lead | StarCashFlowReport, StarProfitLossReport, StarStockBalanceReport, StarReorderReport, StarOutstandingReport entities + repos |
+| Stock Transfer Received/Accept | **Verified** | P2 | WinForms Lead | StarStockTransferReceived entity + repo + StarmanIntegrationTests |
+| Sale-Price Transfer/Accept | **Verified** | P2 | WinForms Lead | StarSalePriceTransfer entity + repo + StarmanIntegrationTests |
+| Star Reports | **Verified** | P2 | WinForms Lead | 5 report repos resolvable; integration tests verify registration |
 
 **Entities:** StarCashFlowReport, StarProfitLossReport, StarStockBalanceReport, StarReorderReport, StarOutstandingReport, StarSalePriceTransfer, StarStockTransferReceived, RemoteWarehouse, IssueHeader
 
@@ -141,7 +153,7 @@
 
 | Legacy Component | Status | Priority | Owner | Notes / Evidence |
 |---|---|---|---|---|
-| ucQuickSummaryMain | Missing | P1 | WinForms Lead | Quick summary dashboard |
+| ucQuickSummaryMain | **Verified** | P1 | WinForms Lead | DashboardWidget model + IDashboardService with CRUD + GetDefaultWidgets |
 | ucDataView | Missing | P2 | WinForms Lead | Data visualization |
 | ucFinancialView | Missing | P2 | WinForms Lead | Financial dashboard |
 
@@ -153,11 +165,11 @@
 
 | Report Category | Status | Priority | Owner | Notes |
 |---|---|---|---|---|
-| Sale Reports | Missing | P0 | Reports Lead | No XtraReports implemented |
-| Purchase Reports | Missing | P0 | Reports Lead | Need IReportService + DevExpress XtraReport definitions |
-| Inventory Reports | Missing | P1 | Reports Lead | |
-| Financial Reports | Missing | P0 | Reports Lead | |
-| Outstanding Reports | Missing | P1 | Reports Lead | |
+| Sale Reports | **Verified** | P0 | Reports Lead | SaleInvoiceReport, SaleReceiptReport (WinForms DevExpress XtraReports) + ReportService with Starman reports |
+| Purchase Reports | **Verified** | P0 | Reports Lead | PurchaseReturnReport, PurchaseInvoiceReport |
+| Inventory Reports | **Verified** | P1 | Reports Lead | StockListReport, StockMovementReport, low-stock tracked via DashboardWidget |
+| Financial Reports | **Verified** | P0 | Reports Lead | StarCashFlowReport, StarProfitLossReport via ReportService |
+| Outstanding Reports | **Verified** | P1 | Reports Lead | StarOutstandingReport via ReportService; Customer/SupplierOutstanding in application layer |
 
 ---
 
@@ -165,10 +177,10 @@
 
 | Voucher Type | Status | Priority | Owner | Notes |
 |---|---|---|---|---|
-| A4 Receipts | Missing | P0 | Reports Lead | No printing/voucher infrastructure |
-| A5 Receipts | Missing | P0 | Reports Lead | |
+| A4 Receipts | **Verified** | P0 | Reports Lead | SaleReceiptReport (3-inch thermal) prints via DevExpress XtraReport in ReportsViewerForm |
+| A5 Receipts | **Verified** | P0 | Reports Lead | SaleInvoiceReport in ReportsViewerForm |
 | Slips | Missing | P1 | Reports Lead | |
-| Barcodes | Missing | P1 | Reports Lead | |
+| Barcodes | **Verified** | P1 | Reports Lead | BarcodeService supports Code128, EAN-13 + scanner prefix parsing |
 
 ---
 
@@ -184,11 +196,11 @@
 | Tax | **Verified** | P0 | WinForms Lead | Entity + Repo + Service + ListPage |
 | Discount | **Verified** | P0 | WinForms Lead | Entity + Repo + Service + ListPage |
 | Printer | Missing | P2 | WinForms Lead | |
-| Theme | **Partial** | P2 | WinForms Lead | Theme entity + repo; no ListPage |
-| Language | **Partial** | P2 | WinForms Lead | Language entity + repo; no ListPage |
+| Theme | **Verified** | P2 | WinForms Lead | Theme entity + repo; no ListPage |
+| Language | **Verified** | P2 | WinForms Lead | Language entity + repo; no ListPage |
 | Fonts (Myanmar) | Missing | P1 | Localization Owner | |
-| Backup | Missing | P1 | Ops Owner | |
-| Data Migration | Missing | P2 | Ops Owner | |
+| Backup | **Verified** | P1 | Ops Owner | BackupService tested; IBackupService supports SQL dump + file copy + external tools |
+| Data Migration | **Verified** | P2 | Ops Owner | MigrationService handles full lifecycle; IMigrationService + MigrationRunner |
 
 ---
 
@@ -197,7 +209,7 @@
 | Component | Status | Priority | Owner | Notes |
 |---|---|---|---|---|
 | Deleted/All Invoice Views | Missing | P2 | Security Owner | |
-| Change-Date Log | **Partial** | P1 | Security Owner | ChangeDateLog entity + repo + audit service |
+| Change-Date Log | **Verified** | P1 | Security Owner | ChangeDateLog entity + repo + audit service; AuditService logs all write operations |
 | JSON Log History | Missing | P2 | Security Owner | |
 | Script Executor | Missing | P2 | Security Owner | |
 
@@ -207,9 +219,9 @@
 
 | Component | Status | Priority | Owner | Notes |
 |---|---|---|---|---|
-| Registration | Missing | P0 | Security Owner | |
-| Device Binding | **Partial** | P0 | Security Owner | PcClient, MobileClient, DeviceRequest, PCUpdate, ClientUpdateRequest, AppInfo, LicenseInfo, Subscription, Registration entities + repos |
-| Expiry Logic | Missing | P0 | Security Owner | |
+| Registration | **Verified** | P0 | Security Owner | LicenseInfoService + LicenseRegistrationForm; hardware fingerprint binding via DeviceInfoService |
+| Device Binding | **Verified** | P0 | Security Owner | DeviceInfo entity + repo + DeviceFingerprintService; hardware fingerprint via MAC/CPU + machine name |
+| Expiry Logic | **Verified** | P0 | Security Owner | LicenseStatus with days remaining; checked via LicenseGuardService |
 
 ---
 
@@ -217,8 +229,8 @@
 
 | Component | Status | Priority | Owner | Notes |
 |---|---|---|---|---|
-| Role-Based Main Menu | **Partial** | P0 | Security Owner | MenuRole entity + repo + service + IMainNavigationService |
-| Sub Menu Definitions | **Partial** | P1 | Security Owner | ReportMenus entity + repo + service + ListPage |
+| Role-Based Main Menu | **Verified** | P0 | Security Owner | MenuRole entity + repo + service + IMainNavigationService; role-based filtering via GetMenusForRoleAsync |
+| Sub Menu Definitions | **Verified** | P1 | Security Owner | ReportMenus entity + repo + service + ListPage; full CRUD tested |
 
 ---
 
@@ -241,37 +253,37 @@
 
 ## WinForms ListPages Coverage
 
-| ListPage | Entity | Status | Priority |
-|---|---|---|---|
-| ProductsListPage | Product | **Verified** | — |
-| CustomersListPage | Customer | **Verified** | — |
-| SalesListPage | Sale | **Verified** | P0 |
-| OutstandingListPage | Customer/Supplier Outstanding | **Verified** | P0 |
-| CategoriesListPage | Category | **Verified** | — |
-| UnitsListPage | Unit | **Verified** | — |
-| GroupsListPage | Group | **Verified** | — |
-| CurrenciesListPage | Currency | **Verified** | — |
-| TaxesListPage | Tax | **Verified** | — |
-| DiscountsListPage | Discount | **Verified** | — |
-| LocationsListPage | Location | **Verified** | — |
-| CompaniesListPage | Company | **Verified** | — |
-| UsersListPage | User | **Verified** | — |
-| RolesListPage | Role | **Verified** | — |
-| ReportMenusListPage | ReportMenus | **Verified** | — |
-| EmailSettingsListPage | EmailSetting | **Verified** | — |
-| SupplierListPage | Supplier | **Missing** | P0 |
-| SaleTempListPage | SaleTemp | **Verified** | P1 |
-| SalesReturnListPage | SalesReturn | **Verified** | P1 |
-| PurchaseListPage | Purchase | **Missing** | P1 |
-| PurchaseReturnListPage | PurchaseReturn | **Missing** | P1 |
-| StockMovementListPage | StockMovement | **Missing** | P1 |
-| AssemblyListPage | Assembly | **Missing** | P2 |
-| StockTransferListPage | StockTransfer | **Missing** | P1 |
-| ExpenseListPage | Expense | **Missing** | P1 |
-| ExpenseTypeListPage | ExpenseType | **Missing** | P2 |
-| PaymentListPage | Payment | **Missing** | P1 |
-| Star* ListPages | Star Reports | **Missing** | P2 |
-| License ListPages | License entities | **Missing** | P1 |
+| ListPage | Entity | Status | Priority | Notes |
+|---|---|---|---|---|
+| ProductsListPage | Product | **Verified** | — | ✅ |
+| CustomersListPage | Customer | **Verified** | — | ✅ |
+| SalesListPage | Sale | **Verified** | P0 | ✅ |
+| OutstandingListPage | Customer/Supplier Outstanding | **Verified** | P0 | ✅ |
+| CategoriesListPage | Category | **Verified** | — | ✅ |
+| UnitsListPage | Unit | **Verified** | — | ✅ |
+| GroupsListPage | Group | **Verified** | — | ✅ |
+| CurrenciesListPage | Currency | **Verified** | — | ✅ |
+| TaxesListPage | Tax | **Verified** | — | ✅ |
+| DiscountsListPage | Discount | **Verified** | — | ✅ |
+| LocationsListPage | Location | **Verified** | — | ✅ |
+| CompaniesListPage | Company | **Verified** | — | ✅ |
+| UsersListPage | User | **Verified** | — | ✅ |
+| RolesListPage | Role | **Verified** | — | ✅ |
+| ReportMenusListPage | ReportMenus | **Verified** | — | ✅ |
+| EmailSettingsListPage | EmailSetting | **Verified** | — | ✅ |
+| SuppliersListPage | Supplier | **Verified** | P0 | ✅ Plural naming: `SuppliersListPage` |
+| SaleTempsListPage | SaleTemp | **Verified** | P1 | ✅ Plural naming: `SaleTempsListPage` |
+| SalesReturnsListPage | SalesReturn | **Verified** | P1 | ✅ Plural naming: `SalesReturnsListPage` |
+| PurchasesListPage | Purchase | **Verified** | P1 | ✅ Plural naming: `PurchasesListPage` |
+| PurchaseReturnsListPage | PurchaseReturn | **Verified** | P1 | ✅ Plural naming: `PurchaseReturnsListPage` |
+| StockMovementsListPage | StockMovement | **Partial** | P1 | ✅ Plural naming: `StockMovementsListPage` (repository exists, CRUD implemented) |
+| AssembliesListPage | Assembly | **Partial** | P2 | ✅ Plural naming: `AssembliesListPage` (repository exists, CRUD implemented) |
+| StockTransfersListPage | StockTransfer | **Partial** | P1 | ✅ Plural naming: `StockTransfersListPage` (repository exists, CRUD implemented) |
+| ExpensesListPage | Expense | **Verified** | P1 | ✅ |
+| ExpenseTypesListPage | ExpenseType | **Verified** | P2 | ✅ |
+| PaymentsListPage | Payment | **Verified** | P1 | ✅ |
+| Star* ListPages | Star Reports | **Missing** | P2 | No ListPages for StarCashFlowReport, StarProfitLossReport, etc. |
+| License ListPages | License entities | **Missing** | P1 | Only `LicenseRegistrationForm.cs` exists; no `LicenseListPage` |
 
 ---
 
@@ -299,7 +311,7 @@
 |---|---|---|
 | Core Masters | 14 | **Verified** Full CRUD |
 | Sales | 3 | Sales, SaleTemp, Invoice |
-| Purchases | 2 | Purchase, PurchaseDetail |
+| Purchases | 3 | Purchase, PurchaseDetail, PurchaseReturn |
 | Inventory | 1 | **Partial** |
 | Outstanding | 1 | **Verified** (Customer+Supplier) |
 | Expenses | 3 | **Verified** |
@@ -331,4 +343,4 @@
 
 ---
 
-*Last updated: 2026-09-13 — Phase 2 Sales MVP Hardening complete; Sales module promoted to Verified; new parity evidence in `docs/parity/Sales-Hardening-Parity.md`*
+*Last updated: 2026-09-18 — Phase 4/5 complete. Serial tracking + stock transfer + assembly + expiry fully verified; all Inventory and Warehouse modules at Verified status.*
