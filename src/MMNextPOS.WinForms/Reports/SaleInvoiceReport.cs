@@ -475,27 +475,27 @@ namespace MMNextPOS.WinForms.Reports
             }
 
             // Populate detail rows from sale details
-var saleDetails = await _salesService.GetSaleDetailsAsync(_currentSale.Id, cancellationToken);
-foreach (var detail in saleDetails)
-{
-    var product = await _productService.GetByIdAsync(detail.ProductId, cancellationToken);
-    var row = new XRTableRow { HeightF = 25 };
-    var cell0 = new XRTableCell { Text = detail.Quantity.ToString(), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleCenter };
-    var cell1 = new XRTableCell { Text = product?.Name ?? $"Product {detail.ProductId}", Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleLeft };
-    var cell2 = new XRTableCell { Text = detail.Quantity.ToString(), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleCenter };
-    var cell3 = new XRTableCell { Text = FormatCurrency(detail.UnitPrice), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
-    var cell4 = new XRTableCell { Text = FormatCurrency(detail.DiscountAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
-    var cell5 = new XRTableCell { Text = FormatCurrency(detail.TaxAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
-    var cell6 = new XRTableCell { Text = FormatCurrency(detail.Quantity * detail.UnitPrice - detail.DiscountAmount + detail.TaxAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
-    row.Cells.Add(cell0);
-    row.Cells.Add(cell1);
-    row.Cells.Add(cell2);
-    row.Cells.Add(cell3);
-    row.Cells.Add(cell4);
-    row.Cells.Add(cell5);
-    row.Cells.Add(cell6);
-    _detailTable.Rows.Add(row);
-}
+            var saleDetails = await _salesService.GetSaleDetailsAsync(_currentSale.Id, cancellationToken);
+            foreach (var detail in saleDetails)
+            {
+                var product = await _productService.GetByIdAsync(detail.ProductId, cancellationToken);
+                var row = new XRTableRow { HeightF = 25 };
+                var cell0 = new XRTableCell { Text = detail.Quantity.ToString(), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleCenter };
+                var cell1 = new XRTableCell { Text = product?.Name ?? $"Product {detail.ProductId}", Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleLeft };
+                var cell2 = new XRTableCell { Text = detail.Quantity.ToString(), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleCenter };
+                var cell3 = new XRTableCell { Text = FormatCurrency(detail.UnitPrice), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
+                var cell4 = new XRTableCell { Text = FormatCurrency(detail.DiscountAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
+                var cell5 = new XRTableCell { Text = FormatCurrency(detail.TaxAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
+                var cell6 = new XRTableCell { Text = FormatCurrency(detail.Quantity * detail.UnitPrice - detail.DiscountAmount + detail.TaxAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
+                row.Cells.Add(cell0);
+                row.Cells.Add(cell1);
+                row.Cells.Add(cell2);
+                row.Cells.Add(cell3);
+                row.Cells.Add(cell4);
+                row.Cells.Add(cell5);
+                row.Cells.Add(cell6);
+                _detailTable.Rows.Add(row);
+            }
 
             // Update footer
             var netAmount = _currentSale.TotalAmount;

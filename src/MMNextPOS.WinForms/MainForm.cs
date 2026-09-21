@@ -32,6 +32,7 @@ namespace MMNextPOS.WinForms
         private readonly IPurchaseService _purchaseService;
         private readonly IInventoryService _inventoryService;
         private readonly IStockTransferRepository _stockTransferRepository;
+        private readonly IStockTransferService _stockTransferService;
         private readonly IExpenseService _expenseService;
         private readonly IExpenseTypeService _expenseTypeService;
         private readonly IPaymentService _paymentService = null!;
@@ -118,6 +119,7 @@ namespace MMNextPOS.WinForms
                     IPurchaseService purchaseService,
                     IInventoryService inventoryService,
                     IStockTransferRepository stockTransferRepository,
+                    IStockTransferService stockTransferService,
                     IExpenseService expenseService,
                     IExpenseTypeService expenseTypeService,
                     IPaymentService paymentService,
@@ -154,6 +156,7 @@ namespace MMNextPOS.WinForms
             _purchaseService = purchaseService ?? throw new ArgumentNullException(nameof(purchaseService));
             _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
             _stockTransferRepository = stockTransferRepository ?? throw new ArgumentNullException(nameof(stockTransferRepository));
+            _stockTransferService = stockTransferService ?? throw new ArgumentNullException(nameof(stockTransferService));
             _expenseService = expenseService ?? throw new ArgumentNullException(nameof(expenseService));
             _expenseTypeService = expenseTypeService ?? throw new ArgumentNullException(nameof(expenseTypeService));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
@@ -301,7 +304,7 @@ namespace MMNextPOS.WinForms
             _purchaseReturnsListPage = new PurchaseReturnsListPage(_purchaseReturnRepository, _serviceProvider);
             _stockMovementsListPage = new StockMovementsListPage(_inventoryService, _serviceProvider);
             _assembliesListPage = new AssembliesListPage(_inventoryService, _serviceProvider);
-            _stockTransfersListPage = new StockTransfersListPage(_stockTransferRepository, _serviceProvider);
+            _stockTransfersListPage = new StockTransfersListPage(_stockTransferService, _serviceProvider);
             _expensesListPage = new ExpensesListPage(_expenseService, _serviceProvider);
             _expenseTypesListPage = new ExpenseTypesListPage(_expenseTypeService, _serviceProvider);
             _paymentsListPage = new PaymentsListPage(_paymentService, _serviceProvider);

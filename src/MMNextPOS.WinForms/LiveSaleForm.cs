@@ -136,7 +136,7 @@ namespace MMNextPOS.WinForms
 
             headerPanel.Controls.Add(_paymentMethodCombo);
 
-// Details Grid
+            // Details Grid
             _detailsGrid = new DevExpress.XtraGrid.GridControl
             {
                 Dock = DockStyle.Fill

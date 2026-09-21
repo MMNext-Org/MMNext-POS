@@ -9,7 +9,9 @@ using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using Microsoft.Extensions.DependencyInjection;
+using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
 
 namespace MMNextPOS.WinForms
@@ -17,9 +19,9 @@ namespace MMNextPOS.WinForms
     /// <summary>
     /// List page for Stock Transfers entity using the generic repository.
     /// </summary>
-    public partial class StockTransfersListPage : ListPage<StockTransfer, IStockTransferRepository>
+    public partial class StockTransfersListPage : ListPage<StockTransfer, IStockTransferService>
     {
-        public StockTransfersListPage(IStockTransferRepository service, IServiceProvider serviceProvider)
+        public StockTransfersListPage(IStockTransferService service, IServiceProvider serviceProvider)
             : base(service, serviceProvider)
         {
         }
@@ -44,18 +46,62 @@ namespace MMNextPOS.WinForms
 
         protected override async Task<IEnumerable<StockTransfer>> GetItemsAsync(CancellationToken cancellationToken)
         {
-            return await _service.GetAllAsync(cancellationToken);
+            return await _service.GetTransfersAsync(cancellationToken: cancellationToken);
+        }
+
+        protected override async Task OnNewAsync()
+        {
+            var locationRepo = _serviceProvider.GetService(typeof(ILocationRepository)) as ILocationRepository;
+            var productRepo = _serviceProvider.GetService(typeof(IProductRepository)) as IProductRepository;
+            var detailRepo = _serviceProvider.GetService(typeof(IStockTransferDetailRepository)) as IStockTransferDetailRepository;
+            var unitOfWork = _serviceProvider.GetService(typeof(IUnitOfWork)) as IUnitOfWork;
+            var auditService = _serviceProvider.GetService(typeof(IAuditService)) as MMNextPOS.Application.Services.IAuditService;
+
+            if (locationRepo == null || productRepo == null || detailRepo == null || unitOfWork == null || auditService == null)
+            {
+                ShowError("Transfer services not available.");
+                return;
+            }
+
+            var transferNo = await _service.GenerateTransferNumberAsync(CancellationToken.None);
+            var transfer = new StockTransfer
+            {
+                TransferNo = transferNo,
+                Status = "Draft",
+                TransferDate = DateTime.UtcNow
+            };
+
+            using var form = new StockTransferEditForm(transfer, _service, locationRepo, productRepo, detailRepo, unitOfWork, auditService);
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                await LoadAsync();
+            }
         }
 
         protected override async Task OnEditAsync(StockTransfer entity)
         {
-            // TODO: Implement StockTransferEditForm
-            await Task.CompletedTask;
+            var locationRepo = _serviceProvider.GetService(typeof(ILocationRepository)) as ILocationRepository;
+            var productRepo = _serviceProvider.GetService(typeof(IProductRepository)) as IProductRepository;
+            var detailRepo = _serviceProvider.GetService(typeof(IStockTransferDetailRepository)) as IStockTransferDetailRepository;
+            var unitOfWork = _serviceProvider.GetService(typeof(IUnitOfWork)) as IUnitOfWork;
+            var auditService = _serviceProvider.GetService(typeof(IAuditService)) as MMNextPOS.Application.Services.IAuditService;
+
+            if (locationRepo == null || productRepo == null || detailRepo == null || unitOfWork == null || auditService == null)
+            {
+                ShowError("Transfer services not available.");
+                return;
+            }
+
+            using var form = new StockTransferEditForm(entity, _service, locationRepo, productRepo, detailRepo, unitOfWork, auditService);
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                await LoadAsync();
+            }
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)
         {
-            await _service.DeleteAsync(id, cancellationToken);
+            await _service.CancelTransferAsync(id, 1, "User deleted", cancellationToken);
         }
     }
 }

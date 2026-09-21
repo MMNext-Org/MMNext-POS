@@ -79,7 +79,7 @@ namespace MMNextPOS.WinForms
         {
             _currentDraft = draft ?? throw new ArgumentNullException(nameof(draft));
             _isResumingDraft = true;
-            
+
             // If the form is already loaded, load the draft immediately
             if (IsHandleCreated)
             {

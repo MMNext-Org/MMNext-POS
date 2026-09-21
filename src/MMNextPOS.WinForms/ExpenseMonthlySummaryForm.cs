@@ -102,11 +102,11 @@ namespace MMNextPOS.WinForms
             mainLayout.Controls.Add(_grid, 0, 2);
 
             // Total
-            _lblTotal = new LabelControl 
-            { 
-                Dock = DockStyle.Fill, 
-                Text = "Total: $0.00", 
-                AutoSizeMode = LabelAutoSizeMode.None, 
+            _lblTotal = new LabelControl
+            {
+                Dock = DockStyle.Fill,
+                Text = "Total: $0.00",
+                AutoSizeMode = LabelAutoSizeMode.None,
                 Font = new System.Drawing.Font("Segoe UI", 12, FontStyle.Bold),
                 Appearance = { TextOptions = { HAlignment = DevExpress.Utils.HorzAlignment.Far } }
             };
