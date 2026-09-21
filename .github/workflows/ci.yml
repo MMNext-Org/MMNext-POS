@@ -1,4 +1,4 @@
-name: MMNextPOS CI
+﻿name: MMNextPOS CI
 
 on:
   push:
@@ -6,34 +6,33 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  discussions: read
+
 jobs:
   build-test:
     runs-on: windows-latest   # WinForms requires Windows
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: mmnextpos_test
-          MYSQL_USER: test
-          MYSQL_PASSWORD: test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+          cache: true
 
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore MMNextPOS.slnx
 
       - name: Build
@@ -42,10 +41,21 @@ jobs:
       - name: Format Check
         run: dotnet format --verify-no-changes
 
+      - name: Run Security Analysis
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          dotnet sonarscanner begin /k:"MMNextPOS" /d:sonar.login="" /d:sonar.host.url="https://sonarqube.com"
+
       - name: Unit test (Application layer)
         run: dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj --configuration Release --no-build --verbosity normal
 
       - name: Integration test (Infrastructure layer)
         env:
-          MMNEXTPOS_CONNECTION_STRING: Server=localhost;Port=3306;Database=mmnextpos_test;User ID=test;Password=test;Pooling=true;
+          MMNEXTPOS_CONNECTION_STRING: Server=localhost;Port=3306;Database=mmnextpos_test;User ID=test;******;Pooling=true;
         run: dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Run Security Scan
+        run: dotnet sonarscanner end /d:sonar.login=""
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4

@@ -1,17 +1,17 @@
-name: Release
+﻿name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., v1.0.0)'
+        description: "Version to release (e.g., v1.0.0)"
         required: true
         type: string
       prerelease:
-        description: 'Mark as pre-release'
+        description: "Mark as pre-release"
         required: false
         type: boolean
         default: false
@@ -21,9 +21,9 @@ permissions:
   packages: write
 
 env:
-  DOTNET_VERSION: '8.0.x'
-  SOLUTION_FILE: 'MMNextPOS.slnx'
-  PROJECT_FILE: 'src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj'
+  DOTNET_VERSION: "8.0.x"
+  SOLUTION_FILE: "MMNextPOS.slnx"
+  PROJECT_FILE: "src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj"
 
 jobs:
   # ===========================
@@ -52,7 +52,7 @@ jobs:
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3
         with:
-          versionSpec: '5.x'
+          versionSpec: "5.x"
 
       - name: Determine Version
         uses: gittools/actions/gitversion/execute@v3
@@ -66,7 +66,7 @@ jobs:
       - name: Build Release
         run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore -v minimal
         env:
-          DEVEXPRESS_LICENSE_KEY: 'evaluation'
+          DEVEXPRESS_LICENSE_KEY: "evaluation"
 
       - name: Run tests
         run: dotnet test ${{ env.SOLUTION_FILE }} --configuration Release --no-build --verbosity normal
@@ -82,7 +82,7 @@ jobs:
             -p:PublishTrimmed=false \
             -p:IncludeNativeLibrariesForSelfExtract=true
         env:
-          DEVEXPRESS_LICENSE_KEY: 'evaluation'
+          DEVEXPRESS_LICENSE_KEY: "evaluation"
 
       - name: Create ZIP archive
         run: |
@@ -93,13 +93,8 @@ jobs:
         id: changelog
         run: |
           # Extract release notes from CHANGELOG.md or git log
-          if [ -f "CHANGELOG.md" ]; then
-            # Get content between current version and previous version
-            VERSION="${{ steps.gitversion.outputs.nuGetVersionV2 }}"
-            NOTES=$(awk "/^## \[$VERSION\]/,/^## \[/" CHANGELOG.md | head -n -1 | tail -n +2)
-          else
-            NOTES=$(git log --oneline --decorate --format="* %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
-          fi
+          VERSION="${{ steps.gitversion.outputs.nuGetVersionV2 }}"
+          NOTES=$(awk "/^## \[$VERSION\]/,/^## \[/" CHANGELOG.md | head -n -1 | tail -n +2)
           echo "release_notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -111,6 +106,11 @@ jobs:
           path: ${{ runner.temp }}/MMNextPOS-${{ steps.gitversion.outputs.nuGetVersionV2 }}-win-x64.zip
           retention-days: 90
 
+      - name: Scan for vulnerabilities
+        run: |
+          # Run Trivy scan on the published artifacts
+          trivy image --exit-code 1 --severity HIGH,CRITICAL "${{ runner.temp }}/MMNextPOS-${{ steps.gitversion.outputs.nuGetVersionV2 }}-win-x64.zip" || true
+
   # ===========================
   # Create GitHub Release
   # ===========================
@@ -119,6 +119,9 @@ jobs:
     needs: release-build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
+      packages: write
     steps:
       - name: Download release artifact
         uses: actions/download-artifact@v4
@@ -152,11 +155,3 @@ jobs:
           echo "✅ Release v${{ needs.release-build.outputs.version }} published successfully!"
           echo "🔗 https://github.com/${{ github.repository }}/releases/tag/v${{ needs.release-build.outputs.version }}"
         # Add Slack/Teams webhook here if needed
-        # - name: Slack notification
-        #   uses: 8398a7/action-slack@v3
-        #   with:
-        #     status: ${{ job.status }}
-        #     channel: '#releases'
-        #     text: "MMNext POS v${{ needs.release-build.outputs.version }} released!"
-        #   env:
-        #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
