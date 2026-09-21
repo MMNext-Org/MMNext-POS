@@ -317,5 +317,230 @@ namespace MMNextPOS.Application.Tests
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetSupplierOutstandingAsync(1));
         }
+
+        // ───────────────────────── ApplyCustomerPaymentAsync Tests ─────────────────────────
+
+        [Fact]
+        public async Task ApplyCustomerPaymentAsync_PartialPayment_ReducesBalance()
+        {
+            // Arrange
+            var customerId = 1;
+            var outstandings = new List<CustomerOutstanding>
+            {
+                new() { Id = 1, CustomerId = customerId, SaleId = 10, TransactionDate = DateTime.Today.AddDays(-2), DebitAmount = 500m, CreditAmount = 0m, Balance = 500m, Status = "Open" },
+                new() { Id = 2, CustomerId = customerId, SaleId = 11, TransactionDate = DateTime.Today.AddDays(-1), DebitAmount = 500m, CreditAmount = 0m, Balance = 500m, Status = "Open" }
+            };
+            _customerRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings);
+            _customerRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings[0]);
+            _customerRepoMock.Setup(r => r.GetByIdAsync(2, It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings[1]);
+            _customerRepoMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
+                             .Returns(Task.CompletedTask);
+            _auditServiceMock.Setup(a => a.LogAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act - Apply payment of 700 (covers first 500 + 200 of second)
+            var result = await service.ApplyCustomerPaymentAsync(customerId, 700m, saleId: 10, paymentId: 1, "Test payment");
+
+            // Assert - First outstanding should be cleared (Balance = 0, Status = "Cleared")
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 1 && o.Balance == 0 && o.Status == "Cleared"), It.IsAny<CancellationToken>()), Times.Once);
+            // Second outstanding should have Balance = 300 (500 - 200)
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 2 && o.Balance == 300 && o.Status == "Open"), It.IsAny<CancellationToken>()), Times.Once);
+            // Audit should be called for each update
+            _auditServiceMock.Verify(a => a.LogAsync(nameof(CustomerOutstanding), It.IsAny<int>(), "Update", It.IsAny<object>(), It.IsAny<object>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task ApplyCustomerPaymentAsync_FullPayment_ClearsAllOutstanding()
+        {
+            // Arrange
+            var customerId = 1;
+            var outstandings = new List<CustomerOutstanding>
+            {
+                new() { Id = 1, CustomerId = customerId, SaleId = 10, TransactionDate = DateTime.Today, DebitAmount = 1000m, CreditAmount = 0m, Balance = 1000m, Status = "Open" }
+            };
+            _customerRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings);
+            _customerRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings[0]);
+            _customerRepoMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
+                             .Returns(Task.CompletedTask);
+            _auditServiceMock.Setup(a => a.LogAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act - Apply payment equal to balance
+            var result = await service.ApplyCustomerPaymentAsync(customerId, 1000m, saleId: 10, paymentId: 1, "Full payment");
+
+            // Assert - Outstanding should be cleared
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 1 && o.Balance == 0 && o.Status == "Cleared"), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ApplyCustomerPaymentAsync_Overpayment_CreatesCreditOutstanding()
+        {
+            // Arrange
+            var customerId = 1;
+            var outstandings = new List<CustomerOutstanding>
+            {
+                new() { Id = 1, CustomerId = customerId, SaleId = 10, TransactionDate = DateTime.Today, DebitAmount = 1000m, CreditAmount = 0m, Balance = 1000m, Status = "Open" }
+            };
+            _customerRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings);
+            _customerRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings[0]);
+            _customerRepoMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
+                             .Returns(Task.CompletedTask);
+            _customerRepoMock.Setup(r => r.AddAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
+                             .ReturnsAsync((CustomerOutstanding o, CancellationToken _) => { o.Id = 2; return o; });
+            _auditServiceMock.Setup(a => a.LogAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act - Apply payment of 1500 (overpayment of 500)
+            var result = await service.ApplyCustomerPaymentAsync(customerId, 1500m, saleId: 10, paymentId: 1, "Overpayment");
+
+            // Assert - Original outstanding cleared
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 1 && o.Balance == 0 && o.Status == "Cleared"), It.IsAny<CancellationToken>()), Times.Once);
+            // Credit outstanding created with negative balance
+            _customerRepoMock.Verify(r => r.AddAsync(It.Is<CustomerOutstanding>(o => o.Balance == -500m && o.Status == "Credit"), It.IsAny<CancellationToken>()), Times.Once);
+            // Result should be the credit outstanding
+            Assert.Equal(-500m, result.Balance);
+            Assert.Equal("Credit", result.Status);
+        }
+
+        [Fact]
+        public async Task ApplyCustomerPaymentAsync_ZeroAmount_ThrowsArgumentException()
+        {
+            var service = CreateService();
+
+            await Assert.ThrowsAsync<ArgumentException>(() => service.ApplyCustomerPaymentAsync(1, 0m, null, null, null));
+        }
+
+        [Fact]
+        public async Task ApplyCustomerPaymentAsync_NegativeAmount_ThrowsArgumentException()
+        {
+            var service = CreateService();
+
+            await Assert.ThrowsAsync<ArgumentException>(() => service.ApplyCustomerPaymentAsync(1, -100m, null, null, null));
+        }
+
+        [Fact]
+        public async Task ApplyCustomerPaymentAsync_NoOpenOutstanding_CreatesCreditOutstanding()
+        {
+            // Arrange - no open outstandings
+            _customerRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(new List<CustomerOutstanding>());
+            _customerRepoMock.Setup(r => r.AddAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
+                             .ReturnsAsync((CustomerOutstanding o, CancellationToken _) => { o.Id = 1; return o; });
+            _auditServiceMock.Setup(a => a.LogAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act - Apply payment with no existing outstanding
+            var result = await service.ApplyCustomerPaymentAsync(1, 500m, saleId: 10, paymentId: 1, "Advance payment");
+
+            // Assert - Credit outstanding created
+            _customerRepoMock.Verify(r => r.AddAsync(It.Is<CustomerOutstanding>(o => o.Balance == -500m && o.Status == "Credit"), It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Equal(-500m, result.Balance);
+            Assert.Equal("Credit", result.Status);
+        }
+
+        // ───────────────────────── ClearCustomerAccountAsync Tests ─────────────────────────
+
+        [Fact]
+        public async Task ClearCustomerAccountAsync_OpenOutstanding_ClearsAll()
+        {
+            // Arrange
+            var customerId = 1;
+            var outstandings = new List<CustomerOutstanding>
+            {
+                new() { Id = 1, CustomerId = customerId, SaleId = 10, TransactionDate = DateTime.Today, DebitAmount = 1000m, CreditAmount = 0m, Balance = 1000m, Status = "Open" },
+                new() { Id = 2, CustomerId = customerId, SaleId = 11, TransactionDate = DateTime.Today, DebitAmount = 500m, CreditAmount = 0m, Balance = 500m, Status = "Open" }
+            };
+            _customerRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings);
+            _customerRepoMock.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings[0]);
+            _customerRepoMock.Setup(r => r.GetByIdAsync(2, It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings[1]);
+            _customerRepoMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
+                             .Returns(Task.CompletedTask);
+            _auditServiceMock.Setup(a => a.LogAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act
+            await service.ClearCustomerAccountAsync(customerId, clearedByUserId: 1, "Account settlement");
+
+            // Assert - Both outstandings cleared
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 1 && o.Balance == 0 && o.Status == "Cleared"), It.IsAny<CancellationToken>()), Times.Once);
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 2 && o.Balance == 0 && o.Status == "Cleared"), It.IsAny<CancellationToken>()), Times.Once);
+            // Audit log for clearance
+            _auditServiceMock.Verify(a => a.LogAsync(nameof(CustomerOutstanding), 0, "ClearAccount", null, It.IsAny<object>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ClearCustomerAccountAsync_NoOpenOutstanding_ThrowsInvalidOperationException()
+        {
+            // Arrange - no open outstandings
+            _customerRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(new List<CustomerOutstanding>());
+
+            var service = CreateService();
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearCustomerAccountAsync(1, 1, "No balance"));
+        }
+
+        [Fact]
+        public async Task ClearCustomerAccountAsync_SkipsNonOpenOutstanding()
+        {
+            // Arrange - mix of open and cleared
+            var customerId = 1;
+            var outstandings = new List<CustomerOutstanding>
+            {
+                new() { Id = 1, CustomerId = customerId, SaleId = 10, TransactionDate = DateTime.Today, DebitAmount = 1000m, CreditAmount = 0m, Balance = 1000m, Status = "Open" },
+                new() { Id = 2, CustomerId = customerId, SaleId = 11, TransactionDate = DateTime.Today, DebitAmount = 500m, CreditAmount = 500m, Balance = 0m, Status = "Cleared" }, // Already cleared
+                new() { Id = 3, CustomerId = customerId, SaleId = 12, TransactionDate = DateTime.Today, DebitAmount = 200m, CreditAmount = 0m, Balance = -200m, Status = "Credit" } // Credit
+            };
+            _customerRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                             .ReturnsAsync(outstandings);
+            _customerRepoMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerOutstanding>(), It.IsAny<CancellationToken>()))
+                             .Returns(Task.CompletedTask);
+            _auditServiceMock.Setup(a => a.LogAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act
+            await service.ClearCustomerAccountAsync(customerId, 1, "Clear open only");
+
+            // Assert - Only the open one is updated
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 1 && o.Balance == 0 && o.Status == "Cleared"), It.IsAny<CancellationToken>()), Times.Once);
+            // The cleared and credit ones should NOT be updated
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 2), It.IsAny<CancellationToken>()), Times.Never);
+            _customerRepoMock.Verify(r => r.UpdateAsync(It.Is<CustomerOutstanding>(o => o.Id == 3), It.IsAny<CancellationToken>()), Times.Never);
+        }
     }
 }

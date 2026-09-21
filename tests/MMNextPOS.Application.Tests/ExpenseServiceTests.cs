@@ -190,5 +190,50 @@ namespace MMNextPOS.Application.Tests
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetByIdAsync(1));
         }
+
+        // ───────────────────────── Date Range and Monthly Summary Tests ─────────────────────────
+
+        [Fact]
+        public async Task GetByDateRangeAsync_FromTo_ReturnsExpensesInRange()
+        {
+            // Arrange
+            var today = DateTime.Today;
+            var expenses = new List<Expense>
+            {
+                new() { Id = 1, ExpenseNo = "EXP-001", Amount = 100m, ExpenseDate = today.AddDays(-5) },
+                new() { Id = 2, ExpenseNo = "EXP-002", Amount = 200m, ExpenseDate = today },
+                new() { Id = 3, ExpenseNo = "EXP-003", Amount = 300m, ExpenseDate = today.AddDays(5) }
+            };
+            _expenseRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(expenses);
+            var service = CreateService();
+
+            // Act
+            var result = await service.GetByDateRangeAsync(today.AddDays(-10), today.AddDays(-1));
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal(1, result[0].Id);
+        }
+
+        [Fact]
+        public async Task GetByDateRangeAsync_NoExpensesInRange_ReturnsEmptyList()
+        {
+            // Arrange
+            var today = DateTime.Today;
+            var expenses = new List<Expense>
+            {
+                new() { Id = 1, ExpenseNo = "EXP-001", Amount = 100m, ExpenseDate = today.AddDays(-5) }
+            };
+            _expenseRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+                            .ReturnsAsync(expenses);
+            var service = CreateService();
+
+            // Act
+            var result = await service.GetByDateRangeAsync(today.AddDays(10), today.AddDays(20));
+
+            // Assert
+            Assert.Empty(result);
+        }
     }
 }
