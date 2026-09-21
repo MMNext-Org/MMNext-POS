@@ -243,7 +243,12 @@ LIMIT @Limit";
                 new { Version = "008", FileName = "008_InvoiceSequences.sql", Description = "Add InvoiceSequences table for atomic per-year invoice numbering" },
                 new { Version = "009", FileName = "009_AddInvoiceNoToSales.sql", Description = "Add InvoiceNo column to Sales table for auto-generated invoice numbers" },
                 new { Version = "010", FileName = "010_ReturnSequences.sql", Description = "Add ReturnSequences table for atomic per-year return numbering" },
-                new { Version = "011", FileName = "011_AddCustomerTypeToCustomer.sql", Description = "Add CustomerType column to Customers table for tax jurisdiction lookup" }
+                new { Version = "011", FileName = "011_AddCustomerTypeToCustomer.sql", Description = "Add CustomerType column to Customers table for tax jurisdiction lookup" },
+                new { Version = "012", FileName = "012_AddReasonCodeToStockMovements.sql", Description = "Add ReasonCode column to StockMovements table for movement reason codes" },
+                new { Version = "013", FileName = "013_AddMissingStockMovementColumns.sql", Description = "Align StockMovements table with StockMovement model (transfer locations, product, reference, quantity, audit users)" },
+                new { Version = "014", FileName = "014_AlignSchemaWithModelPhase4.sql", Description = "Align remaining tables with models (StockMovementDetails, Products, Payments, Expenses, StockTransfers)" },
+                new { Version = "015", FileName = "015_SerialTables.sql", Description = "Add SerialNumber, SerialBatch, and SerialTracking tables for serial/batch tracking" },
+                new { Version = "016", FileName = "016_AddIsDeletedToSerialTables.sql", Description = "Add IsDeleted column to SerialNumbers and SerialTrackings tables" }
             };
 
             foreach (var known in knownMigrations)
