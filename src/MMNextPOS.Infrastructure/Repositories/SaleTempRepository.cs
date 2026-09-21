@@ -15,7 +15,7 @@ namespace MMNextPOS.Infrastructure.Repositories
         {
         }
 
-public async Task<IReadOnlyList<SaleTemp>> GetDraftsByStatusAsync(string status, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<SaleTemp>> GetDraftsByStatusAsync(string status, CancellationToken cancellationToken = default)
         {
             var results = await Connection.QueryAsync<SaleTemp>(
                 new CommandDefinition("SELECT * FROM SaleTemps WHERE Status = @Status", new { Status = status }, Transaction, cancellationToken: cancellationToken));

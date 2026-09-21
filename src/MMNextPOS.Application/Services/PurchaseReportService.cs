@@ -168,7 +168,7 @@ namespace MMNextPOS.Application.Services
 
             var allPurchases = await _purchaseRepo.GetAllAsync(cancellationToken);
             var relevantPurchases = allPurchases.Where(p => p.PurchaseDate >= fromDate && p.PurchaseDate <= toDate).ToList();
-            
+
             // Get purchase details for relevant purchases
             var purchaseIds = relevantPurchases.Select(p => p.Id).ToList();
             var allDetails = await _purchaseDetailRepo.GetAllAsync(cancellationToken);
@@ -249,7 +249,7 @@ namespace MMNextPOS.Application.Services
             await _auditService.LogAsync(nameof(PurchaseReportService), returnId, "GeneratePurchaseReturnReport", null, null, 1, "System", $"Generated purchase return report for return {returnId}", cancellationToken).ConfigureAwait(false);
 
             var purchaseReturn = await _purchaseReturnRepo.GetByIdAsync(returnId, cancellationToken);
-            
+
             var details = await _purchaseReturnDetailRepo.GetAllAsync(cancellationToken);
             var returnDetails = details.Where(d => d.PurchaseReturnId == returnId).ToList();
 
