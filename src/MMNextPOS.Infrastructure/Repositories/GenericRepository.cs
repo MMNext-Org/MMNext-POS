@@ -124,22 +124,22 @@ namespace MMNextPOS.Infrastructure.Repositories
 
         public virtual async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-if (_hasIsDeleted)
-                {
-                    // Soft delete
-                    var sql = $"UPDATE {_tableName} SET IsDeleted = 1 WHERE Id = @Id";
-                    await Connection.ExecuteAsync(
-                        new CommandDefinition(sql, new { Id = id }, transaction: Transaction,
-                            commandTimeout: null, cancellationToken: cancellationToken)).ConfigureAwait(false);
-                }
-                else
-                {
-                    // Hard delete
-                    var sql = $"DELETE FROM {_tableName} WHERE Id = @Id";
-                    await Connection.ExecuteAsync(
-                        new CommandDefinition(sql, new { Id = id }, transaction: Transaction,
-                            commandTimeout: null, cancellationToken: cancellationToken)).ConfigureAwait(false);
-                }
+            if (_hasIsDeleted)
+            {
+                // Soft delete
+                var sql = $"UPDATE {_tableName} SET IsDeleted = 1 WHERE Id = @Id";
+                await Connection.ExecuteAsync(
+                    new CommandDefinition(sql, new { Id = id }, transaction: Transaction,
+                        commandTimeout: null, cancellationToken: cancellationToken)).ConfigureAwait(false);
+            }
+            else
+            {
+                // Hard delete
+                var sql = $"DELETE FROM {_tableName} WHERE Id = @Id";
+                await Connection.ExecuteAsync(
+                    new CommandDefinition(sql, new { Id = id }, transaction: Transaction,
+                        commandTimeout: null, cancellationToken: cancellationToken)).ConfigureAwait(false);
+            }
         }
 
         public virtual async Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default)

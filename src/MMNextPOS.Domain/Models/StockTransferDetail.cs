@@ -8,6 +8,7 @@ namespace MMNextPOS.Domain.Models
         public int StockTransferId { get; set; }
         public int ProductId { get; set; }
         public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
         public int? ReceivedQuantity { get; set; }
         public string? SerialNumber { get; set; }
         public string? Notes { get; set; }

@@ -30,6 +30,12 @@ namespace MMNextPOS.Domain.Models
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
+        /// Barcode/EAN/UPC for scanning.
+        /// </summary>
+        [MaxLength(100)]
+        public string? Barcode { get; set; }
+
+        /// <summary>
         /// Unit selling price.
         /// </summary>
         [Range(0, double.MaxValue)]
@@ -42,15 +48,40 @@ namespace MMNextPOS.Domain.Models
         public int StockQuantity { get; set; }
 
         /// <summary>
-        /// Soft delete flag. Products are never permanently deleted;
-        /// setting IsActive to false preserves the record for historical sales.
-        /// </summary>
-        public bool IsActive { get; set; } = true;
-
-        /// <summary>
         /// Minimum stock alert level. When stock falls below this value,
         /// the product is considered low stock and alerts are triggered.
         /// </summary>
         public int? MinStockAlertLevel { get; set; }
+
+        /// <summary>
+        /// Reorder point - when stock falls to this level, a purchase order is suggested.
+        /// </summary>
+        public int? ReorderPoint { get; set; }
+
+        /// <summary>
+        /// Maximum stock level for inventory planning.
+        /// </summary>
+        public int? MaxStockLevel { get; set; }
+
+        /// <summary>
+        /// Whether this product requires serial number tracking.
+        /// </summary>
+        public bool SerialTracked { get; set; } = false;
+
+        /// <summary>
+        /// Whether this product requires batch/lot tracking.
+        /// </summary>
+        public bool BatchTracked { get; set; } = false;
+
+        /// <summary>
+        /// Shelf life in days for perishable items. Used for expiry tracking.
+        /// </summary>
+        public int? ShelfLifeDays { get; set; }
+
+        /// <summary>
+        /// Soft delete flag. Products are never permanently deleted;
+        /// setting IsActive to false preserves the record for historical sales.
+        /// </summary>
+        public bool IsActive { get; set; } = true;
     }
 }

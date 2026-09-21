@@ -4,219 +4,91 @@ using System.ComponentModel.DataAnnotations;
 namespace MMNextPOS.Domain.Models
 {
     /// <summary>
-    /// Value Object representing the tracking information for a serial number through inventory movements.
-    /// Immutable and compared by value.
+    /// Audit trail for serial number movements. Tracks every state change
+    /// (receive, sale, return, transfer, expire, damage) for full traceability.
     /// </summary>
-    public readonly struct SerialTracking : IEquatable<SerialTracking>
+    public class SerialTracking : EntityBase
     {
         /// <summary>
-        /// Creates a new SerialTracking value object.
+        /// Serial number being tracked.
         /// </summary>
-        /// <param name="serialNumber">The serial number being tracked.</param>
-        /// <param name="productId">The product ID.</param>
-        /// <param name="locationId">The current location ID.</param>
-        /// <param name="status">The current status of the serial number.</param>
-        /// <param name="movementType">The last movement type.</param>
-        /// <param name="movementDate">The date of the last movement.</param>
-        /// <param name="referenceId">Optional reference ID (sale, purchase, transfer, etc.).</param>
-        /// <param name="referenceType">Optional reference type.</param>
-        public SerialTracking(
-            SerialNumber serialNumber,
-            int productId,
-            int locationId,
-            string status,
-            string movementType,
-            DateTime movementDate,
-            int? referenceId = null,
-            string? referenceType = null)
-        {
-            SerialNumber = serialNumber;
-            ProductId = productId;
-            LocationId = locationId;
-            Status = status ?? "Available";
-            MovementType = movementType ?? "Initial";
-            MovementDate = movementDate;
-            ReferenceId = referenceId;
-            ReferenceType = referenceType;
-        }
+        public int SerialNumberId { get; set; }
 
         /// <summary>
-        /// The serial number being tracked.
+        /// Type of movement that occurred.
         /// </summary>
-        public SerialNumber SerialNumber { get; }
+        public SerialMovementType MovementType { get; set; }
 
         /// <summary>
-        /// The product ID.
+        /// Location before this movement (null for initial receive).
         /// </summary>
-        public int ProductId { get; }
+        public int? FromLocationId { get; set; }
 
         /// <summary>
-        /// The current location ID.
+        /// Location after this movement (null if stock removed).
         /// </summary>
-        public int LocationId { get; }
+        public int? ToLocationId { get; set; }
 
         /// <summary>
-        /// The current status (Available, Sold, Reserved, Damaged, Lost, Transferred, Returned).
+        /// User who performed this movement.
         /// </summary>
-        public string Status { get; }
+        public int UserId { get; set; }
 
         /// <summary>
-        /// The last movement type (Purchase, Sale, Transfer, Adjustment, Return, Assembly, Disassembly).
+        /// Timestamp of this movement.
         /// </summary>
-        public string MovementType { get; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        /// The date of the last movement.
+        /// Reference to source document (SaleId, PurchaseId, TransferId, etc.).
         /// </summary>
-        public DateTime MovementDate { get; }
+        public int? ReferenceId { get; set; }
 
         /// <summary>
-        /// Optional reference ID (sale ID, purchase ID, transfer ID, etc.).
+        /// Type of reference document.
         /// </summary>
-        public int? ReferenceId { get; }
+        public string? ReferenceType { get; set; }
 
         /// <summary>
-        /// Optional reference type (Sale, Purchase, Transfer, Adjustment, Return).
+        /// Additional notes about this movement.
         /// </summary>
-        public string? ReferenceType { get; }
+        [MaxLength(500)]
+        public string? Notes { get; set; }
 
-        /// <summary>
-        /// Creates a new SerialTracking with updated status and movement.
-        /// </summary>
-        public SerialTracking WithMovement(
-            string newStatus,
-            string newMovementType,
-            DateTime movementDate,
-            int? newLocationId = null,
-            int? referenceId = null,
-            string? referenceType = null)
-        {
-            return new SerialTracking(
-                SerialNumber,
-                ProductId,
-                newLocationId ?? LocationId,
-                newStatus,
-                newMovementType,
-                movementDate,
-                referenceId,
-                referenceType);
-        }
+        // Navigation
+        public SerialNumber? SerialNumber { get; set; }
+    }
 
-        /// <summary>
-        /// Creates a new SerialTracking for a sale movement.
-        /// </summary>
-        public SerialTracking WithSale(int saleId, DateTime saleDate, int? newLocationId = null)
-        {
-            return WithMovement("Sold", "Sale", saleDate, newLocationId, saleId, "Sale");
-        }
+    /// <summary>
+    /// Types of serial number movements.
+    /// </summary>
+    public enum SerialMovementType
+    {
+        /// <summary>Serial received into stock</summary>
+        Received = 0,
 
-        /// <summary>
-        /// Creates a new SerialTracking for a purchase/receipt movement.
-        /// </summary>
-        public SerialTracking WithPurchase(int purchaseId, DateTime purchaseDate, int locationId)
-        {
-            return WithMovement("Available", "Purchase", purchaseDate, locationId, purchaseId, "Purchase");
-        }
+        /// <summary>Serial sold to customer</summary>
+        Sold = 1,
 
-        /// <summary>
-        /// Creates a new SerialTracking for a transfer movement.
-        /// </summary>
-        public SerialTracking WithTransfer(int transferId, DateTime transferDate, int toLocationId)
-        {
-            return WithMovement("Transferred", "Transfer", transferDate, toLocationId, transferId, "Transfer");
-        }
+        /// <summary>Serial returned by customer</summary>
+        Returned = 2,
 
-        /// <summary>
-        /// Creates a new SerialTracking for a return movement.
-        /// </summary>
-        public SerialTracking WithReturn(int returnId, DateTime returnDate, int locationId)
-        {
-            return WithMovement("Available", "Return", returnDate, locationId, returnId, "Return");
-        }
+        /// <summary>Serial transferred between locations</summary>
+        Transferred = 3,
 
-        /// <summary>
-        /// Creates a new SerialTracking for an adjustment movement.
-        /// </summary>
-        public SerialTracking WithAdjustment(int adjustmentId, DateTime adjustmentDate, string newStatus, int? locationId = null)
-        {
-            return WithMovement(newStatus, "Adjustment", adjustmentDate, locationId, adjustmentId, "Adjustment");
-        }
+        /// <summary>Serial expired</summary>
+        Expired = 4,
 
-        /// <summary>
-        /// Creates a new SerialTracking for a damaged/lost status.
-        /// </summary>
-        public SerialTracking WithDamageOrLoss(string status, int adjustmentId, DateTime date)
-        {
-            if (status != "Damaged" && status != "Lost")
-            {
-                throw new ArgumentException("Status must be 'Damaged' or 'Lost'.", nameof(status));
-            }
-            return WithMovement(status, "Adjustment", date, null, adjustmentId, "Adjustment");
-        }
+        /// <summary>Serial damaged/write-off</summary>
+        Damaged = 5,
 
-        /// <summary>
-        /// Checks if the serial number is currently available for sale.
-        /// </summary>
-        public bool IsAvailable => Status.Equals("Available", StringComparison.OrdinalIgnoreCase);
+        /// <summary>Serial adjusted (correction)</summary>
+        Adjusted = 6,
 
-        /// <summary>
-        /// Checks if the serial number is sold.
-        /// </summary>
-        public bool IsSold => Status.Equals("Sold", StringComparison.OrdinalIgnoreCase);
+        /// <summary>Serial reserved for pending sale</summary>
+        Reserved = 7,
 
-        /// <summary>
-        /// Checks if the serial number is in a transfer.
-        /// </summary>
-        public bool IsInTransfer => Status.Equals("Transferred", StringComparison.OrdinalIgnoreCase) ||
-                                     Status.Equals("InTransit", StringComparison.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Checks if the serial number is damaged or lost.
-        /// </summary>
-        public bool IsDamagedOrLost => Status.Equals("Damaged", StringComparison.OrdinalIgnoreCase) ||
-                                        Status.Equals("Lost", StringComparison.OrdinalIgnoreCase);
-
-        /// <inheritdoc />
-        public bool Equals(SerialTracking other) =>
-            SerialNumber.Equals(other.SerialNumber) &&
-            ProductId == other.ProductId &&
-            LocationId == other.LocationId &&
-            string.Equals(Status, other.Status, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(MovementType, other.MovementType, StringComparison.OrdinalIgnoreCase) &&
-            MovementDate == other.MovementDate &&
-            ReferenceId == other.ReferenceId &&
-            string.Equals(ReferenceType, other.ReferenceType, StringComparison.OrdinalIgnoreCase);
-
-        /// <inheritdoc />
-        public override bool Equals(object? obj) => obj is SerialTracking other && Equals(other);
-
-        /// <inheritdoc />
-        public override int GetHashCode()
-        {
-            var hash = new HashCode();
-            hash.Add(SerialNumber);
-            hash.Add(ProductId);
-            hash.Add(LocationId);
-            hash.Add(Status, StringComparer.OrdinalIgnoreCase);
-            hash.Add(MovementType, StringComparer.OrdinalIgnoreCase);
-            hash.Add(MovementDate);
-            hash.Add(ReferenceId);
-            hash.Add(ReferenceType, StringComparer.OrdinalIgnoreCase);
-            return hash.ToHashCode();
-        }
-
-        /// <inheritdoc />
-        public override string ToString() =>
-            $"{SerialNumber} - {Status} ({MovementType} at {MovementDate:yyyy-MM-dd HH:mm})";
-
-        /// <summary>
-        /// Equality operator.
-        /// </summary>
-        public static bool operator ==(SerialTracking left, SerialTracking right) => left.Equals(right);
-
-        /// <summary>
-        /// Inequality operator.
-        /// </summary>
-        public static bool operator !=(SerialTracking left, SerialTracking right) => !left.Equals(right);
+        /// <summary>Serial reservation released</summary>
+        ReservationReleased = 8
     }
 }
