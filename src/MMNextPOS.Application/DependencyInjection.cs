@@ -76,6 +76,7 @@ namespace MMNextPOS.Application
             services.AddScoped<IChangeDateLogRepository, ChangeDateLogRepository>();
             services.AddScoped<ICustomerOutstandingRepository, CustomerOutstandingRepository>();
             services.AddScoped<ISupplierOutstandingRepository, SupplierOutstandingRepository>();
+            services.AddScoped<IPaymentRepository, PaymentRepository>();
 
             // Admin/Cross-cutting repositories
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISystemSettingRepository, MMNextPOS.Infrastructure.Repositories.SystemSettingRepository>();
@@ -89,6 +90,11 @@ namespace MMNextPOS.Application
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IPurchaseReceiptRepository, MMNextPOS.Infrastructure.Repositories.PurchaseReceiptRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IPurchaseReceiptDetailRepository, MMNextPOS.Infrastructure.Repositories.PurchaseReceiptDetailRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IPaymentVoucherRepository, MMNextPOS.Infrastructure.Repositories.PaymentVoucherRepository>();
+
+            // Phase 4: Serial/Batch tracking repositories
+            services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISerialNumberRepository, MMNextPOS.Infrastructure.Repositories.SerialNumberRepository>();
+            services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISerialBatchRepository, MMNextPOS.Infrastructure.Repositories.SerialBatchRepository>();
+            services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISerialTrackingRepository, MMNextPOS.Infrastructure.Repositories.SerialTrackingRepository>();
 
             // Register MigrationRunner as scoped (uses IUnitOfWork which is scoped)
             services.AddScoped<IMigrationRunner, MigrationRunner>();
@@ -121,6 +127,7 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.ISalesReturnService, Services.SalesReturnService>();
             services.AddScoped<Services.ISalesReturnDetailService, Services.SalesReturnDetailService>();
             services.AddScoped<Services.IPurchaseService, Services.PurchaseService>();
+            services.AddScoped<Services.IPaymentService, Services.PaymentService>();
             services.AddScoped<Services.IPurchaseDetailService, Services.PurchaseDetailService>();
             services.AddScoped<Services.IPurchaseReturnService, Services.PurchaseReturnService>();
             services.AddScoped<Services.IInventoryService, Services.InventoryService>();
@@ -154,6 +161,23 @@ namespace MMNextPOS.Application
 
             // Tax rate service for automatic tax calculation by customer type/jurisdiction
             services.AddScoped<Services.ITaxRateService, Services.TaxRateService>();
+
+            // Phase 4: Inventory/Warehouse/Starman services
+            services.AddScoped<Services.ISerialNumberService, Services.SerialNumberService>();
+            services.AddScoped<Services.IBarcodeService, Services.BarcodeService>();
+            services.AddScoped<Services.IStockTransferService, Services.StockTransferService>();
+            services.AddScoped<Services.ExpiryManagementService>(); // Phase 3c: Expiry management
+
+            // Phase 5: Dashboard service
+            services.AddScoped<Services.IDashboardService, Services.DashboardService>();
+
+            // Phase 6: Database utilities
+            services.AddScoped<Services.IConnectionTestService>(sp =>
+            {
+                var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MMNextPOS.Infrastructure.ConnectionStringOptions>>();
+                var audit = sp.GetRequiredService<Services.IAuditService>();
+                return new Services.ConnectionTestService(options.Value.Default, audit);
+            });
 
             // Admin/Cross-cutting services
             services.AddScoped<Services.ISystemSettingService, Services.SystemSettingService>();
