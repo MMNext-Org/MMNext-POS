@@ -62,6 +62,8 @@ namespace MMNextPOS.Application
             services.AddScoped<IStarStockBalanceReportRepository, StarStockBalanceReportRepository>();
             services.AddScoped<IStarReorderReportRepository, StarReorderReportRepository>();
             services.AddScoped<IStarOutstandingReportRepository, StarOutstandingReportRepository>();
+            services.AddScoped<IStarSalePriceTransferRepository, StarSalePriceTransferRepository>();
+            services.AddScoped<IStarStockTransferReceivedRepository, StarStockTransferReceivedRepository>();
             services.AddScoped<IIssueHeaderRepository, IssueHeaderRepository>();
             services.AddScoped<ILicenseInfoRepository, LicenseInfoRepository>();
             services.AddScoped<IDeviceRequestRepository, DeviceRequestRepository>();
@@ -166,6 +168,9 @@ namespace MMNextPOS.Application
             services.AddScoped<Services.ISerialNumberService, Services.SerialNumberService>();
             services.AddScoped<Services.IBarcodeService, Services.BarcodeService>();
             services.AddScoped<Services.IStockTransferService, Services.StockTransferService>();
+            services.AddScoped<Services.IAssemblyService, Services.AssemblyService>();
+            services.AddScoped<Services.IStarSalePriceTransferService, Services.StarSalePriceTransferService>();
+            services.AddScoped<Services.IStarStockTransferReceivedService, Services.StarStockTransferReceivedService>();
             services.AddScoped<Services.ExpiryManagementService>(); // Phase 3c: Expiry management
 
             // Phase 5: Dashboard service

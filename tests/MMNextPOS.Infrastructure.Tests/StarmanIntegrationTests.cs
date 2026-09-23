@@ -39,11 +39,16 @@ namespace MMNextPOS.Infrastructure.Tests
             using var scope = _fixture.ServiceProvider.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IStarStockTransferReceivedService>();
 
+            // Seed the referenced locations first (FK to locations table)
+            var locationService = scope.ServiceProvider.GetRequiredService<ILocationService>();
+            var hq = await locationService.AddAsync(new Location { Code = "HQ", Name = "Headquarters", IsHeadquarter = true });
+            var branch = await locationService.AddAsync(new Location { Code = "BR-001", Name = "Branch 1" });
+
             var transfer = new StarStockTransferReceived
             {
                 TransferNo = "ST-HQ-001",
-                FromLocationId = 1,
-                ToLocationId = 2,
+                FromLocationId = hq.Id,
+                ToLocationId = branch.Id,
                 TransferDate = DateTime.UtcNow,
                 Status = "Pending"
             };
@@ -79,11 +84,16 @@ namespace MMNextPOS.Infrastructure.Tests
             using var scope = _fixture.ServiceProvider.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IStarSalePriceTransferService>();
 
+            // Seed the referenced locations first (FK to locations table)
+            var locationService = scope.ServiceProvider.GetRequiredService<ILocationService>();
+            var hq = await locationService.AddAsync(new Location { Code = "HQ", Name = "Headquarters", IsHeadquarter = true });
+            var branch = await locationService.AddAsync(new Location { Code = "BR-001", Name = "Branch 1" });
+
             var transfer = new StarSalePriceTransfer
             {
                 TransferNo = "PRICE-HQ-001",
-                FromLocationId = 1,
-                ToLocationId = 2,
+                FromLocationId = hq.Id,
+                ToLocationId = branch.Id,
                 TransferDate = DateTime.UtcNow,
                 Status = "Pending"
             };
