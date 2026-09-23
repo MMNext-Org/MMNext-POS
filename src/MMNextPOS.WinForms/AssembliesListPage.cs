@@ -48,10 +48,28 @@ namespace MMNextPOS.WinForms
             return await _service.GetAssembliesAsync(cancellationToken);
         }
 
+        protected override async Task OnNewAsync()
+        {
+            using var dialog = new AssemblyEditForm(new Assembly());
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var entity = new Assembly();
+                dialog.SaveEntityData(entity);
+                await _service.AddAssemblyAsync(entity, dialog.GetDetails(), CancellationToken);
+                await LoadAsync();
+            }
+        }
+
         protected override async Task OnEditAsync(Assembly entity)
         {
-            // TODO: Implement AssemblyEditForm
-            await Task.CompletedTask;
+            var details = await _service.GetAssemblyDetailsAsync(entity.Id, CancellationToken);
+            using var dialog = new AssemblyEditForm(entity, details);
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                dialog.SaveEntityData(entity);
+                await _service.UpdateAssemblyAsync(entity, dialog.GetDetails(), CancellationToken);
+                await LoadAsync();
+            }
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)

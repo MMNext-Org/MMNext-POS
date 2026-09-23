@@ -10,6 +10,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
+using Microsoft.Extensions.DependencyInjection;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
 
@@ -45,14 +46,33 @@ namespace MMNextPOS.WinForms
             return await _service.GetAllAsync(cancellationToken);
         }
 
+        protected override async Task OnNewAsync()
+        {
+            using var dialog = _serviceProvider.GetRequiredService<CustomerEditForm>();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var entity = new Customer();
+                dialog.SaveEntityData(entity);
+                await _service.AddAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
+        }
+
         protected override async Task OnEditAsync(Customer entity)
         {
-            // Edit handled by derived forms
+            using var dialog = _serviceProvider.GetRequiredService<CustomerEditForm>();
+            dialog.LoadEntityData(entity);
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                dialog.SaveEntityData(entity);
+                await _service.UpdateAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)
         {
-            // Delete handled by derived forms
+            await _service.DeleteAsync(id, cancellationToken);
         }
     }
 }

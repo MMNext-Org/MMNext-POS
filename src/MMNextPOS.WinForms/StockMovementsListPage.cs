@@ -48,10 +48,32 @@ namespace MMNextPOS.WinForms
             return await _service.GetStockMovementsAsync(null, null, cancellationToken);
         }
 
+        protected override async Task OnNewAsync()
+        {
+            using var form = CreateEditForm(new StockMovement());
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                await LoadAsync();
+            }
+        }
+
         protected override async Task OnEditAsync(StockMovement entity)
         {
-            // TODO: Implement StockMovementEditForm
-            await Task.CompletedTask;
+            using var form = CreateEditForm(entity);
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                await LoadAsync();
+            }
+        }
+
+        private StockMovementEditForm CreateEditForm(StockMovement movement)
+        {
+            return new StockMovementEditForm(
+                _serviceProvider.GetRequiredService<IInventoryService>(),
+                _serviceProvider.GetRequiredService<IProductService>(),
+                _serviceProvider.GetRequiredService<ICustomerService>(),
+                _serviceProvider.GetRequiredService<ISupplierService>(),
+                movement);
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)

@@ -49,12 +49,27 @@ namespace MMNextPOS.WinForms
             return await _service.GetAllAsync(cancellationToken);
         }
 
+        protected override async Task OnNewAsync()
+        {
+            using var dialog = _serviceProvider.GetRequiredService<ExpenseEditForm>();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var entity = new Expense();
+                dialog.SaveEntityData(entity);
+                await _service.AddAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
+        }
+
         protected override async Task OnEditAsync(Expense entity)
         {
-            using var form = new ExpenseEditForm(entity);
-            if (form.ShowDialog() == DialogResult.OK)
+            using var dialog = _serviceProvider.GetRequiredService<ExpenseEditForm>();
+            dialog.LoadEntityData(entity);
+            if (dialog.ShowDialog(this) == DialogResult.OK)
             {
+                dialog.SaveEntityData(entity);
                 await _service.UpdateAsync(entity, CancellationToken);
+                await LoadAsync();
             }
         }
 

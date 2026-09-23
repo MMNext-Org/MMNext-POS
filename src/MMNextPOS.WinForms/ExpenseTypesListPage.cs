@@ -45,10 +45,28 @@ namespace MMNextPOS.WinForms
             return await _service.GetAllAsync(cancellationToken);
         }
 
+        protected override async Task OnNewAsync()
+        {
+            using var dialog = _serviceProvider.GetRequiredService<ExpenseTypeEditForm>();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var entity = new ExpenseType();
+                dialog.SaveEntityData(entity);
+                await _service.AddAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
+        }
+
         protected override async Task OnEditAsync(ExpenseType entity)
         {
-            // TODO: Implement ExpenseTypeEditForm
-            await Task.CompletedTask;
+            using var dialog = _serviceProvider.GetRequiredService<ExpenseTypeEditForm>();
+            dialog.LoadEntityData(entity);
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                dialog.SaveEntityData(entity);
+                await _service.UpdateAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)

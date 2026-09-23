@@ -50,13 +50,27 @@ namespace MMNextPOS.WinForms
             return await _service.GetAllAsync(cancellationToken);
         }
 
+        protected override async Task OnNewAsync()
+        {
+            using var dialog = _serviceProvider.GetRequiredService<PaymentEditForm>();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var entity = new Payment();
+                dialog.SaveEntityData(entity);
+                await _service.AddAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
+        }
+
         protected override async Task OnEditAsync(Payment entity)
         {
-            // Open the payment edit form
-            using var form = new PaymentEditForm(entity);
-            if (form.ShowDialog() == DialogResult.OK)
+            using var dialog = _serviceProvider.GetRequiredService<PaymentEditForm>();
+            dialog.LoadEntityData(entity);
+            if (dialog.ShowDialog(this) == DialogResult.OK)
             {
+                dialog.SaveEntityData(entity);
                 await _service.UpdateAsync(entity, CancellationToken);
+                await LoadAsync();
             }
         }
 

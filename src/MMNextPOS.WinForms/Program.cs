@@ -110,6 +110,31 @@ namespace MMNextPOS.WinForms
                     services.AddTransient<ExpenseTypesListPage>();
                     services.AddTransient<PaymentsListPage>();
 
+                    // Edit forms resolved via IServiceProvider from list pages
+                    services.AddTransient<CategoryEditForm>();
+                    services.AddTransient<CompanyEditForm>();
+                    services.AddTransient<CurrencyEditForm>();
+                    services.AddTransient<CustomerEditForm>();
+                    services.AddTransient<DiscountEditForm>();
+                    services.AddTransient<EmailSettingEditForm>();
+                    services.AddTransient<ExpenseEditForm>();
+                    services.AddTransient<ExpenseTypeEditForm>();
+                    services.AddTransient<GroupEditForm>();
+                    services.AddTransient<LanguageEditForm>();
+                    services.AddTransient<LocationEditForm>();
+                    services.AddTransient<PaymentEditForm>();
+                    services.AddTransient<PurchaseEditForm>();
+                    services.AddTransient<PurchaseReturnEditForm>();
+                    services.AddTransient<ReportMenuEditForm>();
+                    services.AddTransient<RoleEditForm>();
+                    services.AddTransient<SalesReturnEditForm>();
+                    services.AddTransient<SaleTempEditForm>();
+                    services.AddTransient<SupplierEditForm>();
+                    services.AddTransient<TaxEditForm>();
+                    services.AddTransient<ThemeEditForm>();
+                    services.AddTransient<UnitEditForm>();
+                    services.AddTransient<UserEditForm>();
+
                     // Build provider
                     using var serviceProvider = services.BuildServiceProvider();
 

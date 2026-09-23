@@ -44,10 +44,28 @@ namespace MMNextPOS.WinForms
             return await _service.GetAllAsync(cancellationToken);
         }
 
+        protected override async Task OnNewAsync()
+        {
+            using var dialog = _serviceProvider.GetRequiredService<RoleEditForm>();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var entity = new Role();
+                dialog.SaveEntityData(entity);
+                await _service.AddAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
+        }
+
         protected override async Task OnEditAsync(Role entity)
         {
-            // TODO: Implement RoleEditForm
-            await Task.CompletedTask;
+            using var dialog = _serviceProvider.GetRequiredService<RoleEditForm>();
+            dialog.LoadEntityData(entity);
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                dialog.SaveEntityData(entity);
+                await _service.UpdateAsync(entity, CancellationToken);
+                await LoadAsync();
+            }
         }
 
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)
