@@ -198,8 +198,8 @@ namespace MMNextPOS.WinForms
 
             if (!string.IsNullOrWhiteSpace(_passwordEdit.Text))
             {
-                // In real implementation, hash the password
-                user.PasswordHash = _passwordEdit.Text; // Placeholder
+                // Hash the plain-text password before persisting (BCrypt, work factor 12).
+                user.PasswordHash = MMNextPOS.Application.Services.UserService.HashPassword(_passwordEdit.Text);
             }
         }
 
