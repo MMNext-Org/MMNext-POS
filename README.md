@@ -65,7 +65,37 @@ Agent သည် API key၊ connection string password၊ user data၊ database d
 
 MMNextPOS သည် .NET 8 WinForms + DevExpress၊ Domain/Infrastructure/Application/Presentation layered architecture၊ Dapper/MySQL၊ xUnit နှင့် Testcontainers ကို အသုံးပြုထားပါတယ်။ Repository ရှိ `.github/AGENTS.md` နှင့် `.claude/AGENTS.md` ညွှန်ကြားချက်များကို agent profiles များက လိုက်နာရန် သတ်မှတ်ထားပါတယ်။
 
-## References
+## တည်ဆောက်ခြင်း နှင့် လုပ်ဆောင်ခြင်း (Build & Run)
+
+### လိုအပ်သော Software များ
+*   **.NET 8 SDK** - အနီးဆုံးသော SDK ကို install လုပ်ပါ
+*   **MySQL 8.0** - Database အတွက်
+*   **Docker Desktop** (Integration tests အတွက်သာ)
+
+### ကြိုတင်ပြင်ဆင်ခြင်း (Environment Setup)
+1.  **Environment Variable သတ်မှတ်ခြင်း:**
+    Windows PowerShell ကို **Administrator rights** ဖြင့် ဖွင့်ပါ။
+    ```powershell
+    # MySQL connection string ကို သတ်မှတ်ပါ
+    [Environment]::SetEnvironmentVariable('MMNEXTPOS_CONNECTION_STRING', 'Server=localhost;Database=mmnextpos;Uid=root;Pwd=;', 'User')
+    ```
+    *(သို့မဟုတ်) MySQL Server ရှိသော PC အတွက် IP Address ကို ပြင်ပါ*
+
+2.  **Database ဆောက်ရန်:**
+    Project ကို ပထမဆုံးအကြိမ် Run လုပ်ပါက `DatabaseInitializer` ကို လိုအပ်သော Migration များကို အလိုအလျောက် လုပ်ဆောင်ပေးပါမည်။
+
+### Build နှင့် Run
+1.  **Solution ကို Build လုပ်ပါ**
+    ```powershell
+    dotnet build -c Release
+    ```
+
+2.  **Application ကို Run ပါ**
+    ```powershell
+    dotnet run --project src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj
+    ```
+
+### References
 
 1. [GitHub: Creating custom agents for Copilot cloud agent](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/create-custom-agents)
 2. [Visual Studio Code: Custom agents](https://code.visualstudio.com/docs/agent-customization/custom-agents)

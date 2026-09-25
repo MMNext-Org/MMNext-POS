@@ -142,6 +142,7 @@ namespace MMNextPOS.Application
             // Theme & Language services
             services.AddScoped<Services.IThemeService, Services.ThemeService>();
             services.AddScoped<Services.ILanguageService, Services.LanguageService>();
+            services.AddSingleton<Services.ITranslationService, Services.TranslationService>();
 
             // Receipt/Voucher services
             services.AddScoped<Services.ISaleReceiptService, Services.SaleReceiptService>();
@@ -185,6 +186,7 @@ namespace MMNextPOS.Application
             });
 
             // Admin/Cross-cutting services
+            services.AddSingleton<Services.ILanguageService, Services.LanguageService>();
             services.AddScoped<Services.ISystemSettingService, Services.SystemSettingService>();
             services.AddScoped<Services.IBackupService, Services.BackupService>();
             services.AddScoped<Services.IMigrationService, Services.MigrationService>();

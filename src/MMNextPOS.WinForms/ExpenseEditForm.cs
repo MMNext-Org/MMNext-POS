@@ -16,6 +16,7 @@ namespace MMNextPOS.WinForms
         private DateEdit _expenseDateEdit = null!;
         private SpinEdit _amountEdit = null!;
         private LookUpEdit _locationLookup = null!;
+        private LookUpEdit _paidByLookup = null!;
         private MemoEdit _notesEdit = null!;
         private ComboBoxEdit _statusCombo = null!;
 
@@ -118,24 +119,38 @@ namespace MMNextPOS.WinForms
             };
             mainLayout.Controls.Add(_locationLookup, 1, 4);
 
-            // Paid By (User)
-            mainLayout.Controls.Add(CreateLabel("Paid By:"), 0, 5);
-            // TODO: Add User lookup if needed
-
-            // Status
-            mainLayout.Controls.Add(CreateLabel("Status:"), 0, 6);
-            _statusCombo = new ComboBoxEdit
+        // Paid By (User)
+        mainLayout.Controls.Add(CreateLabel("Paid By:"), 0, 5);
+        _paidByLookup = new LookUpEdit
+        {
+            Dock = DockStyle.Fill,
+            Properties =
             {
-                Dock = DockStyle.Fill,
-                Properties =
-                {
-                    AutoHeight = false,
-                    TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor,
-                    Items = { "Active", "Closed" }
-                }
-            };
-            _statusCombo.SelectedIndex = 0;
-            mainLayout.Controls.Add(_statusCombo, 1, 6);
+                DisplayMember = "Username",
+                ValueMember = "Id",
+                NullText = "Select user...",
+                ShowHeader = false,
+                AutoHeight = false,
+                BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup,
+                SearchMode = DevExpress.XtraEditors.Controls.SearchMode.AutoFilter
+            }
+        };
+        mainLayout.Controls.Add(_paidByLookup, 1, 5);
+
+        // Status
+        mainLayout.Controls.Add(CreateLabel("Status:"), 0, 6);
+        _statusCombo = new ComboBoxEdit
+        {
+            Dock = DockStyle.Fill,
+            Properties =
+            {
+                AutoHeight = false,
+                TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor,
+                Items = { "Active", "Closed" }
+            }
+        };
+        _statusCombo.SelectedIndex = 0;
+        mainLayout.Controls.Add(_statusCombo, 1, 6);
 
             // Notes
             mainLayout.Controls.Add(CreateLabel("Notes:"), 0, 7);

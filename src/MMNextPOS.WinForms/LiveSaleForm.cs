@@ -30,6 +30,7 @@ namespace MMNextPOS.WinForms
         private readonly ICustomerService _customerService;
         private readonly IPaymentService _paymentService;
         private readonly IInvoiceService _invoiceService;
+        private readonly ITranslationService _translationService;
 
         // UI Controls
         private LookUpEdit _customerLookup = null!;
@@ -52,7 +53,8 @@ namespace MMNextPOS.WinForms
             IProductService productService,
             ICustomerService customerService,
             IPaymentService paymentService,
-            IInvoiceService invoiceService)
+            IInvoiceService invoiceService,
+            ITranslationService translationService)
         {
             _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
             _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
@@ -60,6 +62,7 @@ namespace MMNextPOS.WinForms
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
             _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
+            _translationService = translationService ?? throw new ArgumentNullException(nameof(translationService));
 
             InitializeComponent();
             this.Load += async (s, e) => await LoadReferenceDataAsync();
@@ -348,7 +351,7 @@ namespace MMNextPOS.WinForms
                 _printButton.Enabled = false;
 
                 // Generate receipt using report service
-                var report = new SaleReceiptReport(_salesService, _productService, _customerService);
+                var report = new SaleReceiptReport(_salesService, _productService, _customerService, _translationService);
                 await report.PopulateAsync(_currentDraft.Id, CancellationToken);
                 using var stream = new MemoryStream();
                 report.ExportToPdf(stream);
@@ -370,7 +373,7 @@ namespace MMNextPOS.WinForms
 
         private async Task<string> GenerateReceiptTextAsync(int saleId)
         {
-            var report = new SaleReceiptReport(_salesService, _productService, _customerService);
+            var report = new SaleReceiptReport(_salesService, _productService, _customerService, _translationService);
             await report.PopulateAsync(saleId, CancellationToken);
             using var stream = new MemoryStream();
             report.ExportToPdf(stream);

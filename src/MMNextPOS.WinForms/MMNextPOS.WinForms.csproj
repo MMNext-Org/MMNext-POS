@@ -25,6 +25,20 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- Myanmar fonts: link to the repo-root Fonts/ folder and copy to output
+         so FontHelper can load them at runtime -->
+    <None Include="..\..\Fonts\Pyidaungsu-2.5.3_Regular.ttf">
+      <Link>Fonts\Pyidaungsu-2.5.3_Regular.ttf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Fonts\Pyidaungsu-2.5.3_Bold.ttf">
+      <Link>Fonts\Pyidaungsu-2.5.3_Bold.ttf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Fonts\Pyidaungsu-2.5.3_Numbers.ttf">
+      <Link>Fonts\Pyidaungsu-2.5.3_Numbers.ttf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>
@@ -36,6 +50,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>DX1000</WarningsNotAsErrors>
     <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>2.0.0</Version>
+    <AssemblyName>MMNextPOS.WinForms</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

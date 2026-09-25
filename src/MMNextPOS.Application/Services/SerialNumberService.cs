@@ -42,6 +42,17 @@ namespace MMNextPOS.Application.Services
                 batchId = batch?.Id;
             }
 
+            // Calculate cost from batch if available, otherwise default to 0
+            decimal cost = 0m;
+            if (batchId.HasValue)
+            {
+                var batch = await _batchRepo.GetByIdAsync(batchId.Value, cancellationToken);
+                if (batch != null)
+                {
+                    cost = batch.CostPerUnit;
+                }
+            }
+
             var serial = new SerialNumber
             {
                 SerialNumberValue = serialValue,
@@ -50,16 +61,20 @@ namespace MMNextPOS.Application.Services
                 BatchId = batchId,
                 Status = SerialStatus.Available,
                 ReceivedDate = DateTime.UtcNow,
-                Cost = 0m // TODO: Calculate from batch or product
+                Cost = cost
             };
 
             var result = await _serialNumberRepo.AddAsync(serial, cancellationToken);
+
+            // Get current user ID from context (placeholder - will be replaced with actual session)
+            int userId = 1; // Default to System user for now
+
             await _trackingRepo.AddAsync(new SerialTracking
             {
                 SerialNumberId = result.Id,
                 MovementType = SerialMovementType.Received,
                 ToLocationId = locationId,
-                UserId = 1, // TODO: Get from context
+                UserId = userId,
                 Notes = $"Serial {serialValue} generated for product {productId}"
             }, cancellationToken);
             await _auditService.LogAsync(nameof(SerialNumber), result.Id, "Generate", null, result, 1, "System", $"Generated serial {serialValue} for product {productId}", cancellationToken);

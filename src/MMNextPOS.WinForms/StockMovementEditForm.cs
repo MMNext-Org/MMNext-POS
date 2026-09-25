@@ -244,18 +244,23 @@ namespace MMNextPOS.WinForms
             Controls.Add(mainLayout);
         }
 
-        private void UpdateAvailableStock()
+        private async Task UpdateAvailableStockAsync()
         {
             if (_productLookup.EditValue != null && _inventoryService != null)
             {
                 var productId = (int)_productLookup.EditValue;
-                var available = _inventoryService.GetAvailableStockAsync(productId, null, CancellationToken.None).Result;
+                var available = await _inventoryService.GetAvailableStockAsync(productId, null, CancellationToken.None);
                 _availableStockLabel.Text = $"Available: {available:N0}";
             }
             else
             {
                 _availableStockLabel.Text = "Available: --";
             }
+        }
+
+        private void UpdateAvailableStock()
+        {
+            _ = UpdateAvailableStockAsync();
         }
 
         private void OnMovementTypeChanged()

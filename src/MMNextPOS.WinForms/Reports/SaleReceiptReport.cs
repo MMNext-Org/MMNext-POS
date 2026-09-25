@@ -1,29 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using DevExpress.XtraPrinting;
 using System.Drawing.Printing;
-using DevExpress.Drawing.Printing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DevExpress.XtraPrinting;
+using DevExpress.Drawing.Printing;
 using DevExpress.XtraReports.UI;
 using MMNextPOS.Application.Services;
+using MMNextPOS.Application.Utilities;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.WinForms.Services;
 
 namespace MMNextPOS.WinForms.Reports
 {
     /// <summary>
-    /// Sale Receipt Report - prints a receipt for a single sale transaction.
+    /// Sale Receipt Report – 3‑inch thermal receipt localized for Myanmar and English.
     /// </summary>
     public class SaleReceiptReport : BaseReport
     {
+        private readonly ITranslationService _translationService;
 
-        public SaleReceiptReport(ISalesService salesService, IProductService productService, ICustomerService customerService)
+        public SaleReceiptReport(ISalesService salesService, IProductService productService, ICustomerService customerService, ITranslationService translationService)
         {
             _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
+            _translationService = translationService ?? throw new ArgumentNullException(nameof(translationService));
 
             InitializeReport();
         }
@@ -31,17 +35,19 @@ namespace MMNextPOS.WinForms.Reports
         private void InitializeReport()
         {
             Name = "rptSaleReceipt";
-            DisplayName = "Sale Receipt";
-            PageWidth = 300; // 3-inch thermal receipt width (approx 300 hundredths of inch)
+            DisplayName = "Sale Receipt (Bilingual)";
+            PageWidth = 300; 
             PageHeight = 1169;
             Margins = new Margins(10, 10, 10, 10);
             PaperKind = DXPaperKind.Custom;
-            Font = new Font("Consolas", 8);
+            
+            Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                ? FontHelper.CreateMyanmarFont(8) 
+                : new Font("Segoe UI", 8);
 
-            // Create bands
             var headerBand = new ReportHeaderBand { HeightF = 180 };
             var detailBand = new DetailBand { HeightF = 25 };
-            var footerBand = new ReportFooterBand { HeightF = 100 };
+            var footerBand = new ReportFooterBand { HeightF = 110 };
 
             Bands.Add(headerBand);
             Bands.Add(detailBand);
@@ -56,11 +62,12 @@ namespace MMNextPOS.WinForms.Reports
         {
             float yPos = 5;
 
-            // Company Name
             var companyLabel = new XRLabel
             {
                 Text = "MMNext POS",
-                Font = new Font("Consolas", 10, FontStyle.Bold),
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFontBold(10) 
+                    : new Font("Segoe UI", 10, FontStyle.Bold),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 20),
                 TextAlignment = TextAlignment.MiddleCenter
@@ -68,11 +75,12 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(companyLabel);
             yPos += 22;
 
-            // Company Slogan
             var sloganLabel = new XRLabel
             {
-                Text = "Modern Point of Sale",
-                Font = new Font("Consolas", 7),
+                Text = " Modern Point of Sale ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(7) 
+                    : new Font("Segoe UI", 7),
                 ForeColor = Color.Gray,
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
@@ -81,7 +89,6 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(sloganLabel);
             yPos += 18;
 
-            // Separator
             var sep1 = new XRLine
             {
                 LocationF = new PointF(0, yPos),
@@ -91,11 +98,12 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(sep1);
             yPos += 5;
 
-            // Sale Info Labels (will be populated at runtime)
             _saleCodeLabel = new XRLabel
             {
-                Text = "Sale #: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("ReceiptNo")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
                 TextAlignment = TextAlignment.MiddleLeft
@@ -105,8 +113,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _dateLabel = new XRLabel
             {
-                Text = "Date: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Date")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
                 TextAlignment = TextAlignment.MiddleLeft
@@ -116,8 +126,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _customerLabel = new XRLabel
             {
-                Text = "Customer: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Customer")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
                 TextAlignment = TextAlignment.MiddleLeft
@@ -127,8 +139,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _cashierLabel = new XRLabel
             {
-                Text = "Cashier: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Advance")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
                 TextAlignment = TextAlignment.MiddleLeft
@@ -136,7 +150,6 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(_cashierLabel);
             yPos += 5;
 
-            // Separator
             var sep2 = new XRLine
             {
                 LocationF = new PointF(0, yPos),
@@ -146,14 +159,21 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(sep2);
             yPos += 5;
 
-            // Column headers
             var headerTable = new XRTable
             {
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 20),
-                Font = new Font("Consolas", 7, FontStyle.Bold)
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFontBold(7) 
+                    : new Font("Segoe UI", 7, FontStyle.Bold)
             };
-            headerTable.Rows.Add(CreateHeaderRow(new[] { "Item", "Qty", "Price", "Total" }));
+            headerTable.Rows.Add(CreateHeaderRow(new[]
+            {
+                _translationService.GetText("Item"),
+                _translationService.GetText("Qty"),
+                _translationService.GetText("Price"),
+                _translationService.GetText("Total")
+            }));
             band.Controls.Add(headerTable);
         }
 
@@ -164,17 +184,16 @@ namespace MMNextPOS.WinForms.Reports
 
         private void BuildDetail(DetailBand band)
         {
-            // Detail row will be populated at runtime via BeforePrint
             var detailTable = new XRTable
             {
                 LocationF = new PointF(0, 0),
                 SizeF = new SizeF(280, 25),
-                Font = new Font("Consolas", 7)
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(7) 
+                    : new Font("Segoe UI", 7)
             };
             detailTable.Rows.Add(CreateDetailRow(new[] { "", "", "", "" }));
             band.Controls.Add(detailTable);
-
-            // Store reference for BeforePrint
             _detailTable = detailTable;
         }
 
@@ -184,7 +203,6 @@ namespace MMNextPOS.WinForms.Reports
         {
             float yPos = 5;
 
-            // Separator
             var sep = new XRLine
             {
                 LocationF = new PointF(0, yPos),
@@ -194,11 +212,12 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(sep);
             yPos += 5;
 
-            // Totals
             _subtotalLabel = new XRLabel
             {
-                Text = "Subtotal: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Total")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
                 TextAlignment = TextAlignment.MiddleRight
@@ -208,8 +227,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _discountLabel = new XRLabel
             {
-                Text = "Discount: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Discount")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
                 TextAlignment = TextAlignment.MiddleRight
@@ -219,8 +240,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _taxLabel = new XRLabel
             {
-                Text = "Tax: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Tax")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
                 TextAlignment = TextAlignment.MiddleRight
@@ -228,7 +251,6 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(_taxLabel);
             yPos += 17;
 
-            // Total line
             var totalLine = new XRLine
             {
                 LocationF = new PointF(0, yPos),
@@ -240,8 +262,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _totalLabel = new XRLabel
             {
-                Text = "TOTAL: ",
-                Font = new Font("Consolas", 10, FontStyle.Bold),
+                Text = $"{_translationService.GetText("Total")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFontBold(10) 
+                    : new Font("Segoe UI", 10, FontStyle.Bold),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 22),
                 TextAlignment = TextAlignment.MiddleRight
@@ -251,8 +275,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _paidLabel = new XRLabel
             {
-                Text = "Paid: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Paid")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
                 TextAlignment = TextAlignment.MiddleRight
@@ -262,8 +288,10 @@ namespace MMNextPOS.WinForms.Reports
 
             _changeLabel = new XRLabel
             {
-                Text = "Change: ",
-                Font = new Font("Consolas", 8),
+                Text = $"{_translationService.GetText("Change")}: ",
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
                 TextAlignment = TextAlignment.MiddleRight
@@ -271,7 +299,6 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(_changeLabel);
             yPos += 10;
 
-            // Separator
             var sep2 = new XRLine
             {
                 LocationF = new PointF(0, yPos),
@@ -281,11 +308,12 @@ namespace MMNextPOS.WinForms.Reports
             band.Controls.Add(sep2);
             yPos += 5;
 
-            // Thank you message
             var thanksLabel = new XRLabel
             {
-                Text = "Thank You for Shopping!",
-                Font = new Font("Consolas", 8, FontStyle.Bold),
+                Text = _translationService.GetText("ThankYou"),
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFontBold(8) 
+                    : new Font("Segoe UI", 8, FontStyle.Bold),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
                 TextAlignment = TextAlignment.MiddleCenter
@@ -295,8 +323,10 @@ namespace MMNextPOS.WinForms.Reports
 
             var visitLabel = new XRLabel
             {
-                Text = "Please Visit Again",
-                Font = new Font("Consolas", 7),
+                Text = _translationService.GetText("VisitAgain"),
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(7) 
+                    : new Font("Segoe UI", 7),
                 ForeColor = Color.Gray,
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
@@ -315,37 +345,44 @@ namespace MMNextPOS.WinForms.Reports
         private Sale? _currentSale;
         private List<SaleDetail> _saleDetails = new();
 
-        /// <summary>
-        /// Populates the report with sale data.
-        /// </summary>
         public async Task PopulateAsync(int saleId, CancellationToken cancellationToken = default)
         {
             _currentSale = await _salesService!.GetByIdAsync(saleId, cancellationToken);
             if (_currentSale == null)
                 throw new InvalidOperationException($"Sale #{saleId} not found");
 
-            // Populate header
-            _saleCodeLabel.Text = $"Sale #: {_currentSale.Id}";
-            _dateLabel.Text = $"Date: {FormatDateTime(_currentSale.SaleDate)}";
+            _saleCodeLabel.Text = $"{_translationService.GetText("ReceiptNo")}: {_currentSale.Id}";
+            _dateLabel.Text = $"{_translationService.GetText("Date")}: {FormatDateTime(_currentSale.SaleDate)}";
 
-            var customer = _currentSale.CustomerId > 0 ? await _customerService!.GetByIdAsync(_currentSale.CustomerId, cancellationToken) : null;
-            _customerLabel.Text = $"Customer: {customer?.Name ?? "Walk-in"}";
+            var customer = _currentSale.CustomerId > 0
+                ? await _customerService!.GetByIdAsync(_currentSale.CustomerId, cancellationToken)
+                : null;
+            
+            var custName = customer?.Name ?? "Walk-in";
+            _customerLabel.Text = $"{_translationService.GetText("Customer")}: {custName}";
 
-            _cashierLabel.Text = $"Cashier: User #{_currentSale.Id}"; // Would need user service
+            _cashierLabel.Text = $"{_translationService.GetText("Advance")}: User #{_currentSale.Id}";
 
-            // Populate detail rows from sale details
-            var saleDetails = await _salesService.GetSaleDetailsAsync(_currentSale.Id, cancellationToken);
-            foreach (var detail in saleDetails)
+            _saleDetails = (await _salesService.GetSaleDetailsAsync(_currentSale.Id, cancellationToken)).ToList();
+            foreach (var detail in _saleDetails)
             {
                 var product = await _productService!.GetByIdAsync(detail.ProductId, cancellationToken);
                 var row = new XRTableRow { HeightF = 25 };
-                var cell0 = new XRTableCell { Text = detail.Quantity.ToString(), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleCenter };
-                var cell1 = new XRTableCell { Text = product?.Name ?? $"Product {detail.ProductId}", Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleLeft };
-                var cell2 = new XRTableCell { Text = detail.Quantity.ToString(), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleCenter };
-                var cell3 = new XRTableCell { Text = FormatCurrency(detail.UnitPrice), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
-                var cell4 = new XRTableCell { Text = FormatCurrency(detail.DiscountAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
-                var cell5 = new XRTableCell { Text = FormatCurrency(detail.TaxAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
-                var cell6 = new XRTableCell { Text = FormatCurrency(detail.Quantity * detail.UnitPrice - detail.DiscountAmount + detail.TaxAmount), Font = new Font("Segoe UI", 9), TextAlignment = TextAlignment.MiddleRight };
+                
+                var prodName = product?.Name ?? $"Product {detail.ProductId}";
+
+                var font = _translationService.CurrentLanguage == LanguageType.Myanmar 
+                    ? FontHelper.CreateMyanmarFont(8) 
+                    : new Font("Segoe UI", 8);
+
+                var cell0 = new XRTableCell { Text = detail.Quantity.ToString(), Font = font, TextAlignment = TextAlignment.MiddleCenter };
+                var cell1 = new XRTableCell { Text = prodName, Font = font, TextAlignment = TextAlignment.MiddleLeft };
+                var cell2 = new XRTableCell { Text = detail.Quantity.ToString(), Font = font, TextAlignment = TextAlignment.MiddleCenter };
+                var cell3 = new XRTableCell { Text = FormatCurrency(detail.UnitPrice), Font = font, TextAlignment = TextAlignment.MiddleRight };
+                var cell4 = new XRTableCell { Text = FormatCurrency(detail.DiscountAmount), Font = font, TextAlignment = TextAlignment.MiddleRight };
+                var cell5 = new XRTableCell { Text = FormatCurrency(detail.TaxAmount), Font = font, TextAlignment = TextAlignment.MiddleRight };
+                var cell6 = new XRTableCell { Text = FormatCurrency(detail.Quantity * detail.UnitPrice - detail.DiscountAmount + detail.TaxAmount), Font = font, TextAlignment = TextAlignment.MiddleRight };
+
                 row.Cells.Add(cell0);
                 row.Cells.Add(cell1);
                 row.Cells.Add(cell2);
@@ -356,28 +393,20 @@ namespace MMNextPOS.WinForms.Reports
                 _detailTable.Rows.Add(row);
             }
 
-            // Update footer totals
-            _subtotalLabel.Text = $"Subtotal: {FormatCurrency(_currentSale.TotalAmount)}";
-            _discountLabel.Text = $"Discount: {FormatCurrency(_currentSale.TotalAmount - _currentSale.TotalAmount)}"; // Will be calculated from details
-            _taxLabel.Text = $"Tax: {FormatCurrency(0m)}"; // Will be calculated from details
-            _totalLabel.Text = $"Total: {FormatCurrency(_currentSale.TotalAmount)}";
+            var subtotal = _saleDetails.Sum(d => d.Quantity * d.UnitPrice);
+            var discount = _saleDetails.Sum(d => d.DiscountAmount);
+            var tax = _saleDetails.Sum(d => d.TaxAmount);
+            var total = subtotal - discount + tax;
+
+            _subtotalLabel.Text = $"{_translationService.GetText("Total")}: {FormatCurrency(subtotal)}";
+            _discountLabel.Text = $"{_translationService.GetText("Discount")}: {FormatCurrency(discount)}";
+            _taxLabel.Text = $"{_translationService.GetText("Tax")}: {FormatCurrency(tax)}";
+            _totalLabel.Text = $"{_translationService.GetText("Total")}: {FormatCurrency(total)}";
         }
 
-        protected override void OnBeforePrint(System.ComponentModel.CancelEventArgs e)
-        {
-            base.OnBeforePrint(e);
-
-            // This would be called during report generation to populate detail rows
-            // For thermal receipt, we typically build the entire report programmatically
-        }
-
-        /// <summary>
-        /// Generates the complete receipt programmatically.
-        /// </summary>
         public async Task<byte[]> GenerateReceiptAsync(int saleId, CancellationToken cancellationToken = default)
         {
             await PopulateAsync(saleId, cancellationToken);
-
             using var stream = new System.IO.MemoryStream();
             this.ExportToPdf(stream);
             return stream.ToArray();

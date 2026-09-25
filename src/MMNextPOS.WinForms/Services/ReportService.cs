@@ -129,7 +129,8 @@ namespace MMNextPOS.WinForms.Services
             var report = new SaleReceiptReport(
                 _serviceProvider.GetRequiredService<ISalesService>(),
                 _serviceProvider.GetRequiredService<IProductService>(),
-                _serviceProvider.GetRequiredService<ICustomerService>());
+                _serviceProvider.GetRequiredService<ICustomerService>(),
+                _serviceProvider.GetRequiredService<ITranslationService>());
 
             return await report.GenerateReceiptAsync(saleId, cancellationToken);
         }

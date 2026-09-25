@@ -25,24 +25,16 @@ namespace MMNextPOS.Application.Services
         }
 
         // Customer outstanding methods
-        public Task<IReadOnlyList<CustomerOutstanding>> GetCustomerOutstandingAsync(int customerId, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<CustomerOutstanding>> GetCustomerOutstandingAsync(int customerId, CancellationToken cancellationToken = default)
         {
-            return _customerRepo.GetAllAsync(cancellationToken)
-                .ContinueWith(t =>
-                {
-                    if (t.IsFaulted) throw t.Exception?.Flatten().InnerException ?? new InvalidOperationException("Failed to load customer outstanding.");
-                    return (IReadOnlyList<CustomerOutstanding>)t.Result.Where(o => o.CustomerId == customerId).ToList();
-                }, cancellationToken);
+            var all = await _customerRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            return all.Where(o => o.CustomerId == customerId).ToList();
         }
 
-        public Task<IReadOnlyList<CustomerOutstanding>> GetAllCustomerOutstandingAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<CustomerOutstanding>> GetAllCustomerOutstandingAsync(CancellationToken cancellationToken = default)
         {
-            return _customerRepo.GetAllAsync(cancellationToken)
-                .ContinueWith(t =>
-                {
-                    if (t.IsFaulted) throw t.Exception?.Flatten().InnerException ?? new InvalidOperationException("Failed to load customer outstanding.");
-                    return (IReadOnlyList<CustomerOutstanding>)t.Result.ToList();
-                }, cancellationToken);
+            var all = await _customerRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            return all.ToList();
         }
 
         public async Task<CustomerOutstanding> AddCustomerOutstandingAsync(CustomerOutstanding outstanding, CancellationToken cancellationToken = default)
@@ -67,24 +59,16 @@ namespace MMNextPOS.Application.Services
         }
 
         // Supplier outstanding methods
-        public Task<IReadOnlyList<SupplierOutstanding>> GetSupplierOutstandingAsync(int supplierId, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<SupplierOutstanding>> GetSupplierOutstandingAsync(int supplierId, CancellationToken cancellationToken = default)
         {
-            return _supplierRepo.GetAllAsync(cancellationToken)
-                .ContinueWith(t =>
-                {
-                    if (t.IsFaulted) throw t.Exception?.Flatten().InnerException ?? new InvalidOperationException("Failed to load supplier outstanding.");
-                    return (IReadOnlyList<SupplierOutstanding>)t.Result.Where(o => o.SupplierId == supplierId).ToList();
-                }, cancellationToken);
+            var all = await _supplierRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            return all.Where(o => o.SupplierId == supplierId).ToList();
         }
 
-        public Task<IReadOnlyList<SupplierOutstanding>> GetAllSupplierOutstandingAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<SupplierOutstanding>> GetAllSupplierOutstandingAsync(CancellationToken cancellationToken = default)
         {
-            return _supplierRepo.GetAllAsync(cancellationToken)
-                .ContinueWith(t =>
-                {
-                    if (t.IsFaulted) throw t.Exception?.Flatten().InnerException ?? new InvalidOperationException("Failed to load supplier outstanding.");
-                    return (IReadOnlyList<SupplierOutstanding>)t.Result.ToList();
-                }, cancellationToken);
+            var all = await _supplierRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            return all.ToList();
         }
 
         public async Task<SupplierOutstanding> AddSupplierOutstandingAsync(SupplierOutstanding outstanding, CancellationToken cancellationToken = default)
