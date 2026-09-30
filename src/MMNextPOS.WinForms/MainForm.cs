@@ -56,7 +56,11 @@ namespace MMNextPOS.WinForms
         private readonly IEmailSettingService _emailSettingService;
         private readonly IThemeService _themeService;
         private readonly ILanguageService _languageService;
+        private readonly ITranslationService _translationService;
         private readonly WinFormsReportService _reportService;
+
+        // UI language toggle (EN / မြန်မာ)
+        private SimpleButton _languageButton = null!;
 
         // Concrete list page instances
         private ProductsListPage _productsListPage = null!;
@@ -141,6 +145,7 @@ namespace MMNextPOS.WinForms
                     IEmailSettingService emailSettingService,
                     IThemeService themeService,
                     ILanguageService languageService,
+                    ITranslationService translationService,
                     WinFormsReportService reportService)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
@@ -179,6 +184,7 @@ namespace MMNextPOS.WinForms
             _emailSettingService = emailSettingService ?? throw new ArgumentNullException(nameof(emailSettingService));
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _languageService = languageService ?? throw new ArgumentNullException(nameof(languageService));
+            _translationService = translationService ?? throw new ArgumentNullException(nameof(translationService));
             _reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
 
             InitializeComponent();
@@ -213,13 +219,14 @@ namespace MMNextPOS.WinForms
             var userInfoLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
+                ColumnCount = 3,
                 RowCount = 2,
                 Padding = new Padding(0),
                 Margin = new Padding(0)
             };
             userInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             userInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90F));
+            userInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 44F));
             userInfoLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             userInfoLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
 
@@ -232,7 +239,7 @@ namespace MMNextPOS.WinForms
                 AutoSizeMode = LabelAutoSizeMode.None
             };
             userInfoLayout.Controls.Add(_userInfoLabel, 0, 0);
-            userInfoLayout.SetColumnSpan(_userInfoLabel, 2);
+            userInfoLayout.SetColumnSpan(_userInfoLabel, 3);
 
             // Change Password button
             var changePasswordButton = new SimpleButton
@@ -259,6 +266,18 @@ namespace MMNextPOS.WinForms
             };
             logoutButton.Click += OnLogoutClick;
             userInfoLayout.Controls.Add(logoutButton, 1, 1);
+
+            // UI language toggle (EN / မြန်မာ)
+            _languageButton = new SimpleButton
+            {
+                Text = _translationService.CurrentLanguage == LanguageType.Myanmar ? "မြ" : "EN",
+                Dock = DockStyle.Fill,
+                Height = 30,
+                Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                ToolTip = "Switch UI language"
+            };
+            _languageButton.Click += (s, e) => ToggleUiLanguage();
+            userInfoLayout.Controls.Add(_languageButton, 2, 1);
 
             userInfoPanel.Controls.Add(userInfoLayout);
             _navigationPane.Controls.Add(userInfoPanel);
@@ -464,7 +483,7 @@ namespace MMNextPOS.WinForms
                     await _themeService.ApplyThemeAsync(defaultTheme);
                 }
 
-                // Apply default language (could set thread culture, etc.)
+                // Apply default language (set thread culture AND drive the UI translation service)
                 var defaultLanguage = await _languageService.GetDefaultAsync();
                 if (defaultLanguage != null && !string.IsNullOrEmpty(defaultLanguage.CultureCode))
                 {
@@ -473,6 +492,14 @@ namespace MMNextPOS.WinForms
                         var culture = new System.Globalization.CultureInfo(defaultLanguage.CultureCode);
                         System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
                         System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+
+                        _translationService.SetLanguage(culture.TwoLetterISOLanguageName == "my"
+                            ? LanguageType.Myanmar
+                            : LanguageType.English);
+                        if (_languageButton != null)
+                        {
+                            _languageButton.Text = _translationService.CurrentLanguage == LanguageType.Myanmar ? "မြ" : "EN";
+                        }
                     }
                     catch
                     {
@@ -513,6 +540,30 @@ namespace MMNextPOS.WinForms
             if (dialog != null)
             {
                 dialog.ShowDialog(this);
+            }
+        }
+
+        /// <summary>Toggle the UI between English and Myanmar (all open forms re-localize automatically).</summary>
+        private void ToggleUiLanguage()
+        {
+            var next = _translationService.CurrentLanguage == LanguageType.English
+                ? LanguageType.Myanmar
+                : LanguageType.English;
+
+            _translationService.SetLanguage(next);
+            if (_languageButton != null)
+            {
+                _languageButton.Text = next == LanguageType.Myanmar ? "မြ" : "EN";
+            }
+
+            try
+            {
+                var culture = new System.Globalization.CultureInfo(next == LanguageType.Myanmar ? "my-MM" : "en-US");
+                System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+            }
+            catch
+            {
+                // If the culture isn't available on this machine, keep UI text localized only.
             }
         }
 
