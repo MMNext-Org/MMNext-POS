@@ -18,6 +18,7 @@ using MMNextPOS.Application;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
+using MMNextPOS.WinForms.Services;
 
 namespace MMNextPOS.WinForms
 {
@@ -137,6 +138,10 @@ namespace MMNextPOS.WinForms
 
                     // Build provider
                     using var serviceProvider = services.BuildServiceProvider();
+
+                    // Wire the singleton translation service into the UI localization layer
+                    // so every AsyncFormBase-derived form localizes automatically.
+                    FormLocalizer.Initialize(serviceProvider.GetRequiredService<ITranslationService>());
 
                     // Ensure DB schema exists before launching UI
                     var dbInit = serviceProvider.GetRequiredService<DatabaseInitializer>();
