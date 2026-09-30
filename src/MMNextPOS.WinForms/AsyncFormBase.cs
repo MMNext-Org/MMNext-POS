@@ -3,12 +3,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using MMNextPOS.WinForms.Services;
 
 namespace MMNextPOS.WinForms
 {
     /// <summary>
     /// Base class for WinForms that need async operations, cancellation handling,
     /// and consistent error/info/confirm dialogs.
+    /// Also auto-localizes the form (labels/buttons) via <see cref="FormLocalizer"/>
+    /// and re-localizes whenever the UI language changes.
     /// </summary>
     public abstract class AsyncFormBase : XtraForm, IDisposable
     {
@@ -21,6 +24,27 @@ namespace MMNextPOS.WinForms
         {
             // Ensure the form uses the standard wait cursor handling.
             this.UseWaitCursor = false;
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            // Localize once shown (all controls created by then) and subscribe to
+            // language changes for the rest of the form's lifetime.
+            FormLocalizer.LanguageChanged -= HandleUiLanguageChanged;
+            FormLocalizer.LanguageChanged += HandleUiLanguageChanged;
+            FormLocalizer.Localize(this);
+        }
+
+        private void HandleUiLanguageChanged()
+        {
+            if (_disposed || IsDisposed || !IsHandleCreated) return;
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(HandleUiLanguageChanged));
+                return;
+            }
+            FormLocalizer.Localize(this);
         }
 
         protected async Task RunAsync(Func<CancellationToken, Task> asyncAction)
@@ -121,6 +145,7 @@ namespace MMNextPOS.WinForms
             {
                 if (disposing)
                 {
+                    FormLocalizer.LanguageChanged -= HandleUiLanguageChanged;
                     _cts.Cancel();
                     _cts.Dispose();
                 }

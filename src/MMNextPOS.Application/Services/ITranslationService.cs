@@ -19,6 +19,9 @@ namespace MMNextPOS.Application.Services
         /// <summary>Retrieves the translated text for a given key.</summary>
         string GetText(string key);
 
+        /// <summary>Attempts to retrieve the translated text; returns false when no translation exists for the key.</summary>
+        bool TryGetText(string key, out string text);
+
         /// <summary>Event triggered when the language is changed.</summary>
         event Action? LanguageChanged;
     }
