@@ -10,6 +10,11 @@
 #   scripts\Build-Installer.ps1 -SingleFile              # single-file publish
 #   scripts\Build-Installer.ps1 -IncludeDatabase         # bundle portable MySQL
 #
+# Environment:
+#   MMNEXTPOS_MYSQL_DIR - source folder of the portable MySQL engine used with
+#                         -IncludeDatabase. Defaults to a "database" folder at
+#                         the repo root when the variable is not set.
+#
 # Output:
 #   artifacts\installer\app\       staged publish output
 #   artifacts\installer\fonts\     staged Pyidaungsu fonts
@@ -23,10 +28,20 @@ param(
     [switch]$SingleFile,
     [switch]$IncludeDatabase,
     [string]$InnoCompiler = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-    [string]$MySqlSourceDir = "J:\Project 1\FusionPOS\MMNextPOS\MySQL_Database"
+    [string]$MySqlSourceDir = ""
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Resolve portable MySQL source: explicit param > env var > repo-local default.
+# Falls back to a "database" folder next to this repo root when present.
+if ([string]::IsNullOrWhiteSpace($MySqlSourceDir)) {
+    if ($env:MMNEXTPOS_MYSQL_DIR) {
+        $MySqlSourceDir = $env:MMNEXTPOS_MYSQL_DIR
+    } else {
+        $MySqlSourceDir = Join-Path $PSScriptRoot "..\database"
+    }
+}
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root      = Split-Path -Parent $ScriptDir
