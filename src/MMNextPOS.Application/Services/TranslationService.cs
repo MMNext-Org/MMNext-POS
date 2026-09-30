@@ -158,6 +158,86 @@ namespace MMNextPOS.Application.Services
             AddTranslation("Ready", "Ready", "အသင့်ဖြစ်ပါသည်");
             AddTranslation("Loading", "Loading", "ဖွင့်နေပါသည်");
             AddTranslation("Processing...", "Processing...", "လုပ်ဆောင်နေပါသည်...");
+
+            // Grid column headers
+            AddTranslation("Action", "Action", "လုပ်ဆောင်ချက်");
+            AddTranslation("ID", "ID", "အိုင်ဒီ");
+            AddTranslation("Sale", "Sale", "အရောင်း");
+            AddTranslation("Sales", "Sales", "အရောင်းများ");
+            AddTranslation("Sale #", "Sale #", "အရောင်းနံပါတ်");
+            AddTranslation("Draft #", "Draft #", "ကြိုစာတမ်း နံပါတ်");
+            AddTranslation("Purchase", "Purchase", "ဝယ်ယူမှု");
+            AddTranslation("Invoice #", "Invoice #", "ငွေတောင်းခံလွှာ နံပါတ်");
+            AddTranslation("Payment #", "Payment #", "ငွေပေးချေမှု နံပါတ်");
+            AddTranslation("Return #", "Return #", "ပြန်ပေးမှု နံပါတ်");
+            AddTranslation("Movement #", "Movement #", "စတော့ရွေ့ပြောင်း နံပါတ်");
+            AddTranslation("Transfer #", "Transfer #", "လွှဲပြောင်း နံပါတ်");
+            AddTranslation("Serial #", "Serial #", "စီးရီးနယ်နံပါတ်");
+            AddTranslation("Product #", "Product #", "ပစ္စည်း နံပါတ်");
+            AddTranslation("Expense #", "Expense #", "ကုန်ကျစရိတ် နံပါတ်");
+            AddTranslation("Stock", "Stock", "စတော့");
+            AddTranslation("Balance", "Balance", "လက်ကျန်");
+            AddTranslation("Debit", "Debit", "ထုတ်ငွေ");
+            AddTranslation("Credit", "Credit", "ဝင်ငွေ");
+            AddTranslation("Count", "Count", "အရေအတွက်");
+            AddTranslation("Details", "Details", "အသေးစိတ်");
+            AddTranslation("Received Date", "Received Date", "လက်ခံရက်စွဲ");
+            AddTranslation("Line Total", "Line Total", "ကြောင်းစုပေါင်း");
+            AddTranslation("Total Cost", "Total Cost", "စုစုပေါင်းကုန်ကျစရိတ်");
+            AddTranslation("Unit Price", "Unit Price", "ယူနစ်ဈေး");
+            AddTranslation("Unit Cost", "Unit Cost", "ယူနစ်ကုန်ကျစရိတ်");
+            AddTranslation("Timestamp", "Timestamp", "အချိန်ကိုက်");
+            AddTranslation("Performed By", "Performed By", "လုပ်ဆောင်သူ");
+            AddTranslation("Recommendation", "Recommendation", "အကြံပြုချက်");
+            AddTranslation("From Location", "From Location", "မှ တည်နေရာ");
+            AddTranslation("To Location", "To Location", "သို့ တည်နေရာ");
+            AddTranslation("Transfer Date", "Transfer Date", "လွှဲပြောင်းရက်စွဲ");
+            AddTranslation("Assembly", "Assembly", "ပေါင်းစပ်မှု");
+            AddTranslation("Failed", "Failed", "မအောင်မြင်");
+            AddTranslation("Processed", "Processed", "လုပ်ဆောင်ပြီး");
+            AddTranslation("Source", "Source", "ရင်းမြစ်");
+            AddTranslation("Target", "Target", "ပန်းတိုင်");
+            AddTranslation("Frequency", "Frequency", "ကြိမ်နှုန်း");
+            AddTranslation("Port", "Port", "ပို့က်");
+            AddTranslation("SMTP Host", "SMTP Host", "SMTP ဟုစ်");
+            AddTranslation("IP Address", "IP Address", "IP လိပ်စာ");
+            AddTranslation("Last Login", "Last Login", "နောက်ဆုံးဝင်ရောက်ချိန်");
+            AddTranslation("Last Run", "Last Run", "နောက်ဆုံး လုပ်ဆောင်ချိန်");
+            AddTranslation("Last Status", "Last Status", "နောက်ဆုံး အခြေအနေ");
+            AddTranslation("Schedule", "Schedule", "အစီအစဉ်");
+            AddTranslation("Icon", "Icon", "အိုင်ကွန်");
+            AddTranslation("Font Family", "Font Family", "ဖောင့်အမျိုးအစား");
+            AddTranslation("Font Size", "Font Size", "ဖောင့်အရွယ်အစား");
+            AddTranslation("Primary Color", "Primary Color", "အဓိကအရောင်");
+            AddTranslation("Secondary Color", "Secondary Color", "ဒုတိယအရောင်");
+            AddTranslation("Background", "Background", "နောက်ခံ");
+            AddTranslation("Text Color", "Text Color", "စာသားအရောင်");
+            AddTranslation("Module", "Module", "မော်ဂျူး");
+            AddTranslation("Full Name", "Full Name", "အမည်အပြည့်");
+            AddTranslation("Contact Person", "Contact Person", "ဆက်သွယ်ရန်ပုဂ္ဂိုလ်");
+            AddTranslation("Credit Limit", "Credit Limit", "အကြွေးကန့်သတ်ချက်");
+            AddTranslation("Display Order", "Display Order", "ပြသမှုအစဉ်");
+            AddTranslation("Active", "Active", "အသုံးပြုပါ");
+            AddTranslation("Vendor", "Vendor", "ပေးသွင်းသူ");
+            AddTranslation("Net", "Net", "အသား");
+            AddTranslation("Backup Path", "Backup Path", "အရန်သိမ်းရာနေရာ");
+            AddTranslation("Symbol", "Symbol", "သင်္ကေတ");
+
+            // Lookup prompts (NullText)
+            AddTranslation("Select a user...", "Select a user...", "အသုံးပြုသူ ရွေးချယ်ပါ...");
+            AddTranslation("Select company...", "Select company...", "ကုမ္ပဏီ ရွေးချယ်ပါ...");
+            AddTranslation("Select customer...", "Select customer...", "ဖောက်သည် ရွေးချယ်ပါ...");
+            AddTranslation("Select expense type...", "Select expense type...", "ကုန်ကျစရိတ်အမျိုးအစား ရွေးချယ်ပါ...");
+            AddTranslation("Select location...", "Select location...", "တည်နေရာ ရွေးချယ်ပါ...");
+            AddTranslation("Select method...", "Select method...", "နည်းလမ်း ရွေးချယ်ပါ...");
+            AddTranslation("Select month...", "Select month...", "လ ရွေးချယ်ပါ...");
+            AddTranslation("Select payment type...", "Select payment type...", "ငွေပေးချေမှုအမျိုးအစား ရွေးချယ်ပါ...");
+            AddTranslation("Select product...", "Select product...", "ပစ္စည်း ရွေးချယ်ပါ...");
+            AddTranslation("Select purchase...", "Select purchase...", "ဝယ်ယူမှု ရွေးချယ်ပါ...");
+            AddTranslation("Select sale...", "Select sale...", "အရောင်း ရွေးချယ်ပါ...");
+            AddTranslation("Select supplier...", "Select supplier...", "ပေးသွင်းသူ ရွေးချယ်ပါ...");
+            AddTranslation("Select type...", "Select type...", "အမျိုးအစား ရွေးချယ်ပါ...");
+            AddTranslation("Select user...", "Select user...", "အသုံးပြုသူ ရွေးချယ်ပါ...");
         }
 
         private void AddTranslation(string key, string en, string my)
