@@ -248,7 +248,8 @@ LIMIT @Limit";
                 new { Version = "013", FileName = "013_AddMissingStockMovementColumns.sql", Description = "Align StockMovements table with StockMovement model (transfer locations, product, reference, quantity, audit users)" },
                 new { Version = "014", FileName = "014_AlignSchemaWithModelPhase4.sql", Description = "Align remaining tables with models (StockMovementDetails, Products, Payments, Expenses, StockTransfers)" },
                 new { Version = "015", FileName = "015_SerialTables.sql", Description = "Add SerialNumber, SerialBatch, and SerialTracking tables for serial/batch tracking" },
-                new { Version = "016", FileName = "016_AddIsDeletedToSerialTables.sql", Description = "Add IsDeleted column to SerialNumbers and SerialTrackings tables" }
+                new { Version = "016", FileName = "016_AddIsDeletedToSerialTables.sql", Description = "Add IsDeleted column to SerialNumbers and SerialTrackings tables" },
+                new { Version = "017", FileName = "017_JournalVouchers.sql", Description = "Add JournalVouchers and JournalVoucherDetails tables for double-entry accounting" }
             };
 
             foreach (var known in knownMigrations)

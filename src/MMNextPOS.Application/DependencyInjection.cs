@@ -51,6 +51,9 @@ namespace MMNextPOS.Application
             services.AddScoped<IPurchaseDetailRepository, PurchaseDetailRepository>();
             services.AddScoped<IPurchaseReturnRepository, PurchaseReturnRepository>();
             services.AddScoped<IPurchaseReturnDetailRepository, PurchaseReturnDetailRepository>();
+            services.AddScoped<IJournalVoucherRepository, JournalVoucherRepository>();
+            services.AddScoped<IJournalVoucherDetailRepository, JournalVoucherDetailRepository>();
+            services.AddScoped<IJournalVoucherService, JournalVoucherService>();
             services.AddScoped<IStockMovementRepository, StockMovementRepository>();
             services.AddScoped<IStockMovementDetailRepository, StockMovementDetailRepository>();
             services.AddScoped<IAssemblyRepository, AssemblyRepository>();
