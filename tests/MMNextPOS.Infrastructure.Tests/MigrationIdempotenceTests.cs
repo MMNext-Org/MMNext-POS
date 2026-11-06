@@ -50,7 +50,7 @@ namespace MMNextPOS.Infrastructure.Tests
             // Assert - No exception thrown, verify schema version is set
             var currentVersion = await migrationRunner.GetCurrentVersionAsync();
             Assert.NotNull(currentVersion);
-            Assert.Equal("016", currentVersion); // Latest migration version
+            Assert.Equal("017", currentVersion); // Latest migration version
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace MMNextPOS.Infrastructure.Tests
             // Assert - All migrations should be skipped (already applied)
             Assert.True(result.Success);
             Assert.Equal(0, result.MigrationsApplied);
-            Assert.Equal(17, result.MigrationsSkipped); // 000..016
+            Assert.Equal(18, result.MigrationsSkipped); // 000..017
             Assert.Equal(0, result.MigrationsFailed);
         }
 
@@ -135,8 +135,8 @@ namespace MMNextPOS.Infrastructure.Tests
             Assert.True(validation.IsValid);
             Assert.Empty(validation.MissingMigrations);
             Assert.Empty(validation.FailedMigrations);
-            Assert.Equal("016", validation.CurrentVersion);
-            Assert.Equal("016", validation.ExpectedVersion);
+            Assert.Equal("017", validation.CurrentVersion);
+            Assert.Equal("017", validation.ExpectedVersion);
         }
 
         [Fact]
@@ -158,7 +158,7 @@ namespace MMNextPOS.Infrastructure.Tests
 
             // Assert
             Assert.Null(versionBefore); // No migrations applied yet
-            Assert.Equal("016", versionAfter); // Latest version after full run
+            Assert.Equal("017", versionAfter); // Latest version after full run
         }
 
         [Fact]
@@ -176,16 +176,16 @@ namespace MMNextPOS.Infrastructure.Tests
             var history = await migrationRunner.GetMigrationHistoryAsync(20);
 
             // Assert
-            Assert.Equal(17, history.Count); // 17 migrations total (000-016)
+            Assert.Equal(18, history.Count); // 18 migrations total (000-017)
 
             // Should be ordered by AppliedAt DESC (newest first). Because DATETIME has second
             // precision, adjacent migrations can share a timestamp, so verify the set and
             // relative order robustly rather than asserting a single exact sequence.
             var versions = history.Select(h => h.Version).ToList();
             Assert.Equal(
-                new[] { "016", "015", "014", "013", "012", "011", "010", "009", "008", "007", "006", "005", "004", "003", "002", "001", "000" },
+                new[] { "017", "016", "015", "014", "013", "012", "011", "010", "009", "008", "007", "006", "005", "004", "003", "002", "001", "000" },
                 versions.OrderByDescending(v => v).ToArray());
-            Assert.Contains(versions, v => v == "016");
+            Assert.Contains(versions, v => v == "017");
 
             // All should be successful
             Assert.All(history, entry => Assert.True(entry.Success));
@@ -255,6 +255,54 @@ ORDER BY ORDINAL_POSITION";
             var successCol = columnList.First(c => c.COLUMN_NAME == "Success");
             var successType = (successCol.DATA_TYPE as string)?.ToLowerInvariant() ?? "";
             Assert.Equal("tinyint", successType); // BOOLEAN maps to TINYINT(1)
+        }
+
+        [Fact]
+        public async Task JournalVoucherTables_Exist_AfterFullRun()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            using var scope = _fixture.ServiceProvider.CreateScope();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+            // Act - Run all migrations (creates JournalVoucher tables via 017)
+            var migrationRunner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+            await migrationRunner.RunMigrationsAsync();
+
+            // Assert - Both Journal Voucher tables exist
+            const string tableSql = @"
+SELECT TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = DATABASE()
+AND TABLE_NAME IN ('JournalVouchers', 'JournalVoucherDetails')";
+
+            var tables = await unitOfWork.Connection.QueryAsync(tableSql);
+            var tableNames = tables.Select(r => r.TABLE_NAME as string ?? "").ToHashSet();
+
+            Assert.Contains("JournalVouchers", tableNames);
+            Assert.Contains("JournalVoucherDetails", tableNames);
+
+            // Assert - Audit columns present on both tables
+            const string colSql = @"
+SELECT TABLE_NAME, COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+AND TABLE_NAME IN ('JournalVouchers', 'JournalVoucherDetails')
+AND COLUMN_NAME IN ('CreatedBy', 'CreatedAt', 'UpdatedBy', 'UpdatedAt', 'IsDeleted')
+ORDER BY TABLE_NAME, COLUMN_NAME";
+
+            var cols = await unitOfWork.Connection.QueryAsync(colSql);
+            var colList = cols.ToList();
+
+            foreach (var table in new[] { "JournalVouchers", "JournalVoucherDetails" })
+            {
+                var tableCols = colList.Where(c => (c.TABLE_NAME as string ?? "") == table).Select(c => c.COLUMN_NAME as string ?? "").ToHashSet();
+                Assert.Contains("CreatedBy", tableCols);
+                Assert.Contains("CreatedAt", tableCols);
+                Assert.Contains("UpdatedBy", tableCols);
+                Assert.Contains("UpdatedAt", tableCols);
+                Assert.Contains("IsDeleted", tableCols);
+            }
         }
 
         [Fact]
@@ -350,10 +398,10 @@ ORDER BY ORDINAL_POSITION";
             var updatedAtCol = columns.First(c => c.COLUMN_NAME == "UpdatedAt");
             Assert.Equal("datetime", ((string)updatedAtCol.DATA_TYPE).ToLowerInvariant());
 
-            // Current version is 016 after the full run
+            // Current version is 017 after the full run
             var migrationRunner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
             var currentVersion = await migrationRunner.GetCurrentVersionAsync();
-            Assert.Equal("016", currentVersion);
+            Assert.Equal("017", currentVersion);
         }
     }
 }
