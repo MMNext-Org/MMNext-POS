@@ -75,13 +75,84 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (exit $LASTEXITCODE)" }
 $appExe = Join-Path $AppStage "MMNextPOS.WinForms.exe"
 if (-not (Test-Path $appExe)) { throw "Publish output missing expected exe: $appExe" }
 
-Write-Host "== [2/5] Stage Pyidaungsu fonts ==" -ForegroundColor Cyan
+Write-Host "== [2/6] Obfuscation (Obfuscar GlobalTool 2.2.38) ==" -ForegroundColor Cyan
+$obfModules = @(
+    "MMNextPOS.Domain.dll",
+    "MMNextPOS.Application.dll",
+    "MMNextPOS.Infrastructure.dll",
+    "MMNextPOS.WinForms.dll"
+)
+$obfTool = Join-Path $env:USERPROFILE ".dotnet\tools\obfuscar.console.exe"
+if (-not (Test-Path $obfTool)) {
+    Write-Host "  installing Obfuscar.GlobalTool 2.2.38..."
+    dotnet tool install --global Obfuscar.GlobalTool --version 2.2.38 | Out-Null
+    if (-not (Test-Path $obfTool)) { throw "Obfuscar tool not found after install." }
+}
+
+$obfOut = Join-Path $Stage "obfuscated"
+if (Test-Path $obfOut) { Remove-Item $obfOut -Recurse -Force }
+New-Item -ItemType Directory -Path $obfOut -Force | Out-Null
+
+# DTO / config-binding types excluded from renaming (grid FieldName binding + IOptions binding).
+$skipTypes = "MonthlyExpenseSummary|ExpenseCategorySummary|ConnectionTestResult|ServerInfo|ConnectionStringOptions"
+
+# HidePrivateApi=false is REQUIRED: Obfuscar renames compiler-generated anonymous
+# types when HidePrivateApi=true, which breaks System.Text.Json serialization
+# (constructor parameter names become null). Anonymous types are used throughout
+# the Application layer for report data and audit log payloads.
+$commonVars = @'
+  <Var name="HideStrings" value="true" />
+  <Var name="SuppressIldasm" value="true" />
+  <Var name="OptimizeMethods" value="true" />
+  <Var name="MappingFile" value="obfuscar-mapping.txt" />
+'@
+$renameVars = @'
+  <Var name="KeepPublicApi" value="false" />
+  <Var name="HidePrivateApi" value="false" />
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameMethods" value="true" />
+  <Var name="RenameFields" value="true" />
+  <Var name="RenameEvents" value="true" />
+'@
+
+# Single multi-module run so all assemblies share one rename map.
+$moduleXml = ""
+foreach ($m in $obfModules) {
+    $skipXml = ""
+    if ($m -eq "MMNextPOS.Infrastructure.dll") {
+        $skipPattern = "^MMNextPOS\.Infrastructure\.(" + $skipTypes + ")$"
+        $skipXml = "    <SkipType name=`"" + $skipPattern + "`" skipProperties=`"true`" skipMethods=`"true`" skipFields=`"true`" skipEvents=`"true`" />"
+    }
+    $moduleXml += "  <Module file=`"" + $AppStage + "\" + $m + "`">`n" + $skipXml + "`n  </Module>`n"
+}
+$xml = "<Obfuscator>`n  <Var name=`"InPath`" value=`"" + $AppStage + "`" />`n  <Var name=`"OutPath`" value=`"" + $obfOut + "`" />`n" + $commonVars + "`n" + $renameVars + "`n" + $moduleXml + "</Obfuscator>"
+
+$obfConfig = Join-Path $Stage "obfuscar.xml"
+Set-Content $obfConfig $xml -Encoding UTF8
+
+& $obfTool $obfConfig | Select-String -Pattern "fail|error" | ForEach-Object { Write-Host $_.Line }
+if ($LASTEXITCODE -ne 0) { throw "Obfuscar failed (exit $LASTEXITCODE)" }
+Write-Host ("  + obfuscated: " + ($obfModules -join ', '))
+
+# Copy obfuscated assemblies back to staging
+foreach ($name in $obfModules) {
+    $obfDll = Join-Path $obfOut $name
+    if (-not (Test-Path $obfDll)) { throw "Obfuscated assembly not found: $obfDll" }
+    Copy-Item $obfDll (Join-Path $AppStage $name) -Force
+    Write-Host ("  + replaced: " + $name)
+}
+
+# IP hygiene: never ship symbols, pdbs, or the rename mapping file.
+Remove-Item $obfOut -Recurse -Force
+Get-ChildItem $AppStage -Filter *.pdb -Recurse | Remove-Item -Force
+
+Write-Host "== [3/6] Stage Pyidaungsu fonts ==" -ForegroundColor Cyan
 if (Test-Path $FontStage) { Remove-Item $FontStage -Recurse -Force }
 New-Item -ItemType Directory -Path $FontStage -Force | Out-Null
 Copy-Item (Join-Path $Root "Fonts\*.ttf") $FontStage -Force
 Get-ChildItem $FontStage | ForEach-Object { Write-Host ("  + " + $_.Name) }
 
-Write-Host "== [3/5] Optional portable MySQL staging ==" -ForegroundColor Cyan
+Write-Host "== [4/6] Optional portable MySQL staging ==" -ForegroundColor Cyan
 if ($IncludeDatabase) {
     if (-not (Test-Path $MySqlSourceDir)) { throw "MySQL source not found: $MySqlSourceDir" }
     if (Test-Path $DbStage) { Remove-Item $DbStage -Recurse -Force }
@@ -94,7 +165,7 @@ if ($IncludeDatabase) {
     Write-Host "  (skipped - pass -IncludeDatabase to bundle)"
 }
 
-Write-Host "== [4/5] Compile installer (Inno Setup) ==" -ForegroundColor Cyan
+Write-Host "== [5/6] Compile installer (Inno Setup) ==" -ForegroundColor Cyan
 $isccArgs = @("/DAppVersion=$AppVersion", "/O`"$Stage`"")
 if ($IncludeDatabase) { $isccArgs += "/DBundleMySQL" }
 Push-Location (Join-Path $Root "installer")
@@ -105,7 +176,7 @@ try {
     Pop-Location
 }
 
-Write-Host "== [5/5] Verify artifact ==" -ForegroundColor Cyan
+Write-Host "== [6/6] Verify artifact ==" -ForegroundColor Cyan
 $setupExe = Join-Path $Stage "MMNextPOS_Setup_v$AppVersion.exe"
 if (-not (Test-Path $setupExe)) { throw "Installer was not produced: $setupExe" }
 
