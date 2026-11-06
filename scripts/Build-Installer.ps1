@@ -56,6 +56,9 @@ if (-not (Test-Path $InnoCompiler)) { throw "Inno Setup not found at '$InnoCompi
 if (-not (Test-Path $Iss)) { throw "Inno script not found: $Iss" }
 
 Write-Host "== [1/5] Publish ($Configuration / $Runtime / self-contained) ==" -ForegroundColor Cyan
+# Always rebuild the staging dir from scratch: publish skips files whose staged copy
+# is newer, which would silently re-ship stale binaries.
+if (Test-Path $AppStage) { Remove-Item $AppStage -Recurse -Force }
 $publishArgs = @(
     "publish", $Proj,
     "-c", $Configuration,

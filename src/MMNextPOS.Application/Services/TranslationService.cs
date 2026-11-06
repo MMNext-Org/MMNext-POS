@@ -64,7 +64,7 @@ namespace MMNextPOS.Application.Services
             AddTranslation("Change", "Change", "ပြန်အမ်းငွေ");
             AddTranslation("ThankYou", "Thank you!", "ကျေးဇူးတင်ပါသည်!");
             AddTranslation("VisitAgain", "Please visit us again", "နောက်ထပ် လာရောက်ဝယ်ယူပါရန်");
-            
+
             // Common UI strings
             AddTranslation("Save", "Save", "သိမ်းမည်");
             AddTranslation("Cancel", "Cancel", "ပယ်ဖျက်မည်");
@@ -107,6 +107,13 @@ namespace MMNextPOS.Application.Services
             AddTranslation("History", "History", "မှတ်တမ်း");
             AddTranslation("Activate", "Activate", "ဖွင့်မည်");
             AddTranslation("Restore", "Restore", "ပြန်လည်ရယူမည်");
+            AddTranslation("Import CSV", "Import CSV", "CSV တင်သွင်းမည်");
+            AddTranslation("Import Customers", "Import Customers", "ဖောက်သည်များ တင်သွင်းမည်");
+            AddTranslation("Import Suppliers", "Import Suppliers", "ပေးသွင်းသူများ တင်သွင်းမည်");
+            AddTranslation("Database Connection Test", "Database Connection Test", "ဒေတာဘေ့စ်ချိတ်ဆက်မှု စမ်းသပ်ခြင်း");
+            AddTranslation("Test Connection", "Test Connection", "ချိတ်ဆက်မှု စမ်းသပ်မည်");
+            AddTranslation("Get Server Info", "Get Server Info", "ဆာဗာအချက်အလက်ရယူမည်");
+            AddTranslation("AR Ageing", "AR Ageing", "ရရန်ကျန်ငွေ Ageing");
 
             // Field labels
             AddTranslation("Name", "Name", "အမည်");

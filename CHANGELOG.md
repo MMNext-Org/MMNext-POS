@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Parity gap closures (2026-10-04)**
+  - AR Ageing report: `IOutstandingService.GetCustomerAgeingAsync` (0-30 / 31-60 / 61-90 / 90+ buckets), `CustomerAgeingReport` (DevExpress), "AR Ageing" button on the Outstanding page; 5 new unit tests
+  - Connection Tester UI: `ConnectionTestPage` Admin navigation page surfacing `ConnectionTestService` (latency, server version, table count, DB size)
+  - Customer/Supplier CSV import wired into UI: "Import CSV" toolbar buttons on Customers/Suppliers pages (Admin/Manager roles only)
+  - `ListPage<T>` base: `AppendToolbarButton` helper for module-specific toolbar actions
+
+### Fixed
+- appsettings/README alignment: `MMNEXTPOS_CONNECTION_STRING` environment variable now actually overrides `ConnectionStrings:Default` at startup (main app + health-check scope)
+- `docs/PARITY-FINAL-CHECKLIST.md` re-verified against codebase: corrected false "JournalVoucher repository exists" note, test counts (StockTransfer/Serial 16, Expiry 7, Dashboard 9), installer/connection-tester/import statuses, P0/P1 totals
+- `docs/parity/PARITY-MATRIX.md`: LiveSale → Partial (dormant form), imports → Verified, Connection Tester → Verified, Restore Helpers → Implemented-needs-QA, Myanmar fonts → Partial (Pyidaungsu bundled; Zawgyi untested)
+
+### Testing
+- Verification pending (build was broken at review time; re-run after fixes)
+
+### Added (previous sessions)
 - **Expense Management Module**
   - `IExpenseService` / `ExpenseService` - Full CRUD for expense entries
   - `IExpenseTypeService` / `ExpenseTypeService` - Expense categories management

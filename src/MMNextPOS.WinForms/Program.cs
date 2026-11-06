@@ -27,11 +27,8 @@ namespace MMNextPOS.WinForms
         [STAThread]
         static void Main()
         {
-            // Load configuration from appsettings.json
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
+            // Load configuration from appsettings.json (env var MMNEXTPOS_CONNECTION_STRING overrides, per README)
+            var configuration = LoadConfiguration();
 
             // Configure and initialize Serilog
             Log.Logger = new LoggerConfiguration()
@@ -53,6 +50,10 @@ namespace MMNextPOS.WinForms
                     services.AddSingleton<Serilog.ILogger>(sp => Log.Logger);
                     services.AddSingleton<Microsoft.Extensions.Logging.ILogger>(sp =>
                         new Microsoft.Extensions.Logging.LoggerFactory().CreateLogger("MMNextPOS"));
+
+                    // Route ILogger<T> through Serilog (required by Infrastructure services
+                    // like MigrationRunner that take typed loggers via constructor injection).
+                    services.AddLogging(builder => builder.AddSerilog(Log.Logger, dispose: false));
 
                     services.AddApplication(configuration); // registers repos & services
 
@@ -98,6 +99,7 @@ namespace MMNextPOS.WinForms
                     services.AddTransient<BackupsListPage>();
                     services.AddTransient<MigrationsListPage>();
                     services.AddTransient<SuperAdminForm>();
+                    services.AddTransient<ConnectionTestPage>();
 
                     // Transaction ListPages
                     services.AddTransient<SaleTempsListPage>();
@@ -187,7 +189,20 @@ namespace MMNextPOS.WinForms
                 finally
                 {
                     healthCheckCts.Cancel();
-                    healthCheckTask.Wait(TimeSpan.FromSeconds(5));
+                    // Wait() rethrows TaskCanceledException when the listener task is cancelled
+                    // mid-flight - that is the normal shutdown path, so swallow it explicitly.
+                    try
+                    {
+                        healthCheckTask.Wait(TimeSpan.FromSeconds(5));
+                    }
+                    catch (AggregateException ex) when (ex.InnerException is TaskCanceledException or OperationCanceledException)
+                    {
+                        // expected on shutdown
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // expected on shutdown
+                    }
                     Log.CloseAndFlush();
                 }
             }
@@ -398,14 +413,33 @@ namespace MMNextPOS.WinForms
         static IServiceScope CreateHealthCheckScope()
         {
             var services = new ServiceCollection();
+            var configuration = LoadConfiguration();
+
+            services.AddSingleton<Serilog.ILogger>(sp => Log.Logger);
+            services.AddLogging(builder => builder.AddSerilog(Log.Logger, dispose: false));
+            services.AddApplication(configuration);
+            return services.BuildServiceProvider().CreateScope();
+        }
+
+        /// <summary>
+        /// Loads appsettings.json and applies the MMNEXTPOS_CONNECTION_STRING
+        /// environment variable override documented in the README. This keeps
+        /// real credentials out of the tracked appsettings.json file.
+        /// </summary>
+        static IConfiguration LoadConfiguration()
+        {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-            services.AddSingleton<Serilog.ILogger>(sp => Log.Logger);
-            services.AddApplication(configuration);
-            return services.BuildServiceProvider().CreateScope();
+            var envConnectionString = Environment.GetEnvironmentVariable("MMNEXTPOS_CONNECTION_STRING");
+            if (!string.IsNullOrWhiteSpace(envConnectionString))
+            {
+                configuration["ConnectionStrings:Default"] = envConnectionString;
+            }
+
+            return configuration;
         }
     }
 }

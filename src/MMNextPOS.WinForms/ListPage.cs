@@ -49,6 +49,10 @@ namespace MMNextPOS.WinForms
         protected PanelControl _advancedFilterPanel = null!;
         protected bool _isAdvancedFilterExpanded = false;
 
+        // Toolbar hosting the standard action buttons (Search/Refresh/New/Edit/Delete/Export/Filters).
+        // Derived pages may append module-specific buttons (e.g. Import CSV) via AppendToolbarButton().
+        protected PanelControl _toolbar = null!;
+
         // Filter state
         protected DateTime? _filterDateFrom = null;
         protected DateTime? _filterDateTo = null;
@@ -148,6 +152,7 @@ namespace MMNextPOS.WinForms
                 Height = 50,
                 BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
             };
+            _toolbar = toolbar;
 
             toolbar.Controls.Add(new LabelControl { Text = "Search:", Location = new Point(10, 15), AutoSizeMode = LabelAutoSizeMode.None, Size = new Size(60, 25) });
             toolbar.Controls.Add(_searchBox);
@@ -272,6 +277,24 @@ namespace MMNextPOS.WinForms
         }
 
         protected abstract string GetPageTitle();
+
+        /// <summary>
+        /// Appends an action button to the right of the standard toolbar buttons.
+        /// Returns the created button so callers can wire their own click handler.
+        /// </summary>
+        protected SimpleButton AppendToolbarButton(string text, EventHandler onClick, int xPosition = 910, int width = 100)
+        {
+            var button = new SimpleButton
+            {
+                Text = text,
+                Location = new Point(xPosition, 10),
+                Width = width,
+                Height = 30
+            };
+            button.Click += onClick;
+            _toolbar.Controls.Add(button);
+            return button;
+        }
 
         protected abstract void ConfigureColumns(GridView view);
 

@@ -89,6 +89,7 @@ namespace MMNextPOS.WinForms
         private BackupsListPage _backupsListPage = null!;
         private MigrationsListPage _migrationsListPage = null!;
         private SuperAdminForm _superAdminForm = null!;
+        private ConnectionTestPage _connectionTestPage = null!;
 
         // Transaction ListPages
         private SaleTempsListPage _saleTempsListPage = null!;
@@ -335,6 +336,26 @@ namespace MMNextPOS.WinForms
             _backupsListPage = _serviceProvider.GetRequiredService<BackupsListPage>();
             _migrationsListPage = _serviceProvider.GetRequiredService<MigrationsListPage>();
             _superAdminForm = _serviceProvider.GetRequiredService<SuperAdminForm>();
+            _connectionTestPage = _serviceProvider.GetRequiredService<ConnectionTestPage>();
+
+            // Bulk CSV import is an Admin/Manager capability - wire buttons only for those roles.
+            if (IsAdminOrManager())
+            {
+                _customersListPage.AddImportButton();
+                _suppliersListPage.AddImportButton();
+            }
+        }
+
+        private bool IsAdminOrManager()
+        {
+            if (!_userSession.IsAuthenticated)
+            {
+                return false;
+            }
+
+            return _userSession.Roles.Any(r =>
+                string.Equals(r.Code, "Admin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r.Code, "Manager", StringComparison.OrdinalIgnoreCase));
         }
 
         private void InitializeNavigation()
@@ -417,6 +438,7 @@ namespace MMNextPOS.WinForms
                 AddNavigationPage("Email Settings", _emailSettingsListPage);
                 AddNavigationPage("Backups", _backupsListPage);
                 AddNavigationPage("Data Migrations", _migrationsListPage);
+                AddNavigationPage("DB Connection Test", _connectionTestPage);
                 AddNavigationPage("Super Admin", _superAdminForm);
             }
 
@@ -626,6 +648,7 @@ namespace MMNextPOS.WinForms
                 _backupsListPage?.Dispose();
                 _migrationsListPage?.Dispose();
                 _superAdminForm?.Dispose();
+                _connectionTestPage?.Dispose();
 
                 // Dispose navigation
                 _navigationPane?.Dispose();
@@ -663,6 +686,7 @@ namespace MMNextPOS.WinForms
                 _backupsListPage = null!;
                 _migrationsListPage = null!;
                 _superAdminForm = null!;
+                _connectionTestPage = null!;
                 _navigationPane = null!;
                 _mainContainer = null!;
             }

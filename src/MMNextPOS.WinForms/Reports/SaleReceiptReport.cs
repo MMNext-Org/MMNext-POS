@@ -36,13 +36,13 @@ namespace MMNextPOS.WinForms.Reports
         {
             Name = "rptSaleReceipt";
             DisplayName = "Sale Receipt (Bilingual)";
-            PageWidth = 300; 
+            PageWidth = 300;
             PageHeight = 1169;
             Margins = new Margins(10, 10, 10, 10);
             PaperKind = DXPaperKind.Custom;
-            
-            Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                ? FontHelper.CreateMyanmarFont(8) 
+
+            Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                ? FontHelper.CreateMyanmarFont(8)
                 : new Font("Segoe UI", 8);
 
             var headerBand = new ReportHeaderBand { HeightF = 180 };
@@ -65,8 +65,8 @@ namespace MMNextPOS.WinForms.Reports
             var companyLabel = new XRLabel
             {
                 Text = "MMNext POS",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFontBold(10) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFontBold(10)
                     : new Font("Segoe UI", 10, FontStyle.Bold),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 20),
@@ -78,8 +78,8 @@ namespace MMNextPOS.WinForms.Reports
             var sloganLabel = new XRLabel
             {
                 Text = " Modern Point of Sale ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(7) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(7)
                     : new Font("Segoe UI", 7),
                 ForeColor = Color.Gray,
                 LocationF = new PointF(0, yPos),
@@ -101,8 +101,8 @@ namespace MMNextPOS.WinForms.Reports
             _saleCodeLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("ReceiptNo")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
@@ -114,8 +114,8 @@ namespace MMNextPOS.WinForms.Reports
             _dateLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Date")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
@@ -127,8 +127,8 @@ namespace MMNextPOS.WinForms.Reports
             _customerLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Customer")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
@@ -140,8 +140,8 @@ namespace MMNextPOS.WinForms.Reports
             _cashierLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Advance")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 15),
@@ -163,8 +163,8 @@ namespace MMNextPOS.WinForms.Reports
             {
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 20),
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFontBold(7) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFontBold(7)
                     : new Font("Segoe UI", 7, FontStyle.Bold)
             };
             headerTable.Rows.Add(CreateHeaderRow(new[]
@@ -188,8 +188,8 @@ namespace MMNextPOS.WinForms.Reports
             {
                 LocationF = new PointF(0, 0),
                 SizeF = new SizeF(280, 25),
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(7) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(7)
                     : new Font("Segoe UI", 7)
             };
             detailTable.Rows.Add(CreateDetailRow(new[] { "", "", "", "" }));
@@ -215,8 +215,8 @@ namespace MMNextPOS.WinForms.Reports
             _subtotalLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Total")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
@@ -228,8 +228,8 @@ namespace MMNextPOS.WinForms.Reports
             _discountLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Discount")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
@@ -241,8 +241,8 @@ namespace MMNextPOS.WinForms.Reports
             _taxLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Tax")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
@@ -263,8 +263,8 @@ namespace MMNextPOS.WinForms.Reports
             _totalLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Total")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFontBold(10) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFontBold(10)
                     : new Font("Segoe UI", 10, FontStyle.Bold),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 22),
@@ -276,8 +276,8 @@ namespace MMNextPOS.WinForms.Reports
             _paidLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Paid")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
@@ -289,8 +289,8 @@ namespace MMNextPOS.WinForms.Reports
             _changeLabel = new XRLabel
             {
                 Text = $"{_translationService.GetText("Change")}: ",
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
@@ -311,8 +311,8 @@ namespace MMNextPOS.WinForms.Reports
             var thanksLabel = new XRLabel
             {
                 Text = _translationService.GetText("ThankYou"),
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFontBold(8) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFontBold(8)
                     : new Font("Segoe UI", 8, FontStyle.Bold),
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(280, 17),
@@ -324,8 +324,8 @@ namespace MMNextPOS.WinForms.Reports
             var visitLabel = new XRLabel
             {
                 Text = _translationService.GetText("VisitAgain"),
-                Font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(7) 
+                Font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(7)
                     : new Font("Segoe UI", 7),
                 ForeColor = Color.Gray,
                 LocationF = new PointF(0, yPos),
@@ -357,7 +357,7 @@ namespace MMNextPOS.WinForms.Reports
             var customer = _currentSale.CustomerId > 0
                 ? await _customerService!.GetByIdAsync(_currentSale.CustomerId, cancellationToken)
                 : null;
-            
+
             var custName = customer?.Name ?? "Walk-in";
             _customerLabel.Text = $"{_translationService.GetText("Customer")}: {custName}";
 
@@ -368,11 +368,11 @@ namespace MMNextPOS.WinForms.Reports
             {
                 var product = await _productService!.GetByIdAsync(detail.ProductId, cancellationToken);
                 var row = new XRTableRow { HeightF = 25 };
-                
+
                 var prodName = product?.Name ?? $"Product {detail.ProductId}";
 
-                var font = _translationService.CurrentLanguage == LanguageType.Myanmar 
-                    ? FontHelper.CreateMyanmarFont(8) 
+                var font = _translationService.CurrentLanguage == LanguageType.Myanmar
+                    ? FontHelper.CreateMyanmarFont(8)
                     : new Font("Segoe UI", 8);
 
                 var cell0 = new XRTableCell { Text = detail.Quantity.ToString(), Font = font, TextAlignment = TextAlignment.MiddleCenter };

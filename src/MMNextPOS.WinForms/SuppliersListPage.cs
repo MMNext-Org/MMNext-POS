@@ -24,6 +24,24 @@ namespace MMNextPOS.WinForms
         {
         }
 
+        /// <summary>
+        /// Adds the "Import CSV" toolbar button (Admin/Manager only - controlled by MainForm).
+        /// Opens the bulk supplier import dialog and reloads the grid on success.
+        /// </summary>
+        public void AddImportButton()
+        {
+            AppendToolbarButton("Import CSV", async (s, e) => await OpenImportDialogAsync());
+        }
+
+        private async Task OpenImportDialogAsync()
+        {
+            using var dialog = new SupplierImportDialog(_service);
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                await LoadAsync();
+            }
+        }
+
         protected override string GetPageTitle() => "Suppliers";
 
         protected override void ConfigureColumns(GridView view)

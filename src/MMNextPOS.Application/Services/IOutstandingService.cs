@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,5 +25,12 @@ namespace MMNextPOS.Application.Services
         // Payment application and clearance
         Task<CustomerOutstanding> ApplyCustomerPaymentAsync(int customerId, decimal amount, int? saleId, int? paymentId, string? description, CancellationToken cancellationToken = default);
         Task ClearCustomerAccountAsync(int customerId, int? clearedByUserId, string? reason, CancellationToken cancellationToken = default);
+
+        // Reports
+        /// <summary>
+        /// Computes AR ageing per customer: open balances bucketed into
+        /// 0-30 / 31-60 / 61-90 / 90+ day ranges based on TransactionDate.
+        /// </summary>
+        Task<IReadOnlyList<CustomerAgeingEntry>> GetCustomerAgeingAsync(DateTime asOfDate, CancellationToken cancellationToken = default);
     }
 }

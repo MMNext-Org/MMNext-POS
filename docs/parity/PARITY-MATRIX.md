@@ -34,7 +34,7 @@
 | ucSalesReturnInvoice | Missing | P2 | WinForms Lead | Return invoice |
 | frmBankPayment | **Partial** | P1 | WinForms Lead | Payment processing; `PaymentService` exists but UI integration pending |
 | frmDelivery | Missing | P2 | WinForms Lead | Delivery management |
-| frmLiveSalesEdit | Missing | P1 | WinForms Lead | Live edit form |
+| frmLiveSalesEdit | Partial | P1 | WinForms Lead | `LiveSaleForm.cs` exists but dormant: `_currentDraft` is never assigned (no entry point) and detail lines are placeholders. Needs draft-selection entry point + `SaleTempDetail` loading. (2026-10-04) |
 | frmSalesEdit | **Verified** | P0 | WinForms Lead | NewSaleForm.cs — create/hold/resume/return/void/print all tested; see `Sales-Hardening-Parity.md` |
 | frmSalesHold | **Verified** | P1 | WinForms Lead | SaleTemp hold/resume tested in Sprint 1 |
 | frmSalesReturnBySalesInvoice | Missing | P2 | WinForms Lead | |
@@ -50,8 +50,8 @@
 | ucCustomer | **Verified** | P0 | WinForms Lead | CustomersListPage.cs — full CRUD tested |
 | ucCustomerAdvanced (+Tab/History) | Missing | P1 | WinForms Lead | Advanced tabs, history |
 | ucSupplier | **Verified** | P0 | WinForms Lead | Supplier entity + repo + service + SuppliersListPage; 6 unit tests |
-| frmCustomerImport | Not in scope | P2 | WinForms Lead | Deferred to Phase 6 (owner-approved) |
-| frmSupplierImport | Not in scope | P2 | WinForms Lead | Deferred to Phase 6 (owner-approved) |
+| frmCustomerImport | **Verified** | P2 | WinForms Lead | `CustomerImportDialog` (CSV preview, dedupe by name/phone) wired via "Import CSV" toolbar button on Customers page, Admin/Manager only (2026-10-04) |
+| frmSupplierImport | **Verified** | P2 | WinForms Lead | `SupplierImportDialog` (CSV preview, dedupe by code/name) wired via "Import CSV" toolbar button on Suppliers page, Admin/Manager only (2026-10-04) |
 
 **Entities:** Customer, Supplier, CustomerOutstanding, SupplierOutstanding
 
@@ -198,7 +198,7 @@
 | Printer | Missing | P2 | WinForms Lead | |
 | Theme | **Verified** | P2 | WinForms Lead | Theme entity + repo; no ListPage |
 | Language | **Verified** | P2 | WinForms Lead | Language entity + repo; no ListPage |
-| Fonts (Myanmar) | Missing | P1 | Localization Owner | |
+| Fonts (Myanmar) | **Partial** | P1 | Localization Owner | Pyidaungsu (Regular/Bold/Numbers) bundled in installer + bilingual EN/MY UI shipped; Zawgyi legacy data rendering NOT tested (2026-10-04) |
 | Backup | **Verified** | P1 | Ops Owner | BackupService tested; IBackupService supports SQL dump + file copy + external tools |
 | Data Migration | **Verified** | P2 | Ops Owner | MigrationService handles full lifecycle; IMigrationService + MigrationRunner |
 
@@ -246,8 +246,8 @@
 
 | Component | Status | Priority | Owner | Notes |
 |---|---|---|---|---|
-| Connection Tester | Missing | P2 | Infra Lead | |
-| Restore Helpers | Missing | P2 | Ops Owner | |
+| Connection Tester | **Verified** | P2 | Infra Lead | `ConnectionTestService` (latency, server info, table count, DB size) + unit tests + "DB Connection Test" Admin page in MainForm (2026-10-04) |
+| Restore Helpers | Implemented—needs QA | P2 | Ops Owner | `RestoreHelperService.ValidateBackupFileAsync` exists; no point-in-time restore UI yet (2026-10-04) |
 
 ---
 
@@ -343,4 +343,4 @@
 
 ---
 
-*Last updated: 2026-09-18 — Phase 4/5 complete. Serial tracking + stock transfer + assembly + expiry fully verified; all Inventory and Warehouse modules at Verified status.*
+*Last updated: 2026-10-04 — re-verified against codebase: AR Ageing report added (P1 closed); Connection Tester + Customer/Supplier CSV import wired into UI; Installer (Inno Setup 6) confirmed present; LiveSale/Restore Helpers/Myanmar fonts re-classified. Phase 4/5 complete.*

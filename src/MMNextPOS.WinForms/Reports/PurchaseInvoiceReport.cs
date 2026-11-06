@@ -476,39 +476,39 @@ namespace MMNextPOS.WinForms.Reports
             {
                 // Clear existing rows (except header)
                 _detailTable.Rows.Clear();
-                
+
                 foreach (var detail in _purchaseDetails)
                 {
                     var row = new XRTableRow();
                     var cell = new XRTableCell();
-                    
+
                     // Product Name
                     var product = await _productService.GetByIdAsync(detail.ProductId, cancellationToken);
                     cell.Text = product?.Name ?? detail.ProductId.ToString();
                     cell.Name = "ProductCell";
                     row.Cells.Add(cell);
-                    
+
                     // Quantity
                     cell = new XRTableCell();
                     cell.Text = detail.Quantity.ToString();
                     cell.Name = "QtyCell";
                     cell.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
                     row.Cells.Add(cell);
-                    
+
                     // Unit Price
                     cell = new XRTableCell();
                     cell.Text = FormatCurrency(detail.UnitPrice);
                     cell.Name = "PriceCell";
                     cell.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
                     row.Cells.Add(cell);
-                    
+
                     // Line Total
                     cell = new XRTableCell();
                     cell.Text = FormatCurrency(detail.Quantity * detail.UnitPrice);
                     cell.Name = "TotalCell";
                     cell.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
                     row.Cells.Add(cell);
-                    
+
                     _detailTable.Rows.Add(row);
                 }
             }

@@ -119,12 +119,12 @@ namespace MMNextPOS.WinForms
             };
             mainLayout.Controls.Add(_locationLookup, 1, 4);
 
-        // Paid By (User)
-        mainLayout.Controls.Add(CreateLabel("Paid By:"), 0, 5);
-        _paidByLookup = new LookUpEdit
-        {
-            Dock = DockStyle.Fill,
-            Properties =
+            // Paid By (User)
+            mainLayout.Controls.Add(CreateLabel("Paid By:"), 0, 5);
+            _paidByLookup = new LookUpEdit
+            {
+                Dock = DockStyle.Fill,
+                Properties =
             {
                 DisplayMember = "Username",
                 ValueMember = "Id",
@@ -134,23 +134,23 @@ namespace MMNextPOS.WinForms
                 BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup,
                 SearchMode = DevExpress.XtraEditors.Controls.SearchMode.AutoFilter
             }
-        };
-        mainLayout.Controls.Add(_paidByLookup, 1, 5);
+            };
+            mainLayout.Controls.Add(_paidByLookup, 1, 5);
 
-        // Status
-        mainLayout.Controls.Add(CreateLabel("Status:"), 0, 6);
-        _statusCombo = new ComboBoxEdit
-        {
-            Dock = DockStyle.Fill,
-            Properties =
+            // Status
+            mainLayout.Controls.Add(CreateLabel("Status:"), 0, 6);
+            _statusCombo = new ComboBoxEdit
+            {
+                Dock = DockStyle.Fill,
+                Properties =
             {
                 AutoHeight = false,
                 TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor,
                 Items = { "Active", "Closed" }
             }
-        };
-        _statusCombo.SelectedIndex = 0;
-        mainLayout.Controls.Add(_statusCombo, 1, 6);
+            };
+            _statusCombo.SelectedIndex = 0;
+            mainLayout.Controls.Add(_statusCombo, 1, 6);
 
             // Notes
             mainLayout.Controls.Add(CreateLabel("Notes:"), 0, 7);

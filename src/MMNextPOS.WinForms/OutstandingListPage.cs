@@ -10,6 +10,8 @@ using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.WinForms.Reports;
+using DevExpress.XtraReports.UI;
 
 namespace MMNextPOS.WinForms
 {
@@ -31,6 +33,7 @@ namespace MMNextPOS.WinForms
         private SimpleButton _newCustomerButton = null!;
         private SimpleButton _editButton = null!;
         private SimpleButton _deleteButton = null!;
+        private SimpleButton _ageingButton = null!;
         private LabelControl _statusLabel = null!;
 
         public OutstandingListPage(
@@ -112,6 +115,15 @@ namespace MMNextPOS.WinForms
             };
             _deleteButton.Click += async (s, e) => await OnDeleteAsync();
 
+            _ageingButton = new SimpleButton
+            {
+                Text = "AR Ageing",
+                Location = new Point(970, 10),
+                Width = 100,
+                Height = 30
+            };
+            _ageingButton.Click += async (s, e) => await OpenAgeingReportAsync();
+
             // Toolbar
             var toolbar = new PanelControl
             {
@@ -127,6 +139,7 @@ namespace MMNextPOS.WinForms
             toolbar.Controls.Add(_newCustomerButton);
             toolbar.Controls.Add(_editButton);
             toolbar.Controls.Add(_deleteButton);
+            toolbar.Controls.Add(_ageingButton);
 
             // Grid
             _grid = new GridControl { Dock = DockStyle.Fill };
@@ -357,6 +370,24 @@ namespace MMNextPOS.WinForms
             {
                 await LoadAsync();
             }
+        }
+
+        private async Task OpenAgeingReportAsync()
+        {
+            await RunAsync(async ct =>
+            {
+                var report = new CustomerAgeingReport(_outstandingService, _customerService);
+                try
+                {
+                    await report.PopulateAsync(DateTime.Now, ct);
+                    using var tool = new ReportPrintTool(report);
+                    tool.ShowPreviewDialog();
+                }
+                finally
+                {
+                    report.Dispose();
+                }
+            });
         }
     }
 

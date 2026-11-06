@@ -184,5 +184,48 @@ namespace MMNextPOS.Application.Services
                 description: $"Customer {customerId} account cleared: {openOutstanding.Count} outstanding records zeroed",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// Computes AR ageing buckets per customer (0-30 / 31-60 / 61-90 / 90+ days)
+        /// from open balances as of the given date.
+        /// </summary>
+        public async Task<IReadOnlyList<CustomerAgeingEntry>> GetCustomerAgeingAsync(DateTime asOfDate, CancellationToken cancellationToken = default)
+        {
+            var all = await GetAllCustomerOutstandingAsync(cancellationToken).ConfigureAwait(false);
+
+            var openRecords = all
+                .Where(o => o.Status == "Open" && o.Balance > 0 && o.TransactionDate <= asOfDate)
+                .ToList();
+
+            var buckets = new Dictionary<int, CustomerAgeingEntry>();
+            foreach (var record in openRecords)
+            {
+                if (!buckets.TryGetValue(record.CustomerId, out var entry))
+                {
+                    entry = new CustomerAgeingEntry { CustomerId = record.CustomerId };
+                    buckets[record.CustomerId] = entry;
+                }
+
+                var ageDays = (asOfDate.Date - record.TransactionDate.Date).Days;
+                if (ageDays <= 30)
+                {
+                    entry.CurrentBalance += record.Balance;
+                }
+                else if (ageDays <= 60)
+                {
+                    entry.Days31To60 += record.Balance;
+                }
+                else if (ageDays <= 90)
+                {
+                    entry.Days61To90 += record.Balance;
+                }
+                else
+                {
+                    entry.Days90Plus += record.Balance;
+                }
+            }
+
+            return buckets.Values.OrderBy(e => e.CustomerId).ToList();
+        }
     }
 }
