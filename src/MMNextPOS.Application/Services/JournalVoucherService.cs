@@ -72,6 +72,10 @@ namespace MMNextPOS.Application.Services
             // Validate each line: exactly one of debit/credit must be positive
             foreach (var d in details)
             {
+                if (string.IsNullOrWhiteSpace(d.AccountCode))
+                    throw new InvalidOperationException($"Line {d.LineNo}: AccountCode is required.");
+                if (string.IsNullOrWhiteSpace(d.AccountName))
+                    throw new InvalidOperationException($"Line {d.LineNo}: AccountName is required.");
                 if (d.DebitAmount < 0 || d.CreditAmount < 0)
                     throw new InvalidOperationException($"Line {d.LineNo}: DebitAmount and CreditAmount cannot be negative.");
                 if (d.DebitAmount > 0 && d.CreditAmount > 0)
@@ -80,17 +84,14 @@ namespace MMNextPOS.Application.Services
                     throw new InvalidOperationException($"Line {d.LineNo}: must have either DebitAmount or CreditAmount.");
             }
 
+            if (voucher.VoucherDate == default)
+                throw new InvalidOperationException("VoucherDate is required.");
+
             // Calculate totals from lines (do not trust caller-supplied totals)
             var totalDebit = details.Sum(d => d.DebitAmount);
             var totalCredit = details.Sum(d => d.CreditAmount);
             if (Math.Abs(totalDebit - totalCredit) > 0.0001m)
                 throw new InvalidOperationException("Journal voucher must balance: total debit must equal total credit.");
-
-            // Auto-generate voucher number if blank
-            if (string.IsNullOrWhiteSpace(voucher.VoucherNo))
-            {
-                voucher.VoucherNo = await _invoiceNumberGenerator.NextAsync("JV", cancellationToken);
-            }
 
             voucher.Status = "Draft";
             voucher.TotalDebit = totalDebit;
@@ -99,6 +100,15 @@ namespace MMNextPOS.Application.Services
             await _unitOfWork.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                // Reserve voucher number inside the transaction so concurrent
+                // callers cannot receive the same number (see IInvoiceNumberGenerator).
+                if (string.IsNullOrWhiteSpace(voucher.VoucherNo))
+                {
+                    voucher.VoucherNo = await _invoiceNumberGenerator.NextAsync("JV", cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                voucher.VoucherNo = voucher.VoucherNo.Trim();
                 var saved = await _voucherRepo.AddAsync(voucher, cancellationToken).ConfigureAwait(false);
 
                 foreach (var detail in details)
@@ -149,6 +159,10 @@ namespace MMNextPOS.Application.Services
 
             foreach (var d in details)
             {
+                if (string.IsNullOrWhiteSpace(d.AccountCode))
+                    throw new InvalidOperationException($"Line {d.LineNo}: AccountCode is required.");
+                if (string.IsNullOrWhiteSpace(d.AccountName))
+                    throw new InvalidOperationException($"Line {d.LineNo}: AccountName is required.");
                 if (d.DebitAmount < 0 || d.CreditAmount < 0)
                     throw new InvalidOperationException($"Line {d.LineNo}: DebitAmount and CreditAmount cannot be negative.");
                 if (d.DebitAmount > 0 && d.CreditAmount > 0)
@@ -157,12 +171,15 @@ namespace MMNextPOS.Application.Services
                     throw new InvalidOperationException($"Line {d.LineNo}: must have either DebitAmount or CreditAmount.");
             }
 
+            if (voucher.VoucherDate == default)
+                throw new InvalidOperationException("VoucherDate is required.");
+
             var totalDebit = details.Sum(d => d.DebitAmount);
             var totalCredit = details.Sum(d => d.CreditAmount);
             if (Math.Abs(totalDebit - totalCredit) > 0.0001m)
                 throw new InvalidOperationException("Journal voucher must balance: total debit must equal total credit.");
 
-            existing.VoucherNo = voucher.VoucherNo;
+            existing.VoucherNo = string.IsNullOrWhiteSpace(voucher.VoucherNo) ? existing.VoucherNo : voucher.VoucherNo.Trim();
             existing.VoucherDate = voucher.VoucherDate;
             existing.Description = voucher.Description;
             existing.ReferenceNo = voucher.ReferenceNo;
