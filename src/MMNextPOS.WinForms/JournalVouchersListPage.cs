@@ -22,6 +22,14 @@ namespace MMNextPOS.WinForms
         public JournalVouchersListPage(IJournalVoucherService service, IServiceProvider serviceProvider)
             : base(service, serviceProvider)
         {
+            // Restrict status filter to voucher-relevant values (base populates a generic list).
+            _statusFilter.Properties.Items.Clear();
+            _statusFilter.Properties.Items.AddRange(new[] { "All", "Draft", "Posted", "Voided" });
+            _statusFilter.SelectedIndex = 0;
+
+            // Workflow buttons: Post / Void (single-row status updates, no transaction needed).
+            AppendToolbarButton("Post", PostSelected_Click, 910, 90);
+            AppendToolbarButton("Void", VoidSelected_Click, 1010, 90);
         }
 
         protected override string GetPageTitle() => "Journal Vouchers";
@@ -57,6 +65,57 @@ namespace MMNextPOS.WinForms
             return query.Where(v => v.Status == status);
         }
 
+        private void PostSelected_Click(object? sender, EventArgs e) => _ = PostSelectedAsync();
+        private void VoidSelected_Click(object? sender, EventArgs e) => _ = VoidSelectedAsync();
+
+        private async Task PostSelectedAsync()
+        {
+            if (_gridView.FocusedRowHandle < 0) return;
+            var entity = _gridView.GetRow(_gridView.FocusedRowHandle) as JournalVoucher;
+            if (entity == null) return;
+
+            if (entity.Status != "Draft")
+            {
+                ShowError("Only Draft vouchers can be posted.");
+                return;
+            }
+            if (!ShowConfirm("Post this journal voucher?")) return;
+
+            try
+            {
+                await _service.PostAsync(entity.Id);
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Post failed: {ex.Message}");
+            }
+        }
+
+        private async Task VoidSelectedAsync()
+        {
+            if (_gridView.FocusedRowHandle < 0) return;
+            var entity = _gridView.GetRow(_gridView.FocusedRowHandle) as JournalVoucher;
+            if (entity == null) return;
+
+            if (entity.Status == "Voided")
+            {
+                ShowError("Voucher is already voided.");
+                return;
+            }
+            if (!ShowConfirm("Void this journal voucher?")) return;
+
+            try
+            {
+                await _service.VoidAsync(entity.Id);
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Void failed: {ex.Message}");
+            }
+        }
+
         protected override async Task OnNewAsync()
         {
             var voucher = new JournalVoucher
@@ -79,16 +138,14 @@ namespace MMNextPOS.WinForms
         {
             if (entity.Status != "Draft")
             {
-                XtraMessageBox.Show(this, "Only Draft vouchers can be edited.", "Edit Voucher",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowError("Only Draft vouchers can be edited.");
                 return;
             }
 
             var voucher = await _service.GetByIdWithDetailsAsync(entity.Id);
             if (voucher == null)
             {
-                XtraMessageBox.Show(this, "Voucher not found.", "Edit Voucher",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowError("Voucher not found.");
                 return;
             }
 
@@ -102,24 +159,27 @@ namespace MMNextPOS.WinForms
             }
         }
 
+        protected override async Task OnDeleteAsync()
+        {
+            if (_gridView.FocusedRowHandle < 0) return;
+            var entity = _gridView.GetRow(_gridView.FocusedRowHandle) as JournalVoucher;
+            if (entity == null) return;
+
+            if (entity.Status != "Draft")
+            {
+                ShowError("Only Draft vouchers can be deleted.");
+                return;
+            }
+
+            await base.OnDeleteAsync();
+        }
+
         protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)
         {
             var voucher = await _service.GetByIdAsync(id, cancellationToken);
-            if (voucher == null || voucher.Status != "Draft")
-            {
-                XtraMessageBox.Show(this, "Only Draft vouchers can be deleted.", "Delete Voucher",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (XtraMessageBox.Show(this, "Delete this journal voucher?", "Confirm Delete",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-            {
-                return;
-            }
+            if (voucher == null || voucher.Status != "Draft") return;
 
             await _service.DeleteAsync(id, cancellationToken);
-            await LoadAsync();
         }
     }
 }

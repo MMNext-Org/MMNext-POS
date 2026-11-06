@@ -57,9 +57,13 @@ namespace MMNextPOS.WinForms
             };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            for (int i = 0; i < 6; i++)
+            // Rows 0-4: fixed height header fields (50 px each).
+            // Row 5: lines grid (fills remaining space).
+            // Row 6: line action buttons (fixed height).
+            for (int i = 0; i < 5; i++)
                 layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
 
             // Voucher No
             layout.Controls.Add(CreateLabel("Voucher #:"), 0, 0);
@@ -85,10 +89,13 @@ namespace MMNextPOS.WinForms
             _totalDebitLabel = new LabelControl { Text = "Debit: 0.00", Dock = DockStyle.Fill };
             _totalCreditLabel = new LabelControl { Text = "Credit: 0.00", Dock = DockStyle.Fill };
             _differenceLabel = new LabelControl { Text = "Difference: 0.00", Dock = DockStyle.Fill, Appearance = { ForeColor = Color.Red } };
-            var totalsPanel = new PanelControl { Dock = DockStyle.Fill };
-            totalsPanel.Controls.Add(_totalDebitLabel);
-            totalsPanel.Controls.Add(_totalCreditLabel);
-            totalsPanel.Controls.Add(_differenceLabel);
+            var totalsPanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1 };
+            totalsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            totalsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            totalsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            totalsPanel.Controls.Add(_totalDebitLabel, 0, 0);
+            totalsPanel.Controls.Add(_totalCreditLabel, 1, 0);
+            totalsPanel.Controls.Add(_differenceLabel, 2, 0);
             layout.Controls.Add(CreateLabel("Totals:"), 0, 4);
             layout.Controls.Add(totalsPanel, 1, 4);
 
@@ -180,6 +187,11 @@ namespace MMNextPOS.WinForms
 
             foreach (var l in lines)
             {
+                if (string.IsNullOrWhiteSpace(l.AccountCode))
+                {
+                    ShowError("Account code is required on every line.");
+                    return false;
+                }
                 if (l.DebitAmount < 0 || l.CreditAmount < 0)
                 {
                     ShowError("Debit and Credit cannot be negative.");
@@ -222,6 +234,18 @@ namespace MMNextPOS.WinForms
                     _lines.Add(d);
 
                 RecomputeTotals();
+
+                // Edit vs new mode: title and OK button text.
+                if (v.Id > 0)
+                {
+                    Text = $"Edit Voucher {v.VoucherNo}";
+                    _okButton.Text = "Save";
+                }
+                else
+                {
+                    Text = "New Journal Voucher";
+                    _okButton.Text = "Create";
+                }
             }
         }
 
@@ -229,7 +253,7 @@ namespace MMNextPOS.WinForms
         {
             if (entity is JournalVoucher v)
             {
-                v.VoucherNo = _voucherNoEdit.Text;
+                v.VoucherNo = _voucherNoEdit.Text.Trim();
                 v.VoucherDate = _voucherDateEdit.DateTime;
                 v.ReferenceNo = _referenceNoEdit.Text;
                 v.Description = _descriptionEdit.Text;
