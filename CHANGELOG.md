@@ -22,8 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Testing
 - Build: 0 errors, Release configuration
 - Format: `dotnet format --verify-no-changes` clean
-- Unit tests: 327/327 passed (Application layer)
+- Unit tests: 330/330 passed (Application layer)
 - Integration tests: require Docker/MySQL testcontainer (CI Ubuntu job); 017 migration + Journal Voucher repo tests written
+- Deps: `MySqlConnector` 2.3.0 → 2.6.1 (GHSA-473q-m89c-ghf8); unblocks CI restore which previously failed with NU1902
 - Obfuscation: end-to-end test with 4 assemblies verified — anonymous type JSON serialization, `ConnectionStringOptions` reflection binding, mapping file not shipped
 
 ### Added (previous sessions)

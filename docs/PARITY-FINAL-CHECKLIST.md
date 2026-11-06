@@ -191,8 +191,8 @@ scripts\Build-Installer.ps1           # stages app + fonts
 |-----------|---------|-----------|----------|
 | Build Errors | **0** [re-verified 2026-10-04] | ≤ 0 | ✅ PASS |
 | Build Warnings | **1** (DX1000 DevExpress eval — pre-existing, only on WinForms compile) | ≤ 1 known | ✅ PASS |
-| Test Pass Rate (unit) | **327/327 = 100%** | ≥ 95% | ✅ PASS |
-| Test Coverage | **345** total [Fact]/[Theory] (327 Application + 18 Infrastructure) | ≥ 200 | ✅ PASS |
+| Test Pass Rate (unit) | **330/330 = 100%** | ≥ 95% | ✅ PASS |
+| Test Coverage | **371** total [Fact]/[Theory] (330 Application + 41 Infrastructure) | ≥ 200 | ✅ PASS |
 | Format Check | PASS (`dotnet format --verify-no-changes` clean) | Pass | ✅ PASS |
 | Critical Bugs | 0 observed | = 0 | ✅ PASS |
 | P0 Features | 13/13 (100%, including Journal Entries) | ≥ 95% | ✅ PASS |

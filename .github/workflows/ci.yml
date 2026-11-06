@@ -118,7 +118,7 @@ jobs:
           dotnet build tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj
           --configuration ${{ env.DOTNET_CONFIGURATION }}
 
-      # Runs the full infrastructure suite: MigrationIdempotenceTests (000-015
+      # Runs the full infrastructure suite: MigrationIdempotenceTests (000-017
       # chain), Sales/Purchase integration tests incl. concurrency scenarios
       # (shared MySqlContainerFixture), StarmanIntegrationTests, and
       # UnitOfWorkTests (own container). No connection string env var is set:
