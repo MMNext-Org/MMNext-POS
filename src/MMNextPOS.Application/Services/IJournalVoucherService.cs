@@ -13,6 +13,7 @@ namespace MMNextPOS.Application.Services
     {
         // Header CRUD
         Task<JournalVoucher?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<JournalVoucher?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<JournalVoucher>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<PagedResult<JournalVoucher>> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken = default);
         Task<JournalVoucher> AddAsync(JournalVoucher voucher, CancellationToken cancellationToken = default);
