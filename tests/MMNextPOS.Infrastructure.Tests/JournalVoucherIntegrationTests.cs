@@ -52,10 +52,59 @@ namespace MMNextPOS.Infrastructure.Tests
 
         private async Task<int> SeedVoucherAsync(JournalVoucher voucher)
         {
+            await ResetAndMigrateAsync();
             using var scope = _fixture.ServiceProvider.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IJournalVoucherService>();
             var saved = await service.AddAsync(voucher);
             return saved.Id;
+        }
+
+        /// <summary>
+        /// Each test resets the schema and runs migrations from scratch so the
+        /// collection does not depend on test order. Matches the pattern used by
+        /// SalesServiceIntegrationTests and PurchaseServiceIntegrationTests.
+        /// </summary>
+        private async Task ResetAndMigrateAsync()
+        {
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.ServiceProvider.GetRequiredService<DatabaseInitializer>().InitializeAsync();
+        }
+
+        [Fact]
+        public async Task Add_BlankVoucherNo_GeneratesJvNumber()
+        {
+            var voucher = NewVoucher();
+            voucher.VoucherNo = string.Empty; // auto-generate
+
+            var id = await SeedVoucherAsync(voucher);
+
+            using var scope = _fixture.ServiceProvider.CreateScope();
+            var service = scope.ServiceProvider.GetRequiredService<IJournalVoucherService>();
+            var saved = await service.GetByIdAsync(id);
+
+            Assert.NotNull(saved);
+            Assert.Matches(@"^JV-\d{4}-\d{6}$", saved!.VoucherNo);
+        }
+
+        [Fact]
+        public async Task Post_ThenVoid_UpdatesStatus()
+        {
+            var id = await SeedVoucherAsync(NewVoucher("JV-IT-POSTVOID-001"));
+
+            using var scope = _fixture.ServiceProvider.CreateScope();
+            var service = scope.ServiceProvider.GetRequiredService<IJournalVoucherService>();
+
+            var posted = await service.PostAsync(id);
+            Assert.Equal("Posted", posted.Status);
+
+            var voided = await service.VoidAsync(id);
+            Assert.Equal("Voided", voided.Status);
+
+            // Posted vouchers cannot be updated
+            var update = await service.GetByIdAsync(id);
+            Assert.NotNull(update);
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.UpdateAsync(update!));
         }
 
         [Fact]
