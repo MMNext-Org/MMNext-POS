@@ -20,7 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/parity/PARITY-MATRIX.md`: LiveSale → Partial (dormant form), imports → Verified, Connection Tester → Verified, Restore Helpers → Implemented-needs-QA, Myanmar fonts → Partial (Pyidaungsu bundled; Zawgyi untested)
 
 ### Testing
-- Verification pending (build was broken at review time; re-run after fixes)
+- Build: 0 errors, Release configuration
+- Format: `dotnet format --verify-no-changes` clean
+- Unit tests: 327/327 passed (Application layer)
+- Integration tests: require Docker/MySQL testcontainer (CI Ubuntu job); 017 migration + Journal Voucher repo tests written
+- Obfuscation: end-to-end test with 4 assemblies verified — anonymous type JSON serialization, `ConnectionStringOptions` reflection binding, mapping file not shipped
 
 ### Added (previous sessions)
 - **Expense Management Module**

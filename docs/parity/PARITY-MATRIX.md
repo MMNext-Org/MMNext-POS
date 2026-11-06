@@ -102,8 +102,9 @@
 | ucCustomerOutstand | **Verified** | P0 | WinForms Lead | OutstandingService + OutstandingListPage + ApplyCustomerPaymentAsync/ClearCustomerAccountAsync tested |
 | ucSupplierOutstand | **Verified** | P0 | WinForms Lead | SupplierOutstanding CRUD + payment application tested |
 | Payments & History | **Verified** | P1 | WinForms Lead | PaymentService + PaymentsListPage + 14 tests (CRUD, query by ref, validation) |
+| Journal Voucher | **Verified** | P0 | WinForms Lead | `JournalVoucher`/`JournalVoucherDetail` entities, `JournalVoucherService` (balance validation, Post/Void, audit), `JournalVouchersListPage` + `JournalVoucherEditForm` UI, migration 017; 13 unit tests + 7 integration tests |
 
-**Entities:** CustomerOutstanding, SupplierOutstanding, Payment
+**Entities:** CustomerOutstanding, SupplierOutstanding, Payment, JournalVoucher, JournalVoucherDetail
 
 ---
 

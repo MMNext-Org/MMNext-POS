@@ -40,12 +40,12 @@ These block production release. Do not ship without these.
 | **Cash/Card/Credit Sale** | frmSalesPayment | ✅ Verified | — | PaymentService 16 tests pass 2026-10-04 |
 | **Customer Outstanding** | ucCustomerOutstand | ✅ Verified | — | OutstandingService tested incl. payment application |
 | **Supplier Outstanding** | ucSupplierOutstand | ✅ Verified | — | Same as customer outstanding |
-| **Journal Entries** | frmJournalEntry | 🔴 Not Started | **Full implementation from scratch if accounting is required** | **[re-verified 2026-10-04]** No `Journal`/`JournalVoucher` code exists anywhere (checked *.cs, *.sql, *.md). The previous note "JournalVoucher repository exists but no UI" was **incorrect** — no repository exists. |
+| **Journal Entries** | frmJournalEntry | ✅ **Implemented 2026-11-07** | `JournalVoucher` + `JournalVoucherDetail` entities, `IJournalVoucherService`/`JournalVoucherService` (balance validation, Post/Void workflow, audit logging), `IJournalVoucherRepository`/`JournalVoucherRepository` + detail repo, migration 017, `JournalVouchersListPage` + `JournalVoucherEditForm` UI, MainForm nav | Unit tests (13) + integration tests (7) written; requires Docker/MySQL to run integration |
 | **Hold Sale (Draft)** | ucSalesHold | ✅ Verified | — | SaleTempService persists/resume tested |
 | **Barcode Scanning** | ucBarcode | ✅ Verified | — | BarcodeService: Code128, EAN-13, prefix routing |
 | **User Roles/Permissions** | Role-Based Access | ✅ Verified | — | `IMenuRoleService` role filtering |
 
-**Status:** 12/13 P0 items complete (previous count "11/14" was internally inconsistent with its own table). Only Journal Entries remains — needed only if full double-entry accounting is in scope.
+**Status:** 13/13 P0 items complete (previous count "11/14" was internally inconsistent with its own table). All P0 items including Journal Entries are implemented.
 
 ---
 
@@ -191,11 +191,11 @@ scripts\Build-Installer.ps1           # stages app + fonts
 |-----------|---------|-----------|----------|
 | Build Errors | **0** [re-verified 2026-10-04] | ≤ 0 | ✅ PASS |
 | Build Warnings | **1** (DX1000 DevExpress eval — pre-existing, only on WinForms compile) | ≤ 1 known | ✅ PASS |
-| Test Pass Rate (unit) | **314/314 = 100%** [re-verified 2026-10-04] | ≥ 95% | ✅ PASS |
-| Test Coverage | **345** total [Fact]/[Theory] (314 Application + 31 Infrastructure) | ≥ 200 | ✅ PASS |
+| Test Pass Rate (unit) | **327/327 = 100%** | ≥ 95% | ✅ PASS |
+| Test Coverage | **345** total [Fact]/[Theory] (327 Application + 18 Infrastructure) | ≥ 200 | ✅ PASS |
 | Format Check | PASS (`dotnet format --verify-no-changes` clean) | Pass | ✅ PASS |
 | Critical Bugs | 0 observed | = 0 | ✅ PASS |
-| P0 Features | 12/13 (92%, Journal Entries = optional accounting scope) | ≥ 95% | ⚠️ CONFIRM JOURNAL SCOPE |
+| P0 Features | 13/13 (100%, including Journal Entries) | ≥ 95% | ✅ PASS |
 | P1 Features | 14/15 (93%, Recurring Expenses missing) | ≥ 90% | ✅ PASS |
 
 ---

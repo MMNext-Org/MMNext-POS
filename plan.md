@@ -459,7 +459,9 @@ No single individual should approve both an emergency data correction and the ev
 
 ## 8. Next Immediate Step
 
-Start **Phase 0 — Baseline and Evidence Lock**. Do not generate new POCOs, repositories, or screens until the clean build/test result and parity matrix identify a confirmed gap. The first implementation batch should be the smallest set of fixes required to make the existing .NET 8 solution and CI pipeline reliable, followed by transaction/data-safety validation and sales workflow hardening.
+Phase A (AR ageing, connection tester, health-check), Phase B (Journal Voucher double-entry accounting), Phase C (obfuscation config fix), and Phase D (Journal Voucher service fixes, tests, UI, docs) are complete on `main` (3 commits + 4 Phase D commits, not yet pushed after D4/D5).
+
+Next: **push all commits to origin/main** and confirm CI (Windows build/format/unit tests + Ubuntu infrastructure tests via Docker Testcontainers) is green. Then evaluate remaining backlog from `docs/parity/` (recurring expenses, delivery tracking, loyalty points, etc.).
 
 ### Verification commands
 
