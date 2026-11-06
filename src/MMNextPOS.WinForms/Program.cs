@@ -111,6 +111,7 @@ namespace MMNextPOS.WinForms
                     services.AddTransient<StockTransfersListPage>();
                     services.AddTransient<ExpensesListPage>();
                     services.AddTransient<ExpenseTypesListPage>();
+                    services.AddTransient<JournalVouchersListPage>();
                     services.AddTransient<PaymentsListPage>();
 
                     // Edit forms resolved via IServiceProvider from list pages
@@ -122,6 +123,7 @@ namespace MMNextPOS.WinForms
                     services.AddTransient<EmailSettingEditForm>();
                     services.AddTransient<ExpenseEditForm>();
                     services.AddTransient<ExpenseTypeEditForm>();
+                    services.AddTransient<JournalVoucherEditForm>();
                     services.AddTransient<GroupEditForm>();
                     services.AddTransient<LanguageEditForm>();
                     services.AddTransient<LocationEditForm>();

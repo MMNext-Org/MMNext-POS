@@ -101,6 +101,7 @@ namespace MMNextPOS.WinForms
         private StockTransfersListPage _stockTransfersListPage = null!;
         private ExpensesListPage _expensesListPage = null!;
         private ExpenseTypesListPage _expenseTypesListPage = null!;
+        private JournalVouchersListPage _journalVouchersListPage = null!;
         private PaymentsListPage _paymentsListPage = null!;
 
         private ReportsViewerForm _reportsViewerForm = null!;
@@ -327,6 +328,7 @@ namespace MMNextPOS.WinForms
             _stockTransfersListPage = new StockTransfersListPage(_stockTransferService, _serviceProvider);
             _expensesListPage = new ExpensesListPage(_expenseService, _serviceProvider);
             _expenseTypesListPage = new ExpenseTypesListPage(_expenseTypeService, _serviceProvider);
+            _journalVouchersListPage = _serviceProvider.GetRequiredService<JournalVouchersListPage>();
             _paymentsListPage = new PaymentsListPage(_paymentService, _serviceProvider);
 
             // Reports
@@ -462,6 +464,7 @@ namespace MMNextPOS.WinForms
                 AddNavigationPage("Stock Transfers", _stockTransfersListPage);
                 AddNavigationPage("Expenses", _expensesListPage);
                 AddNavigationPage("Expense Types", _expenseTypesListPage);
+                AddNavigationPage("Journal Vouchers", _journalVouchersListPage);
                 AddNavigationPage("Payments", _paymentsListPage);
             }
             // Warehouse-specific pages
@@ -639,6 +642,7 @@ namespace MMNextPOS.WinForms
                 _stockTransfersListPage.Dispose();
                 _expensesListPage.Dispose();
                 _expenseTypesListPage.Dispose();
+                _journalVouchersListPage.Dispose();
                 _paymentsListPage.Dispose();
 
                 // Dispose reports viewer
@@ -681,6 +685,7 @@ namespace MMNextPOS.WinForms
                 _stockTransfersListPage = null!;
                 _expensesListPage = null!;
                 _expenseTypesListPage = null!;
+                _journalVouchersListPage = null!;
                 _paymentsListPage = null!;
                 _reportsViewerForm = null!;
                 _backupsListPage = null!;
