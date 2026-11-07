@@ -52,7 +52,7 @@ jobs:
         run: |
           $null = New-Item -ItemType Directory -Force -Path "$env:APPDATA\DevExpress"
           Set-Content -Path "$env:APPDATA\DevExpress\DevExpress_License.txt" -Value "evaluation"
-          dotnet build ${{ env.SOLUTION_FILE }} --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore
+          dotnet build ${{ env.SOLUTION_FILE }} --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore -p:DevExpressLicenseKey=evaluation
 
       - name: Format check
         run: dotnet format ${{ env.SOLUTION_FILE }} --verify-no-changes
