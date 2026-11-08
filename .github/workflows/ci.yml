@@ -22,6 +22,9 @@ permissions:
   issues: read
   discussions: read
 
+permissions:
+  contents: read
+
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Job 1: Build + Format + Application unit tests
