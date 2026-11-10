@@ -325,7 +325,7 @@ namespace MMNextPOS.WinForms
     /// <summary>
     /// Dialog for selecting a draft to resume.
     /// </summary>
-    public class DraftSelectorForm : XtraForm
+    public class DraftSelectorForm : AsyncFormBase
     {
         public SaleTemp? SelectedDraft { get; private set; }
 

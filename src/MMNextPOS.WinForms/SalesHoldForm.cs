@@ -682,7 +682,7 @@ namespace MMNextPOS.WinForms
     /// <summary>
     /// Dialog for selecting a product from a list of matches.
     /// </summary>
-    public class ProductSelectorForm : XtraForm
+    public class ProductSelectorForm : AsyncFormBase
     {
         public Product? SelectedProduct { get; private set; }
 

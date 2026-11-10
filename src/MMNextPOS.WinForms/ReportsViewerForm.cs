@@ -18,7 +18,7 @@ namespace MMNextPOS.WinForms
     /// <summary>
     /// Reports viewer form with DevExpress XtraReport preview and print capabilities.
     /// </summary>
-    public partial class ReportsViewerForm : XtraForm
+    public partial class ReportsViewerForm : AsyncFormBase
     {
         private readonly WinFormsReportService _reportService;
         private readonly IServiceProvider _serviceProvider;
@@ -37,7 +37,7 @@ namespace MMNextPOS.WinForms
             _reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             InitializeComponent();
-            LoadReports();
+            _ = LoadReportsAsync();
         }
 
         private void InitializeComponent()
@@ -71,10 +71,10 @@ namespace MMNextPOS.WinForms
                 Width = 300,
                 Properties = { TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor }
             };
-            _reportSelector.SelectedIndexChanged += (s, e) => LoadSelectedReport();
+            _reportSelector.SelectedIndexChanged += (s, e) => { _ = LoadSelectedReportAsync(); };
 
             _refreshButton = new SimpleButton { Text = "Refresh", Location = new Point(400, 15), Width = 80, Height = 30 };
-            _refreshButton.Click += (s, e) => LoadSelectedReport();
+            _refreshButton.Click += (s, e) => { _ = LoadSelectedReportAsync(); };
 
             _printButton = new SimpleButton { Text = "Print", Location = new Point(500, 15), Width = 80, Height = 30 };
             _printButton.Click += (s, e) => PrintReport();
@@ -120,7 +120,7 @@ namespace MMNextPOS.WinForms
             Controls.Add(mainLayout);
         }
 
-        private async void LoadReports()
+        private async Task LoadReportsAsync()
         {
             try
             {
@@ -135,11 +135,11 @@ namespace MMNextPOS.WinForms
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show(this, $"Failed to load reports: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowError($"Failed to load reports: {ex.Message}");
             }
         }
 
-        private async void LoadSelectedReport()
+        private async Task LoadSelectedReportAsync()
         {
             if (_reportSelector.SelectedItem is not ReportMenuItem item) return;
 
@@ -230,7 +230,7 @@ namespace MMNextPOS.WinForms
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show(this, $"Failed to load report: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowError($"Failed to load report: {ex.Message}");
             }
         }
 
@@ -306,11 +306,11 @@ namespace MMNextPOS.WinForms
                 else
                     _currentReport.ExportToXlsx(dialog.FileName);
 
-                XtraMessageBox.Show(this, $"Report exported to {dialog.FileName}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowInfo($"Report exported to {dialog.FileName}");
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show(this, $"Export failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowError($"Export failed: {ex.Message}");
             }
         }
 

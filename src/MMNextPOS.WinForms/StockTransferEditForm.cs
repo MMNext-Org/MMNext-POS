@@ -59,7 +59,7 @@ namespace MMNextPOS.WinForms
             _isNew = _entity.Id == 0;
 
             InitializeComponent();
-            LoadEntityData(_entity);
+            _ = LoadEntityDataAsync(_entity);
         }
 
         private void InitializeComponent()
@@ -168,7 +168,7 @@ namespace MMNextPOS.WinForms
             };
         }
 
-        private async void LoadEntityData(StockTransfer entity)
+        private async Task LoadEntityDataAsync(StockTransfer entity)
         {
             _entity = entity;
             if (_fromLocationEdit != null) _fromLocationEdit.EditValue = entity.FromLocationId;

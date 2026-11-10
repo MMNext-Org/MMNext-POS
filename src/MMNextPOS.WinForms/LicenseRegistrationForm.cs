@@ -337,7 +337,12 @@ namespace MMNextPOS.WinForms
             _statusLabel.Appearance.ForeColor = isError ? Color.Red : Color.SeaGreen;
         }
 
-        private async void OnActivateClick(object? sender, EventArgs e)
+        private void OnActivateClick(object? sender, EventArgs e)
+        {
+            _ = OnActivateClickAsync();
+        }
+
+        private async Task OnActivateClickAsync()
         {
             if (!ValidateForm())
             {

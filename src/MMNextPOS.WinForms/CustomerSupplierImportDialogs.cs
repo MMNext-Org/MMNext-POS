@@ -150,7 +150,12 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async void BtnImport_Click(object? sender, EventArgs e)
+        private void BtnImport_Click(object? sender, EventArgs e)
+        {
+            _ = BtnImport_ClickAsync();
+        }
+
+        private async Task BtnImport_ClickAsync()
         {
             if (_rows.Count == 0) { ShowInfo("No customers to import."); return; }
 
@@ -343,7 +348,12 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async void BtnImport_Click(object? sender, EventArgs e)
+        private void BtnImport_Click(object? sender, EventArgs e)
+        {
+            _ = BtnImport_ClickAsync();
+        }
+
+        private async Task BtnImport_ClickAsync()
         {
             if (_rows.Count == 0) { ShowInfo("No suppliers to import."); return; }
 

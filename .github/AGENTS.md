@@ -35,6 +35,9 @@ Presentation    → WinForms UI (MainForm) via Microsoft.Extensions.DI
 | **Run WinForms app** | `dotnet run --project src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj` |
 | **Run unit tests** | `dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj` |
 | **Run integration tests** | `dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj` |
+| **Format check** | `dotnet format MMNextPOS.slnx --verify-no-changes` |
+| **Collect coverage** | `dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=coverage.opencover.xml` |
+| **Generate coverage report** | `dotnet tool install --global dotnet-reportgenerator && reportgenerator -reports:coverage.opencover.xml -targetdir:coverlet/reports -reporttypes:HtmlInline_AzurePipelines;Cobertura` |
 | **Self-contained publish** | `dotnet publish src/MMNextPOS.WinForms/MMNextPOS.WinForms.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish` |
 | **Build MSI (WiX)** | `candle Installer.wxs && light -ext WixUIExtension Installer.wixobj -o MMNextPOS.msi` |
 
@@ -71,6 +74,24 @@ Presentation    → WinForms UI (MainForm) via Microsoft.Extensions.DI
 | **Dapper queries** | Use parametrized queries; never concatenate user input into SQL strings |
 | **Configuration** | Connection string comes from `MMNEXTPOS_CONNECTION_STRING` environment variable; fall back to `Server=localhost;Port=3306;Database=mmnextpos;User ID=root;` if not set |
 | **DI lifetime** | Register services as `Scoped` for WinForms apps; repositories can be `Scoped` or `Transient` |
+
+## Quality gates
+
+MMNextPOS enforces the following quality gates in CI (`.github/workflows/ci.yml`) and locally:
+
+| Gate | Command | Purpose |
+|------|---------|---------|
+| Format | `dotnet format MMNextPOS.slnx --verify-no-changes` | Enforces `.editorconfig` whitespace/style rules; fails CI on drift |
+| Build | `dotnet build MMNextPOS.slnx -c Release -warnaserror` | Compiles all projects; warnings-as-errors (DevExpress DX1000 eval warning exempted) |
+| Analyze | SDK analyzers via `EnableNETAnalyzers=true` + `AnalysisLevel=latest` (all 6 csproj) + `.editorconfig` severity rules | Static analysis; code-style conventions documented but not enforced (`:none`) |
+| Unit tests | `dotnet test tests/MMNextPOS.Application.Tests/... -c Release` | 330 xUnit tests, mock repos, must be green |
+| Integration tests | `dotnet test tests/MMNextPOS.Infrastructure.Tests/... -c Release` | Testcontainers MySQL 8.0 (Ubuntu CI only; needs Docker) |
+| Coverage | coverlet.collector (opencover) + ReportGenerator report, published as CI artifact | Application-layer coverage measured per Windows CI job; no hard threshold gate yet (Phase 2 baseline) |
+
+Analyzer/tool choices:
+- **SDK analyzers only** — no StyleCop/Roslynator/Meziantou. The codebase passes clean with `TreatWarningsAsErrors=true`; third-party analyzers would add failures without closing a real Phase-2 gap. Revisit if the team wants stricter style enforcement.
+- **No NetArchTest architecture tests yet** — layer boundaries (Domain → Infrastructure → Application → WinForms) are enforced by code review per the architecture rules above. Documented as a future consideration.
+- **Coverage:** `coverlet.collector` is already referenced in both test projects; CI collects opencover output and generates an HTML/Cobertura report via the `dotnet-reportgenerator` tool.
 
 ## Key Files to Know
 

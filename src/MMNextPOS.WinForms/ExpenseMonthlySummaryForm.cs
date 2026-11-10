@@ -15,7 +15,7 @@ namespace MMNextPOS.WinForms
     /// <summary>
     /// Monthly expense summary report form.
     /// </summary>
-    public partial class ExpenseMonthlySummaryForm : Form
+    public partial class ExpenseMonthlySummaryForm : AsyncFormBase
     {
         private readonly IExpenseService _expenseService;
         private readonly IServiceProvider _serviceProvider;
@@ -124,10 +124,10 @@ namespace MMNextPOS.WinForms
 
         private void BtnGenerate_Click(object? sender, EventArgs e)
         {
-            GenerateSummary();
+            _ = GenerateSummaryAsync();
         }
 
-        private async void GenerateSummary()
+        private async Task GenerateSummaryAsync()
         {
             try
             {
@@ -181,8 +181,5 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        // Helper methods mimicking AsyncFormBase
-        private void ShowInfo(string message) => MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        private void ShowError(string message) => MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 }
