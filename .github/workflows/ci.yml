@@ -66,6 +66,8 @@ jobs:
           dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj
           --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build
           --logger "trx;LogFileName=application-tests.trx"
+          --collect:"XPlat Code Coverage" --settings coverlet.runsettings
+          --results-directory tests/MMNextPOS.Application.Tests/TestResults
 
       - name: Upload test results (on failure)
         if: failure()
@@ -74,6 +76,17 @@ jobs:
           name: application-test-results
           path: '**/TestResults/*.trx'
           if-no-files-found: ignore
+
+      # Coverage is collected via the coverlet.collector package already
+      # referenced by the test project (see coverlet.runsettings at the repo
+      # root), producing Cobertura XML identical to a local developer run.
+      - name: Upload coverage artifact (unit tests)
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-csharp-unit
+          path: tests/MMNextPOS.Application.Tests/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: error
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Job 2: Infrastructure integration tests (Testcontainers + MySQL 8.0)
@@ -136,6 +149,8 @@ jobs:
           dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj
           --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build
           --logger "trx;LogFileName=infrastructure-tests.trx"
+          --collect:"XPlat Code Coverage" --settings coverlet.runsettings
+          --results-directory tests/MMNextPOS.Infrastructure.Tests/TestResults
 
       - name: Upload test results (always)
         if: always()
@@ -144,3 +159,69 @@ jobs:
           name: infrastructure-test-results
           path: '**/TestResults/*.trx'
           if-no-files-found: ignore
+
+      # Coverage is collected via the coverlet.collector package already
+      # referenced by the test project (see coverlet.runsettings at the repo
+      # root), producing Cobertura XML identical to a local developer run.
+      - name: Upload coverage artifact (infrastructure tests)
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-csharp-integration
+          path: tests/MMNextPOS.Infrastructure.Tests/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: error
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Coverage upload jobs
+  #
+  # Run in a separate job from the test suites so the elevated
+  # `code-quality: write` permission needed by actions/upload-code-coverage
+  # is never held by jobs that execute repository/third-party test code.
+  # The `needs.*.result` check allows either "success" or "failure": the
+  # coverage artifact is produced by a step with `if: always()`, so it
+  # exists even when an individual test fails (e.g. a pre-existing failing
+  # test), and the task is to report coverage, not to gate on green tests.
+  # Fork PRs are skipped because the upload needs a write token that forked
+  # PR runs don't have.
+  # ─────────────────────────────────────────────────────────────────────────────
+  upload-coverage-csharp-unit:
+    name: Upload Coverage (C# unit tests)
+    needs: build-and-unit-tests
+    if: ${{ !cancelled() && contains(fromJSON('["success", "failure"]'), needs.build-and-unit-tests.result) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      code-quality: write
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-report-csharp-unit
+
+      - uses: actions/upload-code-coverage@v1
+        with:
+          file: coverage.cobertura.xml
+          language: C#
+          label: code-coverage-agent
+
+  upload-coverage-csharp-integration:
+    name: Upload Coverage (C# integration tests)
+    needs: infrastructure-tests
+    if: ${{ !cancelled() && contains(fromJSON('["success", "failure"]'), needs.infrastructure-tests.result) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      code-quality: write
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-report-csharp-integration
+
+      - uses: actions/upload-code-coverage@v1
+        with:
+          file: coverage.cobertura.xml
+          language: C#
+          label: code-coverage-agent
