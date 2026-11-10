@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
 
 namespace MMNextPOS.Application.Services
@@ -14,17 +15,23 @@ namespace MMNextPOS.Application.Services
         private readonly IPurchaseReturnRepository _repo;
         private readonly IPurchaseReturnDetailRepository _detailRepo;
         private readonly IProductRepository _productRepo;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IStockMovementService _stockMovementService;
         private readonly IAuditService _auditService;
 
         public PurchaseReturnService(
             IPurchaseReturnRepository repo,
             IPurchaseReturnDetailRepository detailRepo,
             IProductRepository productRepo,
+            IUnitOfWork unitOfWork,
+            IStockMovementService stockMovementService,
             IAuditService auditService)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _detailRepo = detailRepo ?? throw new ArgumentNullException(nameof(detailRepo));
             _productRepo = productRepo ?? throw new ArgumentNullException(nameof(productRepo));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _stockMovementService = stockMovementService ?? throw new ArgumentNullException(nameof(stockMovementService));
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
         }
 
@@ -60,8 +67,44 @@ namespace MMNextPOS.Application.Services
         public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
             var existing = await _repo.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
-            await _repo.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
-            await _auditService.LogAsync(nameof(PurchaseReturn), id, "Delete", existing, null, 1, "System", $"Deleted purchase return {existing?.ReturnNo ?? id.ToString()}", cancellationToken).ConfigureAwait(false);
+            if (existing == null)
+            {
+                throw new ValidationException($"Purchase return {id} not found.");
+            }
+
+            await _unitOfWork.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                // Restore stock for the return lines being deleted.
+                var details = await _detailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+                var returnDetails = details.Where(d => d.PurchaseReturnId == id).ToList();
+                foreach (var d in returnDetails)
+                {
+                    await _productRepo.TryIncrementStockAsync(d.ProductId, d.Quantity, 1, "PurchaseReturnDelete", cancellationToken).ConfigureAwait(false);
+                    await _detailRepo.DeleteAsync(d.Id, cancellationToken).ConfigureAwait(false);
+                }
+
+                await _repo.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
+
+                await _auditService.LogAsync(
+                    nameof(PurchaseReturn),
+                    id,
+                    "Delete",
+                    existing,
+                    null,
+                    1,
+                    "System",
+                    $"Deleted purchase return {existing.ReturnNo ?? id.ToString()} and restored stock",
+                    cancellationToken).ConfigureAwait(false);
+
+                await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
+            }
         }
 
         // Purchase Return Details
@@ -95,38 +138,145 @@ namespace MMNextPOS.Application.Services
         // Purchase Return with details
         public async Task<PurchaseReturn> CreatePurchaseReturnAsync(PurchaseReturn returnOrder, IEnumerable<PurchaseReturnDetail> details, CancellationToken cancellationToken = default)
         {
-            var result = await _repo.AddAsync(returnOrder, cancellationToken).ConfigureAwait(false);
+            if (returnOrder == null) throw new ArgumentNullException(nameof(returnOrder));
+            if (details == null) throw new ArgumentNullException(nameof(details));
 
-            foreach (var detail in details)
+            var detailList = details as IList<PurchaseReturnDetail> ?? details.ToList();
+            if (detailList.Count == 0)
             {
-                detail.PurchaseReturnId = result.Id;
-                await _detailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
+                throw new ValidationException("A purchase return must have at least one line item.");
             }
 
-            await _auditService.LogAsync(nameof(PurchaseReturn), result.Id, "Create", null, returnOrder, 1, "System", $"Created purchase return {result.ReturnNo} with details", cancellationToken).ConfigureAwait(false);
-            return result;
+            await _unitOfWork.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                // 1) Decrement stock for every returned line. Insufficient stock or
+                //    unknown product fails the whole transaction before any write.
+                foreach (var d in detailList)
+                {
+                    var ok = await _productRepo.TryDecrementStockAsync(d.ProductId, d.Quantity, 1, "PurchaseReturn", cancellationToken).ConfigureAwait(false);
+                    if (!ok)
+                    {
+                        throw new ValidationException($"Product {d.ProductId} not found or insufficient stock to return {d.Quantity} unit(s).");
+                    }
+                }
+
+                // 2) Persist return header + details.
+                var result = await _repo.AddAsync(returnOrder, cancellationToken).ConfigureAwait(false);
+                foreach (var d in detailList)
+                {
+                    d.PurchaseReturnId = result.Id;
+                    await _detailRepo.AddAsync(d, cancellationToken).ConfigureAwait(false);
+                }
+
+                // 3) Stock movement header + one detail row per return line (MovementType = "Return").
+                foreach (var d in detailList)
+                {
+                    await _stockMovementService.AddReturnMovementAsync(
+                        result.Id,
+                        d.ProductId,
+                        d.Quantity,
+                        unitCost: 0m,
+                        locationId: null,
+                        createdByUserId: null,
+                        reason: $"Purchase return {result.ReturnNo}",
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                // 4) Audit inside the transaction.
+                await _auditService.LogAsync(
+                    nameof(PurchaseReturn),
+                    result.Id,
+                    "Create",
+                    null,
+                    returnOrder,
+                    1,
+                    "System",
+                    $"Created purchase return {result.ReturnNo} with {detailList.Count} line(s)",
+                    cancellationToken).ConfigureAwait(false);
+
+                await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return result;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
+            }
         }
 
         public async Task<PurchaseReturn> UpdatePurchaseReturnAsync(PurchaseReturn returnOrder, IEnumerable<PurchaseReturnDetail> details, CancellationToken cancellationToken = default)
         {
+            if (returnOrder == null) throw new ArgumentNullException(nameof(returnOrder));
+            if (details == null) throw new ArgumentNullException(nameof(details));
+
+            var detailList = details as IList<PurchaseReturnDetail> ?? details.ToList();
+            if (detailList.Count == 0)
+            {
+                throw new ValidationException("A purchase return must have at least one line item.");
+            }
+
             var existing = await _repo.GetByIdAsync(returnOrder.Id, cancellationToken).ConfigureAwait(false);
-            await _repo.UpdateAsync(returnOrder, cancellationToken).ConfigureAwait(false);
-
-            var existingDetails = await _detailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
-            var returnDetails = existingDetails.Where(d => d.PurchaseReturnId == returnOrder.Id).ToList();
-            foreach (var detail in returnDetails)
+            if (existing == null)
             {
-                await _detailRepo.DeleteAsync(detail.Id, cancellationToken).ConfigureAwait(false);
+                throw new ValidationException($"Purchase return {returnOrder.Id} not found.");
             }
 
-            foreach (var detail in details)
-            {
-                detail.PurchaseReturnId = returnOrder.Id;
-                await _detailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
-            }
+            await _unitOfWork.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
-            await _auditService.LogAsync(nameof(PurchaseReturn), returnOrder.Id, "Update", null, returnOrder, 1, "System", $"Updated purchase return {returnOrder.ReturnNo} with details", cancellationToken).ConfigureAwait(false);
-            return returnOrder;
+            try
+            {
+                // 1) Reverse stock for the previously recorded return lines.
+                var existingDetails = await _detailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+                var previousDetails = existingDetails.Where(d => d.PurchaseReturnId == returnOrder.Id).ToList();
+                foreach (var d in previousDetails)
+                {
+                    await _productRepo.TryIncrementStockAsync(d.ProductId, d.Quantity, 1, "PurchaseReturnReversal", cancellationToken).ConfigureAwait(false);
+                }
+
+                // 2) Decrement stock for the new return lines.
+                foreach (var d in detailList)
+                {
+                    var ok = await _productRepo.TryDecrementStockAsync(d.ProductId, d.Quantity, 1, "PurchaseReturn", cancellationToken).ConfigureAwait(false);
+                    if (!ok)
+                    {
+                        throw new ValidationException($"Product {d.ProductId} not found or insufficient stock to return {d.Quantity} unit(s).");
+                    }
+                }
+
+                // 3) Replace details.
+                await _repo.UpdateAsync(returnOrder, cancellationToken).ConfigureAwait(false);
+                foreach (var d in previousDetails)
+                {
+                    await _detailRepo.DeleteAsync(d.Id, cancellationToken).ConfigureAwait(false);
+                }
+                foreach (var d in detailList)
+                {
+                    d.PurchaseReturnId = returnOrder.Id;
+                    await _detailRepo.AddAsync(d, cancellationToken).ConfigureAwait(false);
+                }
+
+                // 4) Audit inside the transaction.
+                await _auditService.LogAsync(
+                    nameof(PurchaseReturn),
+                    returnOrder.Id,
+                    "Update",
+                    existing,
+                    returnOrder,
+                    1,
+                    "System",
+                    $"Updated purchase return {returnOrder.ReturnNo} with {detailList.Count} line(s)",
+                    cancellationToken).ConfigureAwait(false);
+
+                await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return returnOrder;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
+            }
         }
 
         // Stock validation

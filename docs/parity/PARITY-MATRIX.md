@@ -102,7 +102,7 @@
 | ucCustomerOutstand | **Verified** | P0 | WinForms Lead | OutstandingService + OutstandingListPage + ApplyCustomerPaymentAsync/ClearCustomerAccountAsync tested |
 | ucSupplierOutstand | **Verified** | P0 | WinForms Lead | SupplierOutstanding CRUD + payment application tested |
 | Payments & History | **Verified** | P1 | WinForms Lead | PaymentService + PaymentsListPage + 14 tests (CRUD, query by ref, validation) |
-| Journal Voucher | **Verified** | P0 | WinForms Lead | `JournalVoucher`/`JournalVoucherDetail` entities, `JournalVoucherService` (balance validation, Post/Void, audit), `JournalVouchersListPage` + `JournalVoucherEditForm` UI, migration 017; 13 unit tests + 7 integration tests |
+| Journal Voucher | **Verified** | P0 | WinForms Lead | `JournalVoucher`/`JournalVoucherDetail` entities, `JournalVoucherService` (balance validation, Post/Void, audit), `JournalVouchersListPage` + `JournalVoucherEditForm` UI, migration 017; 16 unit tests + 9 integration tests |
 
 **Entities:** CustomerOutstanding, SupplierOutstanding, Payment, JournalVoucher, JournalVoucherDetail
 
@@ -290,9 +290,9 @@
 
 ## Domain Entities Summary
 
-**Implemented (63 entities)** — See [Legacy-Module-Inventory.md](../Legacy-Module-Inventory.md) for full list.
+**Implemented (77 entities)** — See [Legacy-Module-Inventory.md](../Legacy-Module-Inventory.md) for full list. Count reflects Domain\Models classes deriving from `EntityBase`/`ValueObject` (SerialNumber, SerialBatch, SerialTracking, DashboardWidget, BackupSetting, DataMigration, JournalVoucher* now implemented).
 
-**Missing Key Entities:** SerialNumber, SerialBatch, SerialTracking, DashboardWidget, Printer, BackupSettings (partial), DataMigration (partial)
+**Missing Key Entities:** Printer
 
 ---
 
@@ -301,7 +301,7 @@
 | Layer | Count | Pattern |
 |---|---|---|
 | Generic Base | 1 | `GenericRepository<T>` |
-| Specific Repos | 52 | Interface + Implementation |
+| Specific Repos | 63 | Interface + Implementation (complete pairs; JournalVoucher is impl-only, SerialBatch is interface-only) |
 | Report Repos | 5 | `IStar*ReportRepository` |
 
 ---

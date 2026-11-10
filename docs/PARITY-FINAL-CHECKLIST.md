@@ -21,7 +21,7 @@
 | Settings & Admin | 10 | 8 | 1 | 1 | ✅ 85% (Connection Tester UI added) |
 | UI Forms & Navigation | 35 | 30 | 3 | 2 | ⏳ ~83% (Import CSV + DB Test wired) |
 | Import/Export & Utilities | 4 | 3 | 1 | 0 | ✅ 75% (was 0%) |
-| **TOTAL** | **90** | **79** | **5** | **6** | **~88%** |
+| **TOTAL** | **90** | **79** | **6** | **5** | **~88%** |
 
 ---
 
@@ -40,7 +40,7 @@ These block production release. Do not ship without these.
 | **Cash/Card/Credit Sale** | frmSalesPayment | ✅ Verified | — | PaymentService 16 tests pass 2026-10-04 |
 | **Customer Outstanding** | ucCustomerOutstand | ✅ Verified | — | OutstandingService tested incl. payment application |
 | **Supplier Outstanding** | ucSupplierOutstand | ✅ Verified | — | Same as customer outstanding |
-| **Journal Entries** | frmJournalEntry | ✅ **Implemented 2026-11-07** | `JournalVoucher` + `JournalVoucherDetail` entities, `IJournalVoucherService`/`JournalVoucherService` (balance validation, Post/Void workflow, audit logging), `IJournalVoucherRepository`/`JournalVoucherRepository` + detail repo, migration 017, `JournalVouchersListPage` + `JournalVoucherEditForm` UI, MainForm nav | Unit tests (13) + integration tests (7) written; requires Docker/MySQL to run integration |
+| **Journal Entries** | frmJournalEntry | ✅ **Implemented 2026-11-07** | `JournalVoucher` + `JournalVoucherDetail` entities, `IJournalVoucherService`/`JournalVoucherService` (balance validation, Post/Void workflow, audit logging), `IJournalVoucherRepository`/`JournalVoucherRepository` + detail repo, migration 017, `JournalVouchersListPage` + `JournalVoucherEditForm` UI, MainForm nav | Unit tests (16) + integration tests (9) written; requires Docker/MySQL to run integration |
 | **Hold Sale (Draft)** | ucSalesHold | ✅ Verified | — | SaleTempService persists/resume tested |
 | **Barcode Scanning** | ucBarcode | ✅ Verified | — | BarcodeService: Code128, EAN-13, prefix routing |
 | **User Roles/Permissions** | Role-Based Access | ✅ Verified | — | `IMenuRoleService` role filtering |
