@@ -253,7 +253,12 @@ namespace MMNextPOS.WinForms
             };
         }
 
-        private async void OnFormLoad(object? sender, EventArgs e)
+        private void OnFormLoad(object? sender, EventArgs e)
+        {
+            _ = OnFormLoadAsync();
+        }
+
+        private async Task OnFormLoadAsync()
         {
             await LoadParties();
             if (!_isNewMode)
@@ -361,7 +366,12 @@ namespace MMNextPOS.WinForms
             return isValid;
         }
 
-        private async void OnSaveClick(object? sender, EventArgs e)
+        private void OnSaveClick(object? sender, EventArgs e)
+        {
+            _ = OnSaveClickAsync();
+        }
+
+        private async Task OnSaveClickAsync()
         {
             if (!_saveButton.Enabled) return;
 

@@ -258,7 +258,12 @@ namespace MMNextPOS.WinForms
             _categoryView.BestFitColumns();
         }
 
-        private async void OnFormLoad(object? sender, EventArgs e)
+        private void OnFormLoad(object? sender, EventArgs e)
+        {
+            _ = OnFormLoadAsync();
+        }
+
+        private async Task OnFormLoadAsync()
         {
             await RefreshSummary();
         }

@@ -58,87 +58,87 @@ namespace MMNextPOS.WinForms
                     services.AddApplication(configuration); // registers repos & services
 
                     // Core Forms
-                    services.AddTransient<LoginForm>();
-                    services.AddTransient<MainForm>();
-                    services.AddTransient<NewSaleForm>();
-                    services.AddTransient<OutstandingForm>();
-                    services.AddTransient<ReportsViewerForm>(); // Reports viewer
-                    services.AddTransient<ChangePasswordForm>();
-                    services.AddTransient<ResetPasswordForm>();
-                    services.AddTransient<LicenseRegistrationForm>(); // License activation
+                    services.AddScoped<LoginForm>();
+                    services.AddScoped<MainForm>();
+                    services.AddScoped<NewSaleForm>();
+                    services.AddScoped<OutstandingForm>();
+                    services.AddScoped<ReportsViewerForm>(); // Reports viewer
+                    services.AddScoped<ChangePasswordForm>();
+                    services.AddScoped<ResetPasswordForm>();
+                    services.AddScoped<LicenseRegistrationForm>(); // License activation
 
                     // WinForms Services
-                    services.AddTransient<Services.WinFormsReportService>(); // WinForms DevExpress ReportService
+                    services.AddScoped<Services.WinFormsReportService>(); // WinForms DevExpress ReportService
 
                     // Core ListPages
-                    services.AddTransient<ProductsListPage>();
-                    services.AddTransient<CustomersListPage>();
-                    services.AddTransient<SalesListPage>();
-                    services.AddTransient<OutstandingListPage>();
+                    services.AddScoped<ProductsListPage>();
+                    services.AddScoped<CustomersListPage>();
+                    services.AddScoped<SalesListPage>();
+                    services.AddScoped<OutstandingListPage>();
 
                     // Master Data ListPages
-                    services.AddTransient<CategoriesListPage>();
-                    services.AddTransient<UnitsListPage>();
-                    services.AddTransient<GroupsListPage>();
-                    services.AddTransient<CurrenciesListPage>();
-                    services.AddTransient<TaxesListPage>();
-                    services.AddTransient<DiscountsListPage>();
-                    services.AddTransient<LocationsListPage>();
-                    services.AddTransient<CompaniesListPage>();
-                    services.AddTransient<UsersListPage>();
-                    services.AddTransient<RolesListPage>();
-                    services.AddTransient<ReportMenusListPage>();
-                    services.AddTransient<EmailSettingsListPage>();
-                    services.AddTransient<SuppliersListPage>();
+                    services.AddScoped<CategoriesListPage>();
+                    services.AddScoped<UnitsListPage>();
+                    services.AddScoped<GroupsListPage>();
+                    services.AddScoped<CurrenciesListPage>();
+                    services.AddScoped<TaxesListPage>();
+                    services.AddScoped<DiscountsListPage>();
+                    services.AddScoped<LocationsListPage>();
+                    services.AddScoped<CompaniesListPage>();
+                    services.AddScoped<UsersListPage>();
+                    services.AddScoped<RolesListPage>();
+                    services.AddScoped<ReportMenusListPage>();
+                    services.AddScoped<EmailSettingsListPage>();
+                    services.AddScoped<SuppliersListPage>();
 
                     // Theme & Language ListPages
-                    services.AddTransient<ThemesListPage>();
-                    services.AddTransient<LanguagesListPage>();
+                    services.AddScoped<ThemesListPage>();
+                    services.AddScoped<LanguagesListPage>();
 
                     // System administration screens
-                    services.AddTransient<BackupsListPage>();
-                    services.AddTransient<MigrationsListPage>();
-                    services.AddTransient<SuperAdminForm>();
-                    services.AddTransient<ConnectionTestPage>();
+                    services.AddScoped<BackupsListPage>();
+                    services.AddScoped<MigrationsListPage>();
+                    services.AddScoped<SuperAdminForm>();
+                    services.AddScoped<ConnectionTestPage>();
 
                     // Transaction ListPages
-                    services.AddTransient<SaleTempsListPage>();
-                    services.AddTransient<SalesReturnsListPage>();
-                    services.AddTransient<PurchasesListPage>();
-                    services.AddTransient<PurchaseReturnsListPage>();
-                    services.AddTransient<StockMovementsListPage>();
-                    services.AddTransient<AssembliesListPage>();
-                    services.AddTransient<StockTransfersListPage>();
-                    services.AddTransient<ExpensesListPage>();
-                    services.AddTransient<ExpenseTypesListPage>();
-                    services.AddTransient<JournalVouchersListPage>();
-                    services.AddTransient<PaymentsListPage>();
+                    services.AddScoped<SaleTempsListPage>();
+                    services.AddScoped<SalesReturnsListPage>();
+                    services.AddScoped<PurchasesListPage>();
+                    services.AddScoped<PurchaseReturnsListPage>();
+                    services.AddScoped<StockMovementsListPage>();
+                    services.AddScoped<AssembliesListPage>();
+                    services.AddScoped<StockTransfersListPage>();
+                    services.AddScoped<ExpensesListPage>();
+                    services.AddScoped<ExpenseTypesListPage>();
+                    services.AddScoped<JournalVouchersListPage>();
+                    services.AddScoped<PaymentsListPage>();
 
                     // Edit forms resolved via IServiceProvider from list pages
-                    services.AddTransient<CategoryEditForm>();
-                    services.AddTransient<CompanyEditForm>();
-                    services.AddTransient<CurrencyEditForm>();
-                    services.AddTransient<CustomerEditForm>();
-                    services.AddTransient<DiscountEditForm>();
-                    services.AddTransient<EmailSettingEditForm>();
-                    services.AddTransient<ExpenseEditForm>();
-                    services.AddTransient<ExpenseTypeEditForm>();
-                    services.AddTransient<JournalVoucherEditForm>();
-                    services.AddTransient<GroupEditForm>();
-                    services.AddTransient<LanguageEditForm>();
-                    services.AddTransient<LocationEditForm>();
-                    services.AddTransient<PaymentEditForm>();
-                    services.AddTransient<PurchaseEditForm>();
-                    services.AddTransient<PurchaseReturnEditForm>();
-                    services.AddTransient<ReportMenuEditForm>();
-                    services.AddTransient<RoleEditForm>();
-                    services.AddTransient<SalesReturnEditForm>();
-                    services.AddTransient<SaleTempEditForm>();
-                    services.AddTransient<SupplierEditForm>();
-                    services.AddTransient<TaxEditForm>();
-                    services.AddTransient<ThemeEditForm>();
-                    services.AddTransient<UnitEditForm>();
-                    services.AddTransient<UserEditForm>();
+                    services.AddScoped<CategoryEditForm>();
+                    services.AddScoped<CompanyEditForm>();
+                    services.AddScoped<CurrencyEditForm>();
+                    services.AddScoped<CustomerEditForm>();
+                    services.AddScoped<DiscountEditForm>();
+                    services.AddScoped<EmailSettingEditForm>();
+                    services.AddScoped<ExpenseEditForm>();
+                    services.AddScoped<ExpenseTypeEditForm>();
+                    services.AddScoped<JournalVoucherEditForm>();
+                    services.AddScoped<GroupEditForm>();
+                    services.AddScoped<LanguageEditForm>();
+                    services.AddScoped<LocationEditForm>();
+                    services.AddScoped<PaymentEditForm>();
+                    services.AddScoped<PurchaseEditForm>();
+                    services.AddScoped<PurchaseReturnEditForm>();
+                    services.AddScoped<ReportMenuEditForm>();
+                    services.AddScoped<RoleEditForm>();
+                    services.AddScoped<SalesReturnEditForm>();
+                    services.AddScoped<SaleTempEditForm>();
+                    services.AddScoped<SupplierEditForm>();
+                    services.AddScoped<TaxEditForm>();
+                    services.AddScoped<ThemeEditForm>();
+                    services.AddScoped<UnitEditForm>();
+                    services.AddScoped<UserEditForm>();
 
                     // Build provider
                     using var serviceProvider = services.BuildServiceProvider();
@@ -445,3 +445,4 @@ namespace MMNextPOS.WinForms
         }
     }
 }
+

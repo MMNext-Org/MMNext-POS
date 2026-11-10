@@ -1,6 +1,6 @@
 # MMNext POS — Parity Matrix (Legacy → New)
 
-**Source:** [Legacy-Module-Inventory.md](../Legacy-Module-Inventory.md)  
+**Source:** [Legacy-Module-Inventory.md](../../Legacy-Module-Inventory.md)  
 **Status Taxonomy:** `Verified` | `Implemented—needs QA` | `Partial` | `Missing` | `Not in scope`  
 **Priority:** `P0` (Critical) | `P1` (High) | `P2` (Medium) | `P3` (Low)  
 

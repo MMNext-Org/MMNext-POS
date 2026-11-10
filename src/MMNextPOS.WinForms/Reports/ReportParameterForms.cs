@@ -12,7 +12,7 @@ namespace MMNextPOS.WinForms.Reports
     /// <summary>
     /// Base class for report parameter forms.
     /// </summary>
-    public abstract class ReportParameterForm : XtraForm
+    public abstract class ReportParameterForm : AsyncFormBase
     {
         protected Dictionary<string, object> _parameters = new();
         protected bool _isValid = false;
@@ -32,7 +32,7 @@ namespace MMNextPOS.WinForms.Reports
             InitializeBaseComponents();
         }
 
-        protected virtual void InitializeBaseComponents()
+        protected void InitializeBaseComponents()
         {
             var mainLayout = new TableLayoutPanel
             {
@@ -64,9 +64,9 @@ namespace MMNextPOS.WinForms.Reports
                 DialogResult = DialogResult.OK,
                 Width = 100,
                 Height = 35,
-                Location = new Point(220, 12)
+                Anchor = AnchorStyles.Right | AnchorStyles.Top
             };
-            okButton.Click += (s, e) => { if (ValidateParameters()) _isValid = true; else DialogResult = DialogResult.None; };
+            okButton.Click += OkButton_Click;
 
             var cancelButton = new SimpleButton
             {
@@ -74,14 +74,28 @@ namespace MMNextPOS.WinForms.Reports
                 DialogResult = DialogResult.Cancel,
                 Width = 100,
                 Height = 35,
-                Location = new Point(330, 12)
+                Anchor = AnchorStyles.Right | AnchorStyles.Top
             };
+            cancelButton.Click += CancelButton_Click;
 
             buttonPanel.Controls.Add(okButton);
             buttonPanel.Controls.Add(cancelButton);
             mainLayout.Controls.Add(buttonPanel, 0, 1);
 
             Controls.Add(mainLayout);
+        }
+
+        private void OkButton_Click(object? sender, EventArgs e)
+        {
+            if (ValidateParameters())
+                _isValid = true;
+            else
+                DialogResult = DialogResult.None;
+        }
+
+        private void CancelButton_Click(object? sender, EventArgs e)
+        {
+            DialogResult = DialogResult.Cancel;
         }
 
         protected virtual bool ValidateParameters()
@@ -250,7 +264,7 @@ namespace MMNextPOS.WinForms.Reports
                 Properties = { Items = { new RadioGroupItem("Code", "By Code/Number"), new RadioGroupItem("Lookup", "Select from List") }, Columns = 2 }
             };
             _selectionMode.SelectedIndex = 0;
-            _selectionMode.SelectedIndexChanged += (s, e) => UpdateVisibility();
+            _selectionMode.SelectedIndexChanged += SelectionMode_SelectedIndexChanged;
             layout.Controls.Add(_selectionMode, 1, 0);
 
             // Code/Number Input
@@ -280,6 +294,11 @@ namespace MMNextPOS.WinForms.Reports
             var isCodeMode = _selectionMode.SelectedIndex == 0;
             _entityCodeEdit.Visible = isCodeMode;
             _entityLookup.Visible = !isCodeMode;
+        }
+
+        private void SelectionMode_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            UpdateVisibility();
         }
 
         protected override bool ValidateParameters()

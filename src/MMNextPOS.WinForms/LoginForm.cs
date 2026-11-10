@@ -385,7 +385,12 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async void OnLoginClick(object? sender, EventArgs e)
+        private void OnLoginClick(object? sender, EventArgs e)
+        {
+            _ = OnLoginClickAsync();
+        }
+
+        private async Task OnLoginClickAsync()
         {
             var username = _usernameEdit.Text?.Trim();
             var password = _passwordEdit.Text;

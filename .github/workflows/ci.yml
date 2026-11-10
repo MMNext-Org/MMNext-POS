@@ -66,6 +66,14 @@ jobs:
           dotnet test tests/MMNextPOS.Application.Tests/MMNextPOS.Application.Tests.csproj
           --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build
           --logger "trx;LogFileName=application-tests.trx"
+          /p:CollectCoverage=true
+          /p:CoverletOutputFormat=opencover
+          /p:CoverletOutput=coverage.opencover.xml
+
+      - name: Generate coverage report
+        run: |
+          dotnet tool install --global dotnet-reportgenerator
+          reportgenerator -reports:coverage.opencover.xml -targetdir:coverlet/reports -reporttypes:HtmlInline_AzurePipelines;Cobertura
 
       - name: Upload test results (on failure)
         if: failure()
@@ -73,6 +81,14 @@ jobs:
         with:
           name: application-test-results
           path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+
+      - name: Upload coverage report (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverlet/reports/**
           if-no-files-found: ignore
 
   # ─────────────────────────────────────────────────────────────────────────────

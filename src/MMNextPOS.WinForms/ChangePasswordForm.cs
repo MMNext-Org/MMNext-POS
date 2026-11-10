@@ -284,7 +284,12 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async void OnChangeClick(object? sender, EventArgs e)
+        private void OnChangeClick(object? sender, EventArgs e)
+        {
+            _ = OnChangeClickAsync(sender, e);
+        }
+
+        private async Task OnChangeClickAsync(object? sender, EventArgs e)
         {
             var currentPassword = _currentPasswordEdit.Text;
             var newPassword = _newPasswordEdit.Text;

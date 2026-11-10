@@ -193,7 +193,7 @@ namespace MMNextPOS.WinForms
             InitializeListPages();
             InitializeNavigation();
             UpdateUserInfo();
-            ApplyUserPreferences();
+            _ = ApplyUserPreferencesAsync();
         }
 
         private void InitializeComponent()
@@ -497,7 +497,7 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async void ApplyUserPreferences()
+        private async Task ApplyUserPreferencesAsync()
         {
             try
             {

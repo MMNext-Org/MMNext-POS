@@ -356,7 +356,12 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async void OnResetClick(object? sender, EventArgs e)
+        private void OnResetClick(object? sender, EventArgs e)
+        {
+            _ = OnResetClickAsync();
+        }
+
+        private async Task OnResetClickAsync()
         {
             var userId = _userLookup.EditValue as int?;
             var newPassword = _newPasswordEdit.Text;

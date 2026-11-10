@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using MMNextPOS.WinForms.Services;
+using Microsoft.Extensions.Logging;
 
 namespace MMNextPOS.WinForms
 {
@@ -16,12 +17,14 @@ namespace MMNextPOS.WinForms
     public abstract class AsyncFormBase : XtraForm, IDisposable
     {
         private readonly CancellationTokenSource _cts = new();
+        private readonly ILogger? _logger;
         private bool _disposed;
 
         protected CancellationToken CancellationToken => _cts.Token;
 
-        protected AsyncFormBase()
+        protected AsyncFormBase(ILogger? logger = null)
         {
+            _logger = logger;
             // Ensure the form uses the standard wait cursor handling.
             this.UseWaitCursor = false;
         }
@@ -54,9 +57,13 @@ namespace MMNextPOS.WinForms
                 SetWaitCursor(true);
                 await asyncAction(_cts.Token).ConfigureAwait(true);
             }
-            catch (OperationCanceledException) { /* ignore */ }
+            catch (OperationCanceledException ex)
+            {
+                _logger?.LogWarning(ex, "Async operation was cancelled.");
+            }
             catch (Exception ex)
             {
+                _logger?.LogError(ex, "Async operation failed.");
                 ShowError(ex.Message);
             }
             finally
@@ -69,11 +76,10 @@ namespace MMNextPOS.WinForms
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action(() => SetWaitCursor(wait)));
+                this.BeginInvoke(new Action(() => SetWaitCursor(wait)));
                 return;
             }
             this.UseWaitCursor = wait;
-            if (wait) System.Windows.Forms.Application.DoEvents();
         }
 
         /// <summary>
@@ -110,7 +116,7 @@ namespace MMNextPOS.WinForms
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action(() => ShowError(message)));
+                this.BeginInvoke(new Action(() => ShowError(message)));
                 return;
             }
             XtraMessageBox.Show(this, message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -120,7 +126,7 @@ namespace MMNextPOS.WinForms
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action(() => ShowInfo(message)));
+                this.BeginInvoke(new Action(() => ShowInfo(message)));
                 return;
             }
             XtraMessageBox.Show(this, message, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
