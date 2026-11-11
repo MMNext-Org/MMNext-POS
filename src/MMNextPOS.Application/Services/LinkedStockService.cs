@@ -44,7 +44,8 @@ namespace MMNextPOS.Application.Services
             var ordered = filtered.OrderBy(l => l.PrimaryProductId).ToList();
             return ordered.AsReadOnly();
 
-        async Task<PagedResult<LinkedStock>> GetLinkedStocksPageAsync(int page, int pageSize, int? productId = null, string? linkType = null, CancellationToken cancellationToken = default){
+        async Task<PagedResult<LinkedStock>> GetLinkedStocksPageAsync(int page, int pageSize, int? productId = null, string? linkType = null, CancellationToken cancellationToken = default)
+                {
                     var all = await _linkedStockRepo.GetAllAsync(cancellationToken);
                     var filtered = all;
 
