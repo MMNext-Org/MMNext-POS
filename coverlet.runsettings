@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <!--
+    Shared coverage configuration for the xUnit test projects
+    (tests/MMNextPOS.Application.Tests, tests/MMNextPOS.Infrastructure.Tests).
+
+    Both test projects already reference the coverlet.collector NuGet
+    package, so this file only needs to turn on the VSTest XPlat Code
+    Coverage data collector and pin its output format to Cobertura XML,
+    which is what CI and local tooling (e.g. IDE coverage gutters) expect.
+
+    Pass this file via the "settings" option of dotnet test together with
+    the "collect" option set to XPlat Code Coverage, the same way CI does.
+  -->
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
