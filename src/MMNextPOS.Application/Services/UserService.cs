@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,15 +14,18 @@ namespace MMNextPOS.Application.Services
         private readonly IUserRepository _repo;
         private readonly IUserRoleRepository _userRoleRepo;
         private readonly IRoleRepository _roleRepo;
+        private readonly IVerificationCodeRepository _verificationCodeRepo;
 
         public UserService(
             IUserRepository repo,
             IUserRoleRepository userRoleRepo,
-            IRoleRepository roleRepo)
+                    IRoleRepository roleRepo,
+                    IVerificationCodeRepository verificationCodeRepo)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _userRoleRepo = userRoleRepo ?? throw new ArgumentNullException(nameof(userRoleRepo));
             _roleRepo = roleRepo ?? throw new ArgumentNullException(nameof(roleRepo));
+                    _verificationCodeRepo = verificationCodeRepo ?? throw new ArgumentNullException(nameof(verificationCodeRepo));
         }
 
         public Task<User> AddAsync(User user, CancellationToken cancellationToken = default)
@@ -131,7 +135,6 @@ namespace MMNextPOS.Application.Services
                     var verificationResult = await VerifyPasswordResetCodeAsync(userId, verificationCode, cancellationToken);
                     if (!verificationResult)
                     {
-                        ShowStatus("Invalid verification code", true);
                         return false;
                     }
 
@@ -147,24 +150,14 @@ namespace MMNextPOS.Application.Services
             return true;
         }
 
-                private readonly ConcurrentDictionary<int, VerificationCodeEntry> _verificationCodes = new();
-
                 public async Task<string> GenerateVerificationCodeAsync(int userId, CancellationToken cancellationToken = default)
                 {
-                    var code = Guid.NewGuid().ToString("N")[..6]; // 6-character alphanumeric code
-                    var expiration = DateTime.UtcNow.AddMinutes(10); // 10-minute expiration
-                    _verificationCodes[userId] = new VerificationCodeEntry(code, expiration);
-                    return code;
+                                    return await _verificationCodeRepo.GenerateCodeAsync(userId, cancellationToken);
                 }
 
                 private async Task<bool> VerifyPasswordResetCodeAsync(int userId, string verificationCode, CancellationToken cancellationToken)
                 {
-                    if (_verificationCodes.TryGetValue(userId, out var entry) && entry.Code == verificationCode && entry.Expiration > DateTime.UtcNow)
-                    {
-                        _verificationCodes.TryRemove(userId, out _);
-                        return true;
-                    }
-                    return false;
+                                    return await _verificationCodeRepo.ValidateCodeAsync(userId, verificationCode, cancellationToken);
                 }
 
                 private class VerificationCodeEntry
@@ -176,13 +169,6 @@ namespace MMNextPOS.Application.Services
                         Code = code;
                         Expiration = expiration;
                     }
-                    // For demonstration, we'll assume the code is valid if it meets basic criteria:
-                    if (string.IsNullOrWhiteSpace(verificationCode))
-                        return false;
-                
-                    // Additional validation could be added here: length requirements, format checks, etc.
-                    // This is a simplified implementation for demonstration purposes
-                    return verificationCode.Length >= 6; // Minimum verification code length
                 }
 
         /// <summary>
