@@ -32,8 +32,18 @@ namespace MMNextPOS.WinForms
         private SimpleButton _resetButton = null!;
         private SimpleButton _cancelButton = null!;
         private LabelControl _statusLabel = null!;
-
         private List<User> _users = new();
+
+                private void GenerateVerificationCode()
+                {
+                    if (_userLookup.EditValue == null) return;
+
+                    var userId = (int)_userLookup.EditValue;
+                    var verificationCode = _userService.GenerateVerificationCodeAsync(userId, _cts.Token).Result;
+                    _verificationCodeEdit.Text = verificationCode;
+                    _statusLabel.Text = $"Verification code generated for user ID {userId}. Send this code to the user.";
+                    _statusLabel.Appearance.ForeColor = System.Drawing.Color.Blue;
+                }
 
         public ResetPasswordForm(
             IUserService userService,
@@ -113,26 +123,11 @@ namespace MMNextPOS.WinForms
             };
             _mainPanel.Controls.Add(userLabel);
 
-            // User lookup
-            _userLookup = new LookUpEdit
+            private async void UserLookup_EditValueChanged(object sender, EventArgs e)
             {
-                Dock = DockStyle.Top,
-                Height = 38,
-                Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
-                Properties =
-                {
-                    AutoHeight = false,
-                    Padding = new Padding(10, 0, 10, 0),
-                    NullText = "Select a user...",
-                    DisplayMember = "DisplayName",
-                    ValueMember = "Id",
-                    ShowHeader = false,
-                    PopupFormMinSize = new System.Drawing.Size(400, 300),
-                    SearchMode = DevExpress.XtraEditors.Controls.SearchMode.AutoComplete,
-                    AutoSearchColumnIndex = 0
-                }
-            };
-            _mainPanel.Controls.Add(_userLookup);
+                // Generate verification code when user is selected
+                GenerateVerificationCode();
+            }
 
             // Spacer
             var spacer2 = new PanelControl
@@ -194,7 +189,8 @@ namespace MMNextPOS.WinForms
             _mainPanel.Controls.Add(confirmPasswordLabel);
 
             // Confirm password edit
-            _confirmPasswordEdit = new TextEdit
+            // Confirm password edit
+                        _confirmPasswordEdit = new TextEdit
             {
                 Dock = DockStyle.Top,
                 Height = 38,
@@ -211,6 +207,22 @@ namespace MMNextPOS.WinForms
             };
             _confirmPasswordEdit.KeyDown += OnKeyDown;
             _mainPanel.Controls.Add(_confirmPasswordEdit);
+
+                        // Verification code field
+                        _verificationCodeEdit = new TextEdit
+                        {
+                            Dock = DockStyle.Top,
+                            Height = 38,
+                            Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                            Properties = 
+                            {
+                                AutoHeight = false,
+                                NullText = "Enter verification code",
+                                Padding = new Padding(10, 0, 10, 0)
+                            }
+                        };
+                        _verificationCodeEdit.KeyDown += OnKeyDown;
+                        _mainPanel.Controls.Add(_verificationCodeEdit);
 
             // Spacer
             var spacer4 = new PanelControl
@@ -336,6 +348,17 @@ namespace MMNextPOS.WinForms
             }
         }
 
+                private void GenerateVerificationCode()
+                {
+                    if (_userLookup.EditValue == null) return;
+
+                    var userId = (int)_userLookup.EditValue;
+                    var verificationCode = _userService.GenerateVerificationCodeAsync(userId, _cts.Token).Result;
+                    _verificationCodeEdit.Text = verificationCode;
+                    _statusLabel.Text = $"Verification code generated for user ID {userId}. Send this code to the user.";
+                    _statusLabel.Appearance.ForeColor = System.Drawing.Color.Blue;
+                }
+
         private void BindUsers<T>(IEnumerable<T> users) where T : class
         {
             _userLookup.Properties.DataSource = users;
@@ -368,6 +391,12 @@ namespace MMNextPOS.WinForms
                 return;
             }
 
+            // Generate verification code if not already provided
+            if (string.IsNullOrWhiteSpace(verificationCode))
+            {
+                GenerateVerificationCode();
+            }
+
             if (string.IsNullOrWhiteSpace(newPassword))
             {
                 ShowStatus("Please enter a new password", true);
@@ -386,6 +415,15 @@ namespace MMNextPOS.WinForms
             {
                 ShowStatus("New passwords do not match", true);
                 _confirmPasswordEdit.Focus();
+                return;
+            }
+
+            // Verify code matches confirmation (if verification code is required)
+            var verificationCode = _verificationCodeEdit.Text;
+                        if (string.IsNullOrWhiteSpace(verificationCode))
+            {
+                            ShowStatus("Please enter the verification code", true);
+                _verificationCodeEdit.Focus();
                 return;
             }
 
@@ -408,8 +446,7 @@ namespace MMNextPOS.WinForms
             {
                 await RunAsync(async ct =>
                 {
-                    var success = await _userService.ResetPasswordAsync(userId.Value, newPassword, ct);
-
+                    var success = await _userService.ResetPasswordAsync(userId.Value, newPassword, verificationCode, ct);
                     if (!success)
                         throw new InvalidOperationException("User not found or inactive");
                 });

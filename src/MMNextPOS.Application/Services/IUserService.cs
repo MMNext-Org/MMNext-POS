@@ -41,12 +41,13 @@ namespace MMNextPOS.Application.Services
         Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Resets a user's password (admin-initiated, no current password required).
+        /// Resets a user's password (admin-initiated, with verification code).
         /// </summary>
         /// <param name="userId">The user ID.</param>
         /// <param name="newPassword">The new password.</param>
+        /// <param name="verificationCode">The verification code sent to the user.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if password was reset successfully.</returns>
-        Task<bool> ResetPasswordAsync(int userId, string newPassword, CancellationToken cancellationToken = default);
+        Task<bool> ResetPasswordAsync(int userId, string newPassword, string verificationCode, CancellationToken cancellationToken = default);
     }
 }

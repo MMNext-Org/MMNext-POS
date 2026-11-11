@@ -119,25 +119,71 @@ namespace MMNextPOS.Application.Services
             return true;
         }
 
-        public async Task<bool> ResetPasswordAsync(int userId, string newPassword, CancellationToken cancellationToken = default)
+        public async Task<bool> ResetPasswordAsync(int userId, string newPassword, string verificationCode, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(newPassword))
                 return false;
 
             if (newPassword.Length < 6)
                 throw new ArgumentException("New password must be at least 6 characters long.");
+            
+                    // Verify that verification code matches what was sent to the user
+                    var verificationResult = await VerifyPasswordResetCodeAsync(userId, verificationCode, cancellationToken);
+                    if (!verificationResult)
+                    {
+                        ShowStatus("Invalid verification code", true);
+                        return false;
+                    }
 
             var user = await _repo.GetByIdAsync(userId, cancellationToken);
             if (user == null || !user.IsActive)
                 return false;
 
-            // Hash new password and update (no current password verification)
+                    // Hash new password and update (no current password verification - this is for verified reset)
             user.PasswordHash = BCryptNet.HashPassword(newPassword, BCryptNet.GenerateSalt(12));
             user.UpdatedAt = DateTime.UtcNow;
             await _repo.UpdateAsync(user, cancellationToken);
 
             return true;
         }
+
+                private readonly ConcurrentDictionary<int, VerificationCodeEntry> _verificationCodes = new();
+
+                public async Task<string> GenerateVerificationCodeAsync(int userId, CancellationToken cancellationToken = default)
+                {
+                    var code = Guid.NewGuid().ToString("N")[..6]; // 6-character alphanumeric code
+                    var expiration = DateTime.UtcNow.AddMinutes(10); // 10-minute expiration
+                    _verificationCodes[userId] = new VerificationCodeEntry(code, expiration);
+                    return code;
+                }
+
+                private async Task<bool> VerifyPasswordResetCodeAsync(int userId, string verificationCode, CancellationToken cancellationToken)
+                {
+                    if (_verificationCodes.TryGetValue(userId, out var entry) && entry.Code == verificationCode && entry.Expiration > DateTime.UtcNow)
+                    {
+                        _verificationCodes.TryRemove(userId, out _);
+                        return true;
+                    }
+                    return false;
+                }
+
+                private class VerificationCodeEntry
+                {
+                    public string Code { get; }
+                    public DateTime Expiration { get; }
+                    public VerificationCodeEntry(string code, DateTime expiration)
+                    {
+                        Code = code;
+                        Expiration = expiration;
+                    }
+                    // For demonstration, we'll assume the code is valid if it meets basic criteria:
+                    if (string.IsNullOrWhiteSpace(verificationCode))
+                        return false;
+                
+                    // Additional validation could be added here: length requirements, format checks, etc.
+                    // This is a simplified implementation for demonstration purposes
+                    return verificationCode.Length >= 6; // Minimum verification code length
+                }
 
         /// <summary>
         /// Hashes a plain-text password using BCrypt.
