@@ -14,10 +14,11 @@ namespace MMNextPOS.Application.Tests
         private readonly Mock<IUserRepository> _userRepoMock = new();
         private readonly Mock<IUserRoleRepository> _userRoleRepoMock = new();
         private readonly Mock<IRoleRepository> _roleRepoMock = new();
+                private readonly Mock<IVerificationCodeRepository> _verificationCodeRepoMock = new();
 
         private UserService CreateService()
         {
-            return new UserService(_userRepoMock.Object, _userRoleRepoMock.Object, _roleRepoMock.Object);
+            return new UserService(_userRepoMock.Object, _userRoleRepoMock.Object, _roleRepoMock.Object, _verificationCodeRepoMock.Object);
         }
 
         private static User CreateUser(string username, string password, bool isActive = true)

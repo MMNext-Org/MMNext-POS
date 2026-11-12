@@ -87,6 +87,7 @@ namespace MMNextPOS.Application
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISystemSettingRepository, MMNextPOS.Infrastructure.Repositories.SystemSettingRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IBackupSettingRepository, MMNextPOS.Infrastructure.Repositories.BackupSettingRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IDataMigrationRepository, MMNextPOS.Infrastructure.Repositories.DataMigrationRepository>();
+                        services.AddScoped<MMNextPOS.Infrastructure.Repositories.IVerificationCodeRepository, MMNextPOS.Infrastructure.Repositories.VerificationCodeRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISuperAdminLogRepository, MMNextPOS.Infrastructure.Repositories.SuperAdminLogRepository>();
 
             // Receipt/Voucher repositories
