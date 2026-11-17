@@ -123,12 +123,6 @@ namespace MMNextPOS.WinForms
             };
             _mainPanel.Controls.Add(userLabel);
 
-            private async void UserLookup_EditValueChanged(object sender, EventArgs e)
-        {
-            // Generate verification code when user is selected
-            GenerateVerificationCode();
-        }
-
         // Spacer
         var spacer2 = new PanelControl
         {

@@ -359,7 +359,7 @@ namespace MMNextPOS.Application.Services
                         ProductId = d.ProductId,
                         Quantity = d.Quantity,
                         UnitPrice = d.UnitPrice,
-                        DiscountAmount = Math.Round(d.UnitPrice * (d.DiscountPercentage / 100m), 2, MidpointRounding.ToEven),
+                        DiscountAmount = d.DiscountAmount,
                         TaxAmount = d.TaxAmount
                     };
                     order.Add(d.ProductId);

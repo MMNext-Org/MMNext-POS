@@ -148,7 +148,7 @@ namespace MMNextPOS.Application.Tests
         }
 
         [Fact]
-        public async Task GetStockMovementsPageAsync_PageOutOfRange_ReturnsEmptyList()
+        public Task GetStockMovementsPageAsync_PageOutOfRange_ReturnsEmptyList()
         {
             var movements = new List<StockMovement>
             {
@@ -167,6 +167,7 @@ namespace MMNextPOS.Application.Tests
                 .ToList();
 
             Assert.Empty(pagedResult);
+            return Task.CompletedTask;
         }
     }
 }
