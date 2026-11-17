@@ -11,6 +11,8 @@ using DevExpress.XtraEditors.Repository;
 using DevExpress.XtraGrid.Views.Grid;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.WinForms.Reports;
+using DevExpress.XtraBars;
 
 namespace MMNextPOS.WinForms
 {
@@ -36,6 +38,7 @@ namespace MMNextPOS.WinForms
         private SimpleButton _printButton = null!;
         private LabelControl _totalLabel = null!;
         private TextEdit _searchProductBox = null!;
+        private ProgressBarControl _progressBar = null!;
         private BindingList<SaleDetailViewModel> _lineItems = new();
 
         // Cache for products (for lookup)
@@ -138,6 +141,7 @@ namespace MMNextPOS.WinForms
                 }
             };
             _customerLookup.Properties.Columns.Add(new LookUpColumnInfo("Name", "Name"));
+                        _customerLookup.ToolTip = "Select a customer for this sale";
             _customerLookup.Properties.Columns.Add(new LookUpColumnInfo("Phone", "Phone"));
 
             var productSearchLabel = new LabelControl
@@ -154,6 +158,7 @@ namespace MMNextPOS.WinForms
                 Width = 300,
                 Properties = { NullValuePrompt = "Type product name or SKU..." }
             };
+                        _searchProductBox.ToolTip = "Type product name or SKU to search";
             _searchProductBox.EditValueChanged += (s, e) => FilterProducts();
 
             headerPanel.Controls.Add(customerLabel);
@@ -253,6 +258,7 @@ namespace MMNextPOS.WinForms
                 Width = 120,
                 Height = 30
             };
+                        _addLineButton.ToolTip = "Add a product line to the sale";
             _addLineButton.Click += async (s, e) => await AddProductLineAsync();
 
             _removeLineButton = new SimpleButton
@@ -262,6 +268,7 @@ namespace MMNextPOS.WinForms
                 Width = 120,
                 Height = 30
             };
+                        _removeLineButton.ToolTip = "Remove the selected product line";
             _removeLineButton.Click += (s, e) => RemoveSelectedLine();
 
             lineButtonsPanel.Controls.Add(_addLineButton);
@@ -298,6 +305,7 @@ namespace MMNextPOS.WinForms
                 Width = 120,
                 Height = 35
             };
+                        _saveButton.ToolTip = "Save the current sale";
             _saveButton.Click += async (s, e) => await SaveSaleAsync();
 
             _holdButton = new SimpleButton
@@ -307,6 +315,7 @@ namespace MMNextPOS.WinForms
                 Width = 100,
                 Height = 35
             };
+                        _holdButton.ToolTip = "Hold the current draft for later resumption";
             _holdButton.Click += async (s, e) => await HoldDraftAsync();
 
             _printButton = new SimpleButton
@@ -317,6 +326,7 @@ namespace MMNextPOS.WinForms
                 Height = 35,
                 Enabled = false
             };
+                        _printButton.ToolTip = "Print a receipt for the current sale";
             _printButton.Click += async (s, e) => await PrintReceiptAsync();
 
             _cancelButton = new SimpleButton
@@ -326,12 +336,21 @@ namespace MMNextPOS.WinForms
                 Width = 100,
                 Height = 35
             };
+                        _cancelButton.ToolTip = "Cancel the current sale and close the form";
             _cancelButton.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
 
             buttonPanel.Controls.Add(_saveButton);
             buttonPanel.Controls.Add(_holdButton);
             buttonPanel.Controls.Add(_printButton);
             buttonPanel.Controls.Add(_cancelButton);
+
+            // Progress indicator
+            _progressBar = new ProgressBarControl
+            {
+                Dock = DockStyle.Fill,
+                Visibility = DevExpress.XtraBars.BarVisibility.Never
+            };
+            buttonPanel.Controls.Add(_progressBar);
 
             // Assemble
             mainLayout.Controls.Add(headerPanel, 0, 0);
@@ -347,6 +366,7 @@ namespace MMNextPOS.WinForms
         {
             try
             {
+                ShowProgress("Loading reference data...");
                 SetWaitCursor(true);
 
                 // Load customers
@@ -368,6 +388,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
             }
         }
@@ -378,6 +399,7 @@ namespace MMNextPOS.WinForms
 
             try
             {
+                ShowProgress("Loading draft...");
                 SetWaitCursor(true);
 
                 // Load customer
@@ -399,6 +421,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
             }
         }
@@ -552,6 +575,7 @@ namespace MMNextPOS.WinForms
 
             try
             {
+                ShowProgress("Saving sale...");
                 SetWaitCursor(true);
                 _saveButton.Enabled = false;
                 _holdButton.Enabled = false;
@@ -595,6 +619,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
                 _saveButton.Enabled = true;
                 _holdButton.Enabled = true;
@@ -618,6 +643,7 @@ namespace MMNextPOS.WinForms
 
             try
             {
+                ShowProgress("Holding draft...");
                 SetWaitCursor(true);
                 _holdButton.Enabled = false;
 
@@ -657,6 +683,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
                 _holdButton.Enabled = true;
             }
@@ -687,13 +714,19 @@ namespace MMNextPOS.WinForms
 
             try
             {
+                ShowProgress("Printing receipt...");
                 SetWaitCursor(true);
                 _printButton.Enabled = false;
 
-                // Generate receipt using report service
-                // For now, we'll show a simple message
-                var receipt = GenerateReceiptText();
-                XtraMessageBox.Show(this, receipt, $"Receipt - Sale #{_currentDraft.Id}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            // Generate receipt using report service with Myanmar Unicode support
+                            var report = new SaleReceiptReport(_salesService, _productService, _customerService, _translationService);
+                            await report.PopulateAsync(_currentDraft.Id, CancellationToken);
+                            using var stream = new MemoryStream();
+                            report.ExportToPdf(stream);
+                            var receiptBytes = stream.ToArray();
+                            // Decode PDF bytes to text for display (simplified)
+                            var receiptText = System.Text.Encoding.UTF8.GetString(receiptBytes);
+                            XtraMessageBox.Show(this, receiptText, $"Receipt - Sale #{_currentDraft.Id}", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -701,6 +734,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
                 _printButton.Enabled = true;
             }

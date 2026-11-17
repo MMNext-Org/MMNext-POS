@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MMNextPOS.Domain.Models;
-using MMNextPOS.Infrastructure.Repositories;
 using MMNextPOS.Infrastructure;
+using MMNextPOS.Infrastructure.Repositories;
 
 namespace MMNextPOS.Application.Services
 {

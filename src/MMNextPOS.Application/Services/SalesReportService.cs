@@ -38,7 +38,7 @@ namespace MMNextPOS.Application.Services
         {
             await _auditService.LogAsync(nameof(SalesReportService), saleId, "GenerateSalesInvoiceReport", null, null, 1, "System", $"Generated sales invoice report for sale {saleId}", cancellationToken).ConfigureAwait(false);
 
-            var sale = await _saleRepo.GetByIdAsync(saleId, cancellationToken);
+            var sale = await _saleRepo.GetByIdAsync(saleId, cancellationToken).ConfigureAwait(false);
             if (sale == null)
             {
                 throw new KeyNotFoundException($"Sale {saleId} not found");
@@ -65,17 +65,20 @@ namespace MMNextPOS.Application.Services
 
         public async Task<byte[]> GenerateSalesInvoiceReportByNoAsync(string invoiceNo, CancellationToken cancellationToken = default)
         {
-            // Find sale by invoice number - would need a repository method
-            // For now, return generic report
-            var reportData = new
-            {
-                ReportTitle = "Sales Invoice Report",
-                InvoiceNo = invoiceNo,
-                GeneratedAt = DateTime.UtcNow
-            };
+            return await Task.Run(() =>
+    {
+        // Find sale by invoice number - would need a repository method
+        // For now, return generic report
+        var reportData = new
+        {
+            ReportTitle = "Sales Invoice Report",
+            InvoiceNo = invoiceNo,
+            GeneratedAt = DateTime.UtcNow
+        };
 
-            var json = System.Text.Json.JsonSerializer.Serialize(reportData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            return System.Text.Encoding.UTF8.GetBytes(json);
+        var json = System.Text.Json.JsonSerializer.Serialize(reportData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        return System.Text.Encoding.UTF8.GetBytes(json);
+    });
         }
 
         public async Task<byte[]> GenerateSalesHistoryReportAsync(int? customerId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default)

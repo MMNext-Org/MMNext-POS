@@ -55,9 +55,15 @@ namespace MMNextPOS.WinForms
         {
             if (_currentDraft != null)
             {
-                CustomerName = _currentDraft.CustomerName ?? "Walk-in";
-                _customerId = _currentDraft.CustomerId;
-                // Load line items from draft if needed (currently not used)
+                try
+                {
+                    CustomerName = _currentDraft.CustomerName ?? "Walk-in";
+                    _customerId = _currentDraft.CustomerId;
+                }
+                catch (Exception ex)
+                {
+                    ShowError($"Failed to load draft: {ex.Message}");
+                }
             }
         }
 
@@ -242,13 +248,13 @@ Now modify `NewSaleForm.cs` to use the ViewModel.
 
 Steps:
 
-- Add a field `_viewModel` of type `NewSaleViewModel`.
+-Add a field `_viewModel` of type `NewSaleViewModel`.
 
 - In the constructor, instantiate the ViewModel passing services: `_salesService`, `_productService`, `_saleTempService`.
 
 - Replace the existing fields with binding to ViewModel properties. For example:
 
-  - Remove `_lineItems` field and `_searchProductBox`, etc. Instead, bind the grid's `DataSource` to `ViewModel.LineItems`.
+  -Remove `_lineItems` field and `_searchProductBox`, etc. Instead, bind the grid's `DataSource` to `ViewModel.LineItems`.
 
   - The `AddProductLineAsync` method becomes a call to `ViewModel.AddProductLineAsync(product)`.
 
@@ -266,7 +272,7 @@ Steps:
 
 Let's edit NewSaleForm.cs accordingly.
 
-First, add using statement for the ViewModel and maybe for ObservableObject (if needed).
+First, add using statement for the ViewModel and maybe for ObservableObject(if needed).
 
 We'll need to adjust the constructor to instantiate the ViewModel and set DataContext.
 
@@ -279,13 +285,13 @@ Let's locate the constructor and modify.
             ISalesService salesService,
             ISaleTempService saleTempService,
             IProductService productService,
-            ICustomerService customerService) 
-        {
-            _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
-            _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
-            _productService = productService ?? throw new ArgumentNullException(nameof(productService));
-            _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
+            ICustomerService customerService)
+{
+    _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
+    _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
+    _productService = productService ?? throw new ArgumentNullException(nameof(productService));
+    _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
 
-            InitializeComponent();
-            this.Load += async (s, e) => await LoadReferenceDataAsync();
-        }
+    InitializeComponent();
+    this.Load += async (s, e) => await LoadReferenceDataAsync();
+}

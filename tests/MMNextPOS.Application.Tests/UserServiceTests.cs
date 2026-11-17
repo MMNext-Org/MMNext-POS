@@ -14,7 +14,7 @@ namespace MMNextPOS.Application.Tests
         private readonly Mock<IUserRepository> _userRepoMock = new();
         private readonly Mock<IUserRoleRepository> _userRoleRepoMock = new();
         private readonly Mock<IRoleRepository> _roleRepoMock = new();
-                private readonly Mock<IVerificationCodeRepository> _verificationCodeRepoMock = new();
+        private readonly Mock<IVerificationCodeRepository> _verificationCodeRepoMock = new();
 
         private UserService CreateService()
         {

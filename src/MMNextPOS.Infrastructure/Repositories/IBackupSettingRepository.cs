@@ -9,5 +9,6 @@ namespace MMNextPOS.Infrastructure.Repositories
     {
         Task<IReadOnlyList<BackupSetting>> GetActiveBackupsAsync(CancellationToken cancellationToken = default);
         Task<BackupSetting?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<BackupResult>> GetBackupHistoryAsync(int backupSettingId, int limit = 50, CancellationToken cancellationToken = default);
     }
 }

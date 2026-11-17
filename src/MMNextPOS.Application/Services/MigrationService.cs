@@ -22,34 +22,34 @@ namespace MMNextPOS.Application.Services
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
         }
 
-        public Task<DataMigration?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<DataMigration?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            return _repo.GetByIdAsync(id, cancellationToken);
+            return await _repo.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<DataMigration?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+        public async Task<DataMigration?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
         {
-            return _repo.GetByNameAsync(name, cancellationToken);
+            return await _repo.GetByNameAsync(name, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<IReadOnlyList<DataMigration>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<DataMigration>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            return _repo.GetAllAsync(cancellationToken);
+            return await _repo.GetAllAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<IReadOnlyList<DataMigration>> GetPendingMigrationsAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<DataMigration>> GetPendingMigrationsAsync(CancellationToken cancellationToken = default)
         {
-            return _repo.GetPendingMigrationsAsync(cancellationToken);
+            return await _repo.GetPendingMigrationsAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<IReadOnlyList<DataMigration>> GetRunningMigrationsAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<DataMigration>> GetRunningMigrationsAsync(CancellationToken cancellationToken = default)
         {
-            return _repo.GetRunningMigrationsAsync(cancellationToken);
+            return await _repo.GetRunningMigrationsAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<IReadOnlyList<DataMigration>> GetScheduledMigrationsAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<DataMigration>> GetScheduledMigrationsAsync(CancellationToken cancellationToken = default)
         {
-            return _repo.GetScheduledMigrationsAsync(cancellationToken);
+            return await _repo.GetScheduledMigrationsAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<DataMigration> AddAsync(DataMigration migration, CancellationToken cancellationToken = default)
@@ -114,7 +114,7 @@ namespace MMNextPOS.Application.Services
         {
             // In a real implementation, this would query a migration steps table
             // For now, return empty list
-            return new List<MigrationStepResult>();
+            return await Task.FromResult(new List<MigrationStepResult>());
         }
 
         private async Task<bool> RunMigrationInternalAsync(DataMigration migration, CancellationToken cancellationToken)

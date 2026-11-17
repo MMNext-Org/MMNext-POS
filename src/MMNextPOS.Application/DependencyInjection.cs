@@ -24,7 +24,7 @@ namespace MMNextPOS.Application
             });
 
             // Register infrastructure repositories as scoped services
-            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<MMNextPOS.Infrastructure.Repositories.IProductRepository, MMNextPOS.Infrastructure.Repositories.ProductRepository>();
             services.AddScoped<ISaleRepository, SaleRepository>();
             services.AddScoped<ISaleDetailRepository, SaleDetailRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
@@ -87,7 +87,7 @@ namespace MMNextPOS.Application
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISystemSettingRepository, MMNextPOS.Infrastructure.Repositories.SystemSettingRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IBackupSettingRepository, MMNextPOS.Infrastructure.Repositories.BackupSettingRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.IDataMigrationRepository, MMNextPOS.Infrastructure.Repositories.DataMigrationRepository>();
-                        services.AddScoped<MMNextPOS.Infrastructure.Repositories.IVerificationCodeRepository, MMNextPOS.Infrastructure.Repositories.VerificationCodeRepository>();
+            services.AddScoped<MMNextPOS.Infrastructure.Repositories.IVerificationCodeRepository, MMNextPOS.Infrastructure.Repositories.VerificationCodeRepository>();
             services.AddScoped<MMNextPOS.Infrastructure.Repositories.ISuperAdminLogRepository, MMNextPOS.Infrastructure.Repositories.SuperAdminLogRepository>();
 
             // Receipt/Voucher repositories

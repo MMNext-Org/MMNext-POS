@@ -1,0 +1,11 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  MMNextPOS.Domain -> C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\src\MMNextPOS.Domain\bin\Release\net8.0\MMNextPOS.Domain.dll
+  MMNextPOS.Infrastructure -> C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\src\MMNextPOS.Infrastructure\bin\Release\net8.0\MMNextPOS.Infrastructure.dll
+  MMNextPOS.Application -> C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\src\MMNextPOS.Application\bin\Release\net8.0\MMNextPOS.Application.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.87

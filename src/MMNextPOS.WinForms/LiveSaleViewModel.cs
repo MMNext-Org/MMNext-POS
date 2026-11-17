@@ -102,7 +102,7 @@ namespace MMNextPOS.WinForms
             }
             catch (Exception ex)
             {
-                // Handle error (e.g., show message)
+                ShowError($"Failed to load reference data: {ex.Message}");
             }
         }
 
@@ -128,7 +128,7 @@ namespace MMNextPOS.WinForms
             }
             catch (Exception ex)
             {
-                // Handle error
+                ShowError($"Failed to load draft: {ex.Message}");
             }
         }
 
@@ -157,7 +157,7 @@ namespace MMNextPOS.WinForms
             }
             catch (Exception ex)
             {
-                // Show error
+                ShowError($"Failed to print receipt: {ex.Message}");
             }
         }
 
@@ -202,6 +202,13 @@ namespace MMNextPOS.WinForms
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string propertyName) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        // UI feedback methods
+        private void ShowInfo(string message) =>
+            System.Windows.Forms.MessageBox.Show(message, "Information", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+
+        private void ShowError(string message) =>
+            System.Windows.Forms.MessageBox.Show(message, "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
     }
 
     /// <summary>

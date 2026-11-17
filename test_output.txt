@@ -1,0 +1,6 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  MMNextPOS.Domain -> C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\src\MMNextPOS.Domain\bin\Release\net8.0\MMNextPOS.Domain.dll
+  MMNextPOS.Infrastructure -> C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\src\MMNextPOS.Infrastructure\bin\Release\net8.0\MMNextPOS.Infrastructure.dll
+  MMNextPOS.Application -> C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\src\MMNextPOS.Application\bin\Release\net8.0\MMNextPOS.Application.dll
+C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\tests\MMNextPOS.Application.Tests\InventoryServiceTests.cs(151,27): error CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [C:\Users\Kaung Thant\.copilot\repos\MMNext-POS\tests\MMNextPOS.Application.Tests\MMNextPOS.Application.Tests.csproj]

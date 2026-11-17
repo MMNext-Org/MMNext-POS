@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
 
 namespace MMNextPOS.Application.Services
@@ -24,24 +25,24 @@ namespace MMNextPOS.Application.Services
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
         }
 
-        public Task<BackupSetting?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<BackupSetting?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            return _repo.GetByIdAsync(id, cancellationToken);
+            return await _repo.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<BackupSetting?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+        public async Task<BackupSetting?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
         {
-            return _repo.GetByNameAsync(name, cancellationToken);
+            return await _repo.GetByNameAsync(name, cancellationToken);
         }
 
-        public Task<IReadOnlyList<BackupSetting>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<BackupSetting>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            return _repo.GetAllAsync(cancellationToken);
+            return await _repo.GetAllAsync(cancellationToken);
         }
 
-        public Task<IReadOnlyList<BackupSetting>> GetActiveBackupsAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<BackupSetting>> GetActiveBackupsAsync(CancellationToken cancellationToken = default)
         {
-            return _repo.GetActiveBackupsAsync(cancellationToken);
+            return await _repo.GetActiveBackupsAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<BackupSetting> AddAsync(BackupSetting setting, CancellationToken cancellationToken = default)
@@ -124,11 +125,11 @@ namespace MMNextPOS.Application.Services
             }
         }
 
-        public Task<IReadOnlyList<BackupResult>> GetBackupHistoryAsync(int backupSettingId, int limit = 50, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<BackupResult>> GetBackupHistoryAsync(int backupSettingId, int limit = 50, CancellationToken cancellationToken = default)
         {
             // In a real implementation, this would query a backup history table
             // For now, return empty list
-            return Task.FromResult<IReadOnlyList<BackupResult>>(new List<BackupResult>());
+            return await _repo.GetBackupHistoryAsync(backupSettingId, limit, cancellationToken).ConfigureAwait(false);
         }
 
         // Restore
@@ -192,24 +193,27 @@ namespace MMNextPOS.Application.Services
 
         private async Task CleanupOldBackupsAsync(BackupSetting setting, CancellationToken cancellationToken)
         {
-            var backupDir = Path.GetDirectoryName(setting.BackupPath) ?? Path.GetTempPath();
-            var prefix = setting.Name;
-            var files = Directory.GetFiles(backupDir, $"{prefix}*.zip")
-                .OrderByDescending(f => File.GetCreationTime(f))
-                .Skip(setting.RetentionDays)
-                .ToList();
-
-            foreach (var file in files)
+            await Task.Run(() =>
             {
-                try
+                var backupDir = Path.GetDirectoryName(setting.BackupPath) ?? Path.GetTempPath();
+                var prefix = setting.Name;
+                var files = Directory.GetFiles(backupDir, $"{prefix}*.zip")
+                    .OrderByDescending(f => File.GetCreationTime(f))
+                    .Skip(setting.RetentionDays)
+                    .ToList();
+
+                foreach (var file in files)
                 {
-                    File.Delete(file);
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch
+                    {
+                        // Ignore delete errors
+                    }
                 }
-                catch
-                {
-                    // Ignore delete errors
-                }
-            }
+            });
         }
 
         private DateTime CalculateNextRun(BackupSetting setting)

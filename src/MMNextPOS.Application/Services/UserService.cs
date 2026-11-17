@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BCryptNet = BCrypt.Net.BCrypt;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
 
 namespace MMNextPOS.Application.Services
@@ -25,7 +26,7 @@ namespace MMNextPOS.Application.Services
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _userRoleRepo = userRoleRepo ?? throw new ArgumentNullException(nameof(userRoleRepo));
             _roleRepo = roleRepo ?? throw new ArgumentNullException(nameof(roleRepo));
-                    _verificationCodeRepo = verificationCodeRepo ?? throw new ArgumentNullException(nameof(verificationCodeRepo));
+            _verificationCodeRepo = verificationCodeRepo ?? throw new ArgumentNullException(nameof(verificationCodeRepo));
         }
 
         public Task<User> AddAsync(User user, CancellationToken cancellationToken = default)
@@ -130,19 +131,19 @@ namespace MMNextPOS.Application.Services
 
             if (newPassword.Length < 6)
                 throw new ArgumentException("New password must be at least 6 characters long.");
-            
-                    // Verify that verification code matches what was sent to the user
-                    var verificationResult = await VerifyPasswordResetCodeAsync(userId, verificationCode, cancellationToken);
-                    if (!verificationResult)
-                    {
-                        return false;
-                    }
+
+            // Verify that verification code matches what was sent to the user
+            var verificationResult = await VerifyPasswordResetCodeAsync(userId, verificationCode, cancellationToken);
+            if (!verificationResult)
+            {
+                return false;
+            }
 
             var user = await _repo.GetByIdAsync(userId, cancellationToken);
             if (user == null || !user.IsActive)
                 return false;
 
-                    // Hash new password and update (no current password verification - this is for verified reset)
+            // Hash new password and update (no current password verification - this is for verified reset)
             user.PasswordHash = BCryptNet.HashPassword(newPassword, BCryptNet.GenerateSalt(12));
             user.UpdatedAt = DateTime.UtcNow;
             await _repo.UpdateAsync(user, cancellationToken);
@@ -150,26 +151,26 @@ namespace MMNextPOS.Application.Services
             return true;
         }
 
-                public async Task<string> GenerateVerificationCodeAsync(int userId, CancellationToken cancellationToken = default)
-                {
-                                    return await _verificationCodeRepo.GenerateCodeAsync(userId, cancellationToken);
-                }
+        public async Task<string> GenerateVerificationCodeAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            return await _verificationCodeRepo.GenerateCodeAsync(userId, cancellationToken);
+        }
 
-                private async Task<bool> VerifyPasswordResetCodeAsync(int userId, string verificationCode, CancellationToken cancellationToken)
-                {
-                                    return await _verificationCodeRepo.ValidateCodeAsync(userId, verificationCode, cancellationToken);
-                }
+        private async Task<bool> VerifyPasswordResetCodeAsync(int userId, string verificationCode, CancellationToken cancellationToken)
+        {
+            return await _verificationCodeRepo.ValidateCodeAsync(userId, verificationCode, cancellationToken);
+        }
 
-                private class VerificationCodeEntry
-                {
-                    public string Code { get; }
-                    public DateTime Expiration { get; }
-                    public VerificationCodeEntry(string code, DateTime expiration)
-                    {
-                        Code = code;
-                        Expiration = expiration;
-                    }
-                }
+        private class VerificationCodeEntry
+        {
+            public string Code { get; }
+            public DateTime Expiration { get; }
+            public VerificationCodeEntry(string code, DateTime expiration)
+            {
+                Code = code;
+                Expiration = expiration;
+            }
+        }
 
         /// <summary>
         /// Hashes a plain-text password using BCrypt.

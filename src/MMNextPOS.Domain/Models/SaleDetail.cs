@@ -26,8 +26,8 @@ namespace MMNextPOS.Domain.Models
         public decimal DiscountAmount { get; set; }
 
         public decimal TaxAmount { get; set; }
-
         public decimal LineTotal { get; set; }
+        public decimal DiscountPercentage { get; set; }
 
         /// <summary>
         /// Navigation property for the product

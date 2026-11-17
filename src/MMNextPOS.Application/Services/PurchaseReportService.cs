@@ -41,7 +41,7 @@ namespace MMNextPOS.Application.Services
         {
             await _auditService.LogAsync(nameof(PurchaseReportService), purchaseId, "GeneratePurchaseInvoiceReport", null, null, 1, "System", $"Generated purchase invoice report for purchase {purchaseId}", cancellationToken).ConfigureAwait(false);
 
-            var purchase = await _purchaseRepo.GetByIdAsync(purchaseId, cancellationToken);
+            var purchase = await _purchaseRepo.GetByIdAsync(purchaseId, cancellationToken).ConfigureAwait(false);
             if (purchase == null)
             {
                 throw new KeyNotFoundException($"Purchase {purchaseId} not found");
@@ -87,15 +87,18 @@ namespace MMNextPOS.Application.Services
 
         public async Task<byte[]> GeneratePurchaseInvoiceReportByNoAsync(string invoiceNo, CancellationToken cancellationToken = default)
         {
-            var reportData = new
-            {
-                ReportTitle = "Purchase Invoice Report",
-                InvoiceNo = invoiceNo,
-                GeneratedAt = DateTime.UtcNow
-            };
+            return await Task.Run(() =>
+    {
+        var reportData = new
+        {
+            ReportTitle = "Purchase Invoice Report",
+            InvoiceNo = invoiceNo,
+            GeneratedAt = DateTime.UtcNow
+        };
 
-            var json = System.Text.Json.JsonSerializer.Serialize(reportData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            return System.Text.Encoding.UTF8.GetBytes(json);
+        var json = System.Text.Json.JsonSerializer.Serialize(reportData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        return System.Text.Encoding.UTF8.GetBytes(json);
+    });
         }
 
         public async Task<byte[]> GeneratePurchaseHistoryReportAsync(int? supplierId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default)

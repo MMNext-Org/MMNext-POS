@@ -40,6 +40,7 @@ namespace MMNextPOS.WinForms
         private BindingList<SaleDetailViewModel> _lineItems = new();
         private DevExpress.XtraEditors.ComboBoxEdit _paymentMethodCombo = null!;
         private SimpleButton _printButton = null!;
+        private ProgressBarControl _progressBar = null!;
 
         // Cache for products
         private List<Product> _allProducts = new();
@@ -240,6 +241,14 @@ namespace MMNextPOS.WinForms
             };
             closeButton.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
 
+            // Progress indicator
+            _progressBar = new ProgressBarControl
+            {
+                Dock = DockStyle.Fill,
+                Visibility = DevExpress.XtraBars.BarVisibility.Never
+            };
+            buttonPanel.Controls.Add(_progressBar);
+
             buttonPanel.Controls.Add(_printButton);
             buttonPanel.Controls.Add(closeButton);
 
@@ -264,6 +273,7 @@ namespace MMNextPOS.WinForms
         {
             try
             {
+                ShowProgress("Loading reference data...");
                 SetWaitCursor(true);
 
                 // Load customers
@@ -285,6 +295,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
             }
         }
@@ -295,6 +306,7 @@ namespace MMNextPOS.WinForms
 
             try
             {
+                ShowProgress("Loading draft...");
                 SetWaitCursor(true);
 
                 // Load customer
@@ -321,6 +333,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
             }
         }
@@ -347,6 +360,7 @@ namespace MMNextPOS.WinForms
 
             try
             {
+                ShowProgress("Printing receipt...");
                 SetWaitCursor(true);
                 _printButton.Enabled = false;
 
@@ -366,6 +380,7 @@ namespace MMNextPOS.WinForms
             }
             finally
             {
+                HideProgress();
                 SetWaitCursor(false);
                 _printButton.Enabled = true;
             }
