@@ -29,9 +29,9 @@ namespace MMNextPOS.WinForms
                 _selectedCustomerId = value;
                 OnPropertyChanged(nameof(SelectedCustomerId));
                 // Update customer name if draft is loaded
-                if (_currentDraft != null && _selectedCustomerId == _currentDraft.CustomerId)
+                if (CurrentDraft != null && _selectedCustomerId == CurrentDraft.CustomerId)
                 {
-                    SelectedCustomerName = _currentDraft.CustomerName;
+                    SelectedCustomerName = CurrentDraft.CustomerName;
                 }
             }
         }
@@ -198,31 +198,11 @@ namespace MMNextPOS.WinForms
             return string.Join(Environment.NewLine, lines);
         }
 
-        // INotifyPropertyChanged implementation
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged(string propertyName) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
         // UI feedback methods
         private void ShowInfo(string message) =>
             System.Windows.Forms.MessageBox.Show(message, "Information", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
 
         private void ShowError(string message) =>
             System.Windows.Forms.MessageBox.Show(message, "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-    }
-
-    /// <summary>
-    /// View model for a single line item in a sale (grid row).
-    /// </summary>
-    public class SaleDetailViewModel : INotifyPropertyChanged
-    {
-        public int ProductId { get; set; }
-        public string ProductName { get; set; } = string.Empty;
-        public string Sku { get; set; } = string.Empty;
-        public int Quantity { get; set; }
-        public decimal UnitPrice { get; set; }
-        public int AvailableStock { get; set; }
-
-        public decimal LineTotal => Quantity * UnitPrice;
     }
 }
