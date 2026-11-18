@@ -375,6 +375,8 @@ namespace MMNextPOS.WinForms
                 return;
             }
 
+            int resolvedUserId = userId.Value;
+
             // Generate verification code if not already provided
             if (string.IsNullOrWhiteSpace(verificationCode))
             {
@@ -412,7 +414,7 @@ namespace MMNextPOS.WinForms
             }
 
             // Prevent admin from resetting their own password through this form
-            if (_userSession.IsAuthenticated && userId.Value == _userSession.CurrentUser!.Id)
+            if (_userSession.IsAuthenticated && resolvedUserId == _userSession.CurrentUser!.Id)
             {
                 ShowStatus("Use 'Change Password' to change your own password", true);
                 return;
@@ -430,13 +432,13 @@ namespace MMNextPOS.WinForms
             {
                 await RunAsync(async ct =>
                 {
-                    var success = await _userService.ResetPasswordAsync(userId.Value, newPassword, verificationCode, ct);
+                    var success = await _userService.ResetPasswordAsync(resolvedUserId, newPassword, verificationCode, ct);
                     if (!success)
                         throw new InvalidOperationException("User not found or inactive");
                 });
 
                 // Success
-                var selectedUser = _users.FirstOrDefault(u => u.Id == userId.Value);
+                var selectedUser = _users.FirstOrDefault(u => u.Id == resolvedUserId);
                 ShowStatus($"Password reset for '{selectedUser?.Username}' successfully!", false);
                 await Task.Delay(1500);
                 this.DialogResult = DialogResult.OK;
