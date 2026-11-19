@@ -258,27 +258,27 @@ namespace MMNextPOS.WinForms
             };
         }
 
-        private async Task<Dictionary<string, object>?> ShowDateRangeParameterFormAsync()
+        private Task<Dictionary<string, object>?> ShowDateRangeParameterFormAsync()
         {
             using var form = _serviceProvider.GetRequiredService<DateRangeParameterForm>();
             var result = form.ShowDialog(this);
             if (result == DialogResult.OK && form.IsValid)
             {
-                return form.GetParameters();
+                return Task.FromResult<Dictionary<string, object>?>(form.GetParameters());
             }
-            return null;
+            return Task.FromResult<Dictionary<string, object>?>(null);
         }
 
-        private async Task<Dictionary<string, object>?> ShowEntityParameterFormAsync(string entityType)
+        private Task<Dictionary<string, object>?> ShowEntityParameterFormAsync(string entityType)
         {
             using var form = _serviceProvider.GetRequiredService<EntityParameterForm>();
             // The form title will be set in constructor
             var result = form.ShowDialog(this);
             if (result == DialogResult.OK && form.IsValid)
             {
-                return form.GetParameters();
+                return Task.FromResult<Dictionary<string, object>?>(form.GetParameters());
             }
-            return null;
+            return Task.FromResult<Dictionary<string, object>?>(null);
         }
 
         private void PrintReport()

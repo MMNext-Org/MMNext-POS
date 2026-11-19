@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -25,6 +26,7 @@ namespace MMNextPOS.WinForms
         private readonly ISaleTempService _saleTempService;
         private readonly IProductService _productService;
         private readonly ICustomerService _customerService;
+        private readonly ITranslationService _translationService;
 
         // UI Controls
         private LookUpEdit _customerLookup = null!;
@@ -52,12 +54,14 @@ namespace MMNextPOS.WinForms
             ISalesService salesService,
             ISaleTempService saleTempService,
             IProductService productService,
-            ICustomerService customerService)
+            ICustomerService customerService,
+            ITranslationService translationService)
         {
             _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
             _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
+            _translationService = translationService ?? throw new ArgumentNullException(nameof(translationService));
 
             InitializeComponent();
             this.Load += async (s, e) => await LoadReferenceDataAsync();
@@ -69,7 +73,8 @@ namespace MMNextPOS.WinForms
             ISaleTempService saleTempService,
             IProductService productService,
             ICustomerService customerService,
-            SaleTemp draft) : this(salesService, saleTempService, productService, customerService)
+            ITranslationService translationService,
+            SaleTemp draft) : this(salesService, saleTempService, productService, customerService, translationService)
         {
             _currentDraft = draft ?? throw new ArgumentNullException(nameof(draft));
             _isResumingDraft = true;
@@ -347,8 +352,7 @@ namespace MMNextPOS.WinForms
             // Progress indicator
             _progressBar = new ProgressBarControl
             {
-                Dock = DockStyle.Fill,
-                Visibility = DevExpress.XtraBars.BarVisibility.Never
+                Dock = DockStyle.Fill
             };
             buttonPanel.Controls.Add(_progressBar);
 
@@ -393,9 +397,9 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async Task LoadDraftAsync()
+        private Task LoadDraftAsync()
         {
-            if (_currentDraft == null) return;
+            if (_currentDraft == null) return Task.CompletedTask;
 
             try
             {
@@ -424,6 +428,7 @@ namespace MMNextPOS.WinForms
                 HideProgress();
                 SetWaitCursor(false);
             }
+            return Task.CompletedTask;
         }
 
         private void FilterProducts()
@@ -432,13 +437,13 @@ namespace MMNextPOS.WinForms
             // For now, we'll use a simple approach - the user types and presses Enter or clicks Add Product
         }
 
-        private async Task AddProductLineAsync()
+        private Task AddProductLineAsync()
         {
             var searchText = _searchProductBox.EditValue?.ToString()?.Trim();
             if (string.IsNullOrEmpty(searchText))
             {
                 ShowInfo("Please enter a product name or SKU to search.");
-                return;
+                return Task.CompletedTask;
             }
 
             var matches = _allProducts.Where(p =>
@@ -448,7 +453,7 @@ namespace MMNextPOS.WinForms
             if (!matches.Any())
             {
                 ShowInfo($"No product found matching '{searchText}'.");
-                return;
+                return Task.CompletedTask;
             }
 
             Product selectedProduct;
@@ -461,7 +466,7 @@ namespace MMNextPOS.WinForms
                 // Show selection dialog
                 using var selector = new ProductSelectorForm(matches);
                 if (selector.ShowDialog(this) != DialogResult.OK || selector.SelectedProduct == null)
-                    return;
+                    return Task.CompletedTask;
                 selectedProduct = selector.SelectedProduct;
             }
 
@@ -472,7 +477,7 @@ namespace MMNextPOS.WinForms
                 existing.Quantity++;
                 _detailsView.RefreshData();
                 UpdateTotal();
-                return;
+                return Task.CompletedTask;
             }
 
             // Add new line
@@ -490,6 +495,7 @@ namespace MMNextPOS.WinForms
             _searchProductBox.EditValue = null;
             _detailsView.BestFitColumns();
             UpdateTotal();
+            return Task.CompletedTask;
         }
 
         private void RemoveSelectedLine()

@@ -51,7 +51,7 @@ namespace MMNextPOS.WinForms
 
         #region Public Commands
 
-        public async Task LoadDraftAsync()
+        public Task LoadDraftAsync()
         {
             if (_currentDraft != null)
             {
@@ -65,9 +65,10 @@ namespace MMNextPOS.WinForms
                     ShowError($"Failed to load draft: {ex.Message}");
                 }
             }
+            return Task.CompletedTask;
         }
 
-        public async Task AddProductLineAsync(Product product)
+        public Task AddProductLineAsync(Product product)
         {
             var line = new SaleDetailViewModel
             {
@@ -80,6 +81,7 @@ namespace MMNextPOS.WinForms
             };
             LineItems.Add(line);
             TotalAmount = LineItems.Sum(l => l.LineTotal);
+            return Task.CompletedTask;
         }
 
         public async Task SaveSaleAsync()

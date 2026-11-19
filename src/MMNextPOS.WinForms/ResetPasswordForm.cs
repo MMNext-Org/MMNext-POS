@@ -29,21 +29,11 @@ namespace MMNextPOS.WinForms
         private TextEdit _newPasswordEdit = null!;
         private TextEdit _confirmPasswordEdit = null!;
         private CheckEdit _showPasswordCheck = null!;
+        private TextEdit _verificationCodeEdit = null!;
         private SimpleButton _resetButton = null!;
         private SimpleButton _cancelButton = null!;
         private LabelControl _statusLabel = null!;
         private List<User> _users = new();
-
-        private void GenerateVerificationCode()
-        {
-            if (_userLookup.EditValue == null) return;
-
-            var userId = (int)_userLookup.EditValue;
-            var verificationCode = _userService.GenerateVerificationCodeAsync(userId, _cts.Token).Result;
-            _verificationCodeEdit.Text = verificationCode;
-            _statusLabel.Text = $"Verification code generated for user ID {userId}. Send this code to the user.";
-            _statusLabel.Appearance.ForeColor = System.Drawing.Color.Blue;
-        }
 
         public ResetPasswordForm(
             IUserService userService,
@@ -376,12 +366,6 @@ namespace MMNextPOS.WinForms
             }
 
             int resolvedUserId = userId.Value;
-
-            // Generate verification code if not already provided
-            if (string.IsNullOrWhiteSpace(verificationCode))
-            {
-                GenerateVerificationCode();
-            }
 
             if (string.IsNullOrWhiteSpace(newPassword))
             {

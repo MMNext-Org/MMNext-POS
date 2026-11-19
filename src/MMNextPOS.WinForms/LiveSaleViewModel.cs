@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Domain.Models;
+using MMNextPOS.WinForms.Reports;
 
 namespace MMNextPOS.WinForms
 {
@@ -107,9 +109,9 @@ namespace MMNextPOS.WinForms
         }
 
         // Load draft (if any)
-        public async Task LoadDraftAsync()
+        public Task LoadDraftAsync()
         {
-            if (CurrentDraft == null) return;
+            if (CurrentDraft == null) return Task.CompletedTask;
 
             try
             {
@@ -130,6 +132,8 @@ namespace MMNextPOS.WinForms
             {
                 ShowError($"Failed to load draft: {ex.Message}");
             }
+
+            return Task.CompletedTask;
         }
 
         // Print receipt command
@@ -148,12 +152,12 @@ namespace MMNextPOS.WinForms
                 await report.PopulateAsync(CurrentDraft.Id, default);
 
                 using var stream = new System.IO.MemoryStream();
-                await report.ExportToPdf(stream);
+                report.ExportToPdf(stream);
                 var receiptBytes = stream.ToArray();
 
                 // For demo, just show a message box with the receipt text
                 string receiptText = await GenerateReceiptTextAsync(CurrentDraft.Id);
-                System.Windows.Forms.MessageBox.Show(this, receiptText, "Receipt", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+                System.Windows.Forms.MessageBox.Show(receiptText, "Receipt", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -173,7 +177,7 @@ namespace MMNextPOS.WinForms
             await report.PopulateAsync(saleId, default);
 
             using var stream = new System.IO.MemoryStream();
-            await report.ExportToPdf(stream);
+            report.ExportToPdf(stream);
             var lines = new System.Collections.Generic.List<string>
             {
                 "MMNext POS - Receipt",
