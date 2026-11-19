@@ -387,9 +387,10 @@ namespace MMNextPOS.WinForms
             await LoadAsync();
         }
 
-        protected virtual async Task OnNewAsync()
+        protected virtual Task OnNewAsync()
         {
             // Override in derived class
+            return Task.CompletedTask;
         }
 
         protected virtual async Task OnEditAsync()

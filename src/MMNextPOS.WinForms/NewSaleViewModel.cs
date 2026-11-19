@@ -13,7 +13,7 @@ namespace MMNextPOS.WinForms
         public ObservableCollection<SaleDetailViewModel> LineItems { get; } = new();
 
         private int? _customerId;
-        public string CustomerName { get; private set; = "Walk-in"; }
+        public string CustomerName { get; private set; } = "Walk-in";
 
         private decimal _totalAmount;
         public decimal TotalAmount
@@ -51,7 +51,7 @@ namespace MMNextPOS.WinForms
 
         #region Public Commands
 
-        public async Task LoadDraftAsync()
+        public Task LoadDraftAsync()
         {
             if (_currentDraft != null)
             {
@@ -65,9 +65,10 @@ namespace MMNextPOS.WinForms
                     ShowError($"Failed to load draft: {ex.Message}");
                 }
             }
+            return Task.CompletedTask;
         }
 
-        public async Task AddProductLineAsync(Product product)
+        public Task AddProductLineAsync(Product product)
         {
             var line = new SaleDetailViewModel
             {
@@ -80,6 +81,7 @@ namespace MMNextPOS.WinForms
             };
             LineItems.Add(line);
             TotalAmount = LineItems.Sum(l => l.LineTotal);
+            return Task.CompletedTask;
         }
 
         public async Task SaveSaleAsync()
@@ -239,59 +241,4 @@ namespace MMNextPOS.WinForms
             PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
         }
     }
-}
-```
-
-Note: We introduced `ObservableObject` and `ObservableCollection`. The `ObservableObject` class needs to be defined somewhere; we can add it to the same file or create a separate file. For simplicity, we embed a minimal version. However, the file may become large; but for the purpose of this answer, it's acceptable.
-
-Now modify `NewSaleForm.cs` to use the ViewModel.
-
-Steps:
-
--Add a field `_viewModel` of type `NewSaleViewModel`.
-
-- In the constructor, instantiate the ViewModel passing services: `_salesService`, `_productService`, `_saleTempService`.
-
-- Replace the existing fields with binding to ViewModel properties. For example:
-
-  -Remove `_lineItems` field and `_searchProductBox`, etc. Instead, bind the grid's `DataSource` to `ViewModel.LineItems`.
-
-  - The `AddProductLineAsync` method becomes a call to `ViewModel.AddProductLineAsync(product)`.
-
-  - The `SaveSaleAsync` method (invoked by Ctrl+S) becomes a call to `ViewModel.SaveSaleAsync()`.
-
-  - The `HoldDraftAsync` method becomes a call to `ViewModel.HoldDraftAsync()`.
-
-  - Remove the existing `AddProductLineAsync` method and related UI logic; instead, wire a button's click to `AddProductLineAsync` that opens a product selector (still needed).
-
-- Adjust `ProcessCmdKey` to call `ViewModel.SaveSaleAsync` when Ctrl+S is pressed.
-
-- Remove the existing private `SaveSaleAsync` method (or make it internal and call ViewModel).
-
-- Remove fields that are no longer needed (`_lineItems`, `_searchProductBox`, etc.) and replace with binding to ViewModel.
-
-Let's edit NewSaleForm.cs accordingly.
-
-First, add using statement for the ViewModel and maybe for ObservableObject(if needed).
-
-We'll need to adjust the constructor to instantiate the ViewModel and set DataContext.
-
-Let's locate the constructor and modify.
-</think>
-<tool_call>
-<function=str_replace>
-<parameter=old_str>
-        public NewSaleForm(
-            ISalesService salesService,
-            ISaleTempService saleTempService,
-            IProductService productService,
-            ICustomerService customerService)
-{
-    _salesService = salesService ?? throw new ArgumentNullException(nameof(salesService));
-    _saleTempService = saleTempService ?? throw new ArgumentNullException(nameof(saleTempService));
-    _productService = productService ?? throw new ArgumentNullException(nameof(productService));
-    _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
-
-    InitializeComponent();
-    this.Load += async (s, e) => await LoadReferenceDataAsync();
 }

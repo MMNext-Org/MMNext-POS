@@ -335,9 +335,9 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async Task LoadDraftAsync()
+        private Task LoadDraftAsync()
         {
-            if (_currentDraft == null) return;
+            if (_currentDraft == null) return Task.CompletedTask;
 
             try
             {
@@ -370,6 +370,8 @@ namespace MMNextPOS.WinForms
             {
                 SetWaitCursor(false);
             }
+
+            return Task.CompletedTask;
         }
 
         private void FilterProducts()
@@ -378,13 +380,13 @@ namespace MMNextPOS.WinForms
             // For now, we'll use a simple approach - the user types and presses Enter or clicks Add Product
         }
 
-        private async Task AddProductLineAsync()
+        private Task AddProductLineAsync()
         {
             var searchText = _searchProductBox.EditValue?.ToString()?.Trim();
             if (string.IsNullOrEmpty(searchText))
             {
                 ShowInfo("Please enter a product name or SKU to search.");
-                return;
+                return Task.CompletedTask;
             }
 
             var matches = _allProducts.Where(p =>
@@ -394,7 +396,7 @@ namespace MMNextPOS.WinForms
             if (!matches.Any())
             {
                 ShowInfo($"No product found matching '{searchText}'.");
-                return;
+                return Task.CompletedTask;
             }
 
             Product selectedProduct;
@@ -407,7 +409,7 @@ namespace MMNextPOS.WinForms
                 // Show selection dialog
                 using var selector = new ProductSelectorForm(matches);
                 if (selector.ShowDialog(this) != DialogResult.OK || selector.SelectedProduct == null)
-                    return;
+                    return Task.CompletedTask;
                 selectedProduct = selector.SelectedProduct;
             }
 
@@ -418,7 +420,7 @@ namespace MMNextPOS.WinForms
                 existing.Quantity++;
                 _detailsView.RefreshData();
                 UpdateTotal();
-                return;
+                return Task.CompletedTask;
             }
 
             // Add new line
@@ -436,6 +438,7 @@ namespace MMNextPOS.WinForms
             _searchProductBox.EditValue = null;
             _detailsView.BestFitColumns();
             UpdateTotal();
+            return Task.CompletedTask;
         }
 
         private void RemoveSelectedLine()
@@ -585,12 +588,12 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async Task PrintReceiptAsync()
+        private Task PrintReceiptAsync()
         {
             if (_currentDraft == null)
             {
                 ShowInfo("No sale to print.");
-                return;
+                return Task.CompletedTask;
             }
 
             try
@@ -611,6 +614,8 @@ namespace MMNextPOS.WinForms
                 SetWaitCursor(false);
                 _printButton.Enabled = true;
             }
+
+            return Task.CompletedTask;
         }
 
         private string GenerateReceiptText()
