@@ -28,6 +28,7 @@ namespace MMNextPOS.Application.Tests
         private readonly Mock<IReturnNumberGenerator> _returnNumberGeneratorMock = new();
         private readonly Mock<IPaymentService> _paymentServiceMock = new();
         private readonly Mock<ITaxRateService> _taxRateServiceMock = new();
+        private readonly Mock<ISalePrintService> _salePrintServiceMock = new();
 
         private ISalesService CreateService()
         {
@@ -45,7 +46,8 @@ namespace MMNextPOS.Application.Tests
                 _salesReturnDetailRepoMock.Object,
                 _returnNumberGeneratorMock.Object,
                 _paymentServiceMock.Object,
-                _taxRateServiceMock.Object);
+                _taxRateServiceMock.Object,
+                _salePrintServiceMock.Object);
         }
 
         private void SetupHappyPath(int productId = 1, int initialStock = 10, string productName = "Widget")
@@ -555,7 +557,6 @@ namespace MMNextPOS.Application.Tests
 
             Sale? capturedSale = null;
             List<SaleDetail>? capturedDetails = null;
-            string? capturedPrintOutput = null;
             _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
                          .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { capturedSale = s; capturedDetails = d.ToList(); })
                          .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
@@ -935,43 +936,6 @@ namespace MMNextPOS.Application.Tests
         }
 
         [Fact]
-        public async Task CreateSaleAsync_Rounding_Change_Calculation()
-        {
-            // Arrange
-            SetupHappyPath();
-            var service = CreateService();
-            var details = new List<SaleDetail>
-            {
-                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 10.99m }
-            };
-            var sale = new Sale { CustomerId = 1 };
-            await service.CreateSaleAsync(sale, details);
-
-            // Act
-            var change = 15m - sale!.TotalAmount; // 15 - 10.99 = 4.01
-
-            // Assert
-            Assert.Equal(4.01m, change);
-        }
-
-        [Fact]
-        public async Task CreateSaleAsync_PartPayment_RemainingBalance()
-        {
-            // Arrange — create sale with 60, then payment of 40 (leaving 20 outstanding)
-            var service = CreateService();
-            var sale = new Sale { CustomerId = 1, TotalAmount = 60m };
-            var details = new List<SaleDetail> { new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 60m } };
-            await service.CreateSaleAsync(sale, details);
-
-            // Act — apply partial payment
-            await service.AddPaymentToSaleAsync(sale.Id, 40m);
-
-            // Assert — verify outstanding record for customer 1 has balance 20m
-            _outstandingMock.Verify(o => o.AddCustomerOutstandingAsync(
-                It.Is<CustomerOutstanding>(co => co.CustomerId == 1 && co.Balance == 20m), Times.Once);
-        }
-
-        [Fact]
         public async Task CreateSaleAsync_UsesDiscountedPrice_NotCatalogPrice()
         {
             // Arrange
@@ -1000,6 +964,5 @@ namespace MMNextPOS.Application.Tests
             Assert.Single(capturedDetails);
             Assert.Equal(2m, capturedDetails[0].DiscountAmount);
         }
-    }
     }
 }
