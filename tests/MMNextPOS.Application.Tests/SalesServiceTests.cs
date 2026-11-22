@@ -933,8 +933,7 @@ namespace MMNextPOS.Application.Tests
             Assert.Single(capturedDetails);
             Assert.Equal(3m, capturedDetails[0].DiscountAmount);
         }
-        
-        [Fact]
+
         [Fact]
         public async Task CreateSaleAsync_Rounding_Change_Calculation()
         {
@@ -947,10 +946,10 @@ namespace MMNextPOS.Application.Tests
             };
             var sale = new Sale { CustomerId = 1 };
             await service.CreateSaleAsync(sale, details);
-            
+
             // Act
             var change = 15m - sale!.TotalAmount; // 15 - 10.99 = 4.01
-            
+
             // Assert
             Assert.Equal(4.01m, change);
         }
@@ -971,6 +970,9 @@ namespace MMNextPOS.Application.Tests
             _outstandingMock.Verify(o => o.AddCustomerOutstandingAsync(
                 It.Is<CustomerOutstanding>(co => co.CustomerId == 1 && co.Balance == 20m), Times.Once);
         }
+
+        [Fact]
+        public async Task CreateSaleAsync_UsesDiscountedPrice_NotCatalogPrice()
         {
             // Arrange
             SetupHappyPath();
