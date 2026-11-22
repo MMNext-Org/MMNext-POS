@@ -433,9 +433,26 @@ namespace MMNextPOS.WinForms
             }
             // Intentional broad catch at the UI boundary: unexpected service or
             // repository failures are surfaced to the user instead of crashing the form.
+                        catch (InvalidOperationException ex)
+                        {
+                            Debug.WriteLine($"[ResetPassword] InvalidOperation: {ex}");
+                            ShowStatus("Invalid request. Please check your input.", true);
+                        }
+                        catch (SqlException ex)
+                        {
+                            Debug.WriteLine($"[ResetPassword] SqlException: {ex}");
+                            ShowStatus("Database error. Please try again later.", true);
+                        }
+                        catch (IOException ex)
+                        {
+                            Debug.WriteLine($"[ResetPassword] IOException: {ex}");
+                            ShowStatus("I/O error. Please try again.", true);
+                        }
             catch (Exception ex)
             {
-                ShowStatus($"Failed to reset password: {ex.Message}", true);
+                            // fallback generic catch that logs and shows user‑friendly message
+                            Debug.WriteLine($"[ResetPassword] Unexpected error: {ex}");
+                            ShowStatus("An unexpected error occurred. Please try again later.", true);
             }
             finally
             {
