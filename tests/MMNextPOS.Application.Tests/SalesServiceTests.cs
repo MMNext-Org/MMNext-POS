@@ -72,6 +72,7 @@ namespace MMNextPOS.Application.Tests
                             .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>()))
                             .Returns(Task.CompletedTask);
+                        _salePrintServiceMock.Setup(s => s.GenerateSalePrintAsync(It.IsAny<Sale>()), Times.Once());
 
             // Default tax rate service setup - returns 0 (no tax) by default
             _taxRateServiceMock.Setup(t => t.GetTaxRateForCustomerAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
