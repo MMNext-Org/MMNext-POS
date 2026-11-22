@@ -51,7 +51,7 @@
 | ucCustomerAdvanced (+Tab/History) | Missing | P1 | WinForms Lead | Advanced tabs, history |
 | ucSupplier | **Verified** | P0 | WinForms Lead | Supplier entity + repo + service + SuppliersListPage; 6 unit tests |
 | frmCustomerImport | **Verified** | P2 | WinForms Lead | `CustomerImportDialog` (CSV preview, dedupe by name/phone) wired via "Import CSV" toolbar button on Customers page, Admin/Manager only (2026-10-04) |
-| frmSupplierImport | **Verified** | P2 | WinForms Lead | `SupplierImportDialog` (CSV preview, dedupe by code/name) wired via "Import CSV" toolbar button on Suppliers page, Admin/Manager only (2026-10-04) |
+| frmSupplierImport | **Missing** | P2 | WinForms Lead | `SupplierImportDialog` (CSV preview, dedupe by code/name) wired via "Import CSV" toolbar button on Suppliers page, Admin/Manager only (2026-10-04) |
 
 **Entities:** Customer, Supplier, CustomerOutstanding, SupplierOutstanding
 
