@@ -431,6 +431,8 @@ namespace MMNextPOS.WinForms
             {
                 ShowStatus(ex.Message, true);
             }
+            // Intentional broad catch at the UI boundary: unexpected service or
+            // repository failures are surfaced to the user instead of crashing the form.
             catch (Exception ex)
             {
                 ShowStatus($"Failed to reset password: {ex.Message}", true);
