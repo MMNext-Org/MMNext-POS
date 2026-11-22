@@ -137,9 +137,6 @@ namespace MMNextPOS.Application.Services
                 // 3) Round money per line (banker's half-even) and sum for the header.
                 var rounded = RoundLines(aggregated);
                 sale.TotalAmount = rounded.Sum(l => l.LineTotal);
-                // Generate sale print receipt before final commit
-                var printOutput = await _salePrintService.GenerateSalePrintAsync(sale).ConfigureAwait(false);
-                // Optionally log or store print output here if needed for later retrieval
                 if (sale.SaleDate == default)
                 {
                     sale.SaleDate = DateTime.UtcNow;
