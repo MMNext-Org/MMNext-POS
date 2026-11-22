@@ -26,6 +26,7 @@ namespace MMNextPOS.Application.Services
         private readonly IReturnNumberGenerator _returnNumberGenerator;
         private readonly IPaymentService _paymentService;
         private readonly ITaxRateService _taxRateService;
+        private readonly ISalePrintService _salePrintService;
 
         public SalesService(
             ISaleRepository saleRepo,
@@ -41,13 +42,24 @@ namespace MMNextPOS.Application.Services
             ISalesReturnDetailRepository salesReturnDetailRepo,
             IReturnNumberGenerator returnNumberGenerator,
             IPaymentService paymentService,
-            ITaxRateService taxRateService)
+            ITaxRateService taxRateService, ISalePrintService salePrintService)
         {
             _saleRepo = saleRepo ?? throw new ArgumentNullException(nameof(saleRepo));
             _saleDetailRepo = saleDetailRepo ?? throw new ArgumentNullException(nameof(saleDetailRepo));
             _productRepo = productRepo ?? throw new ArgumentNullException(nameof(productRepo));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+            _stockMovementService = stockMovementService ?? throw new ArgumentNullException(nameof(stockMovementService));
+            _invoiceNumberGenerator = invoiceNumberGenerator ?? throw new ArgumentNullException(nameof(invoiceNumberGenerator));
+            _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
+            _outstandingService = outstandingService ?? throw new ArgumentNullException(nameof(outstandingService));
+            _salesReturnRepo = salesReturnRepo ?? throw new ArgumentNullException(nameof(salesReturnRepo));
+            _salesReturnDetailRepo = salesReturnDetailRepo ?? throw new ArgumentNullException(nameof(salesReturnDetailRepo));
+            _returnNumberGenerator = returnNumberGenerator ?? throw new ArgumentNullException(nameof(returnNumberGenerator));
+            _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
+            _taxRateService = taxRateService ?? throw new ArgumentNullException(nameof(taxRateService));
+            _salePrintService = salePrintService ?? throw new ArgumentNullException(nameof(salePrintService));
+        }
             _stockMovementService = stockMovementService ?? throw new ArgumentNullException(nameof(stockMovementService));
             _invoiceNumberGenerator = invoiceNumberGenerator ?? throw new ArgumentNullException(nameof(invoiceNumberGenerator));
             _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
@@ -135,6 +147,9 @@ namespace MMNextPOS.Application.Services
                 // 3) Round money per line (banker's half-even) and sum for the header.
                 var rounded = RoundLines(aggregated);
                 sale.TotalAmount = rounded.Sum(l => l.LineTotal);
+                // Generate sale print receipt before final commit
+                var printOutput = await _salePrintService.GenerateSalePrintAsync(sale).ConfigureAwait(false);
+                // Optionally log or store print output here if needed for later retrieval
                 if (sale.SaleDate == default)
                 {
                     sale.SaleDate = DateTime.UtcNow;
@@ -202,6 +217,10 @@ namespace MMNextPOS.Application.Services
                     userName: null,
                     description: $"Sale {invoiceNo} posted: {rounded.Count} lines, total {createdSale.TotalAmount:C2}",
                     cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                // Generate print output for the completed sale
+                var printOutput = await _salePrintService.GenerateSalePrintAsync(createdSale).ConfigureAwait(false);
+                // Optionally log or store print output here if needed for later retrieval
 
                 // 9) Create payment record for the sale amount (cash payment on completion).
                 //    This links the payment to the sale so the cashier can track

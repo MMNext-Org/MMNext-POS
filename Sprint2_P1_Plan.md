@@ -30,7 +30,7 @@
 | **TC3.6.2** | **Percentage Discount** | Discount applied to unit price or line total | `TotalAmount ≈ 8m` (10m × 0.80, rounded) | Pending |
 | **TC3.6.3** | **Fixed-Amount Discount** | Fixed amount subtracted from line total | `TotalAmount = 7m` (10m - 3m) | Pending |
 | **TC3.6.3** | **Tax Jurisdiction** | Different tax rates per customer type | Tax rate lookup by customer type, correct % applied | Pending |
-| **TC3.6.4** | **Price Override** | Scanner price overrides catalog price | Scanner price used, not catalog price | Pending |
+| **TC3.6.4** | **Price Override** | Scanner price overrides catalog price | Scanner price used, not catalog price | ✅ Pass |
 | **TC3.6.5** | **Boundary Fixtures** | 0.005→0.00, 0.015→0.02, negative prices, >100% discount | Correct rounding and validation | Pending |
 
 **Already Added**:

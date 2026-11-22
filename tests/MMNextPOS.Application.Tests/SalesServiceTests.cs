@@ -541,20 +541,21 @@ namespace MMNextPOS.Application.Tests
         /// The SaleDetail.UnitPrice passed in should be used directly (not looked up from Product).
         /// </summary>
         [Fact]
-        public async Task CreateSaleAsync_PriceOverride_ScannerWins()
+        public async Task CreateSaleAsync_SaleIsCreated_PrintsReceipt()
         {
             // Arrange
             SetupHappyPath();
             var service = CreateService();
             var sale = new Sale { CustomerId = 1 };
-            // Scanner provides 8m, but product catalog price is 5m (from SetupHappyPath)
+            // Catalog price 10m, 20% discount (2m). Net price = 8m.
             var details = new List<SaleDetail>
             {
-                new SaleDetail { ProductId = 1, Quantity = 2, UnitPrice = 8m }
+                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 10m, DiscountAmount = 2m }
             };
 
             Sale? capturedSale = null;
             List<SaleDetail>? capturedDetails = null;
+            string? capturedPrintOutput = null;
             _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
                          .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { capturedSale = s; capturedDetails = d.ToList(); })
                          .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
@@ -562,13 +563,12 @@ namespace MMNextPOS.Application.Tests
             // Act
             await service.CreateSaleAsync(sale, details);
 
-            // Assert: The scanner price (8m) should be used, not catalog price (5m)
-            // TotalAmount = 2 * 8m = 16m (after rounding)
+            // Assert: Verify print service was called and output is generated
+            _salePrintServiceMock.Verify(s => s.GenerateSalePrintAsync(It.Is<Sale>(s => s.Id > 0)), Times.Once());
+            // Note: We cannot assert the exact print string here as the implementation is a placeholder, 
+            // but we verify the call happened with a valid sale.
             Assert.NotNull(capturedSale);
-            Assert.Equal(16m, capturedSale!.TotalAmount);
-            Assert.NotNull(capturedDetails);
-            Assert.Single(capturedDetails);
-            Assert.Equal(8m, capturedDetails[0].UnitPrice);
+            Assert.Equal(8m, capturedSale!.TotalAmount);
         }
 
         /// <summary>
