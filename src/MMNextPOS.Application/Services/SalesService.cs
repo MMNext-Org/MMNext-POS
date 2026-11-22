@@ -60,16 +60,6 @@ namespace MMNextPOS.Application.Services
             _taxRateService = taxRateService ?? throw new ArgumentNullException(nameof(taxRateService));
             _salePrintService = salePrintService ?? throw new ArgumentNullException(nameof(salePrintService));
         }
-            _stockMovementService = stockMovementService ?? throw new ArgumentNullException(nameof(stockMovementService));
-            _invoiceNumberGenerator = invoiceNumberGenerator ?? throw new ArgumentNullException(nameof(invoiceNumberGenerator));
-            _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
-            _outstandingService = outstandingService ?? throw new ArgumentNullException(nameof(outstandingService));
-            _salesReturnRepo = salesReturnRepo ?? throw new ArgumentNullException(nameof(salesReturnRepo));
-            _salesReturnDetailRepo = salesReturnDetailRepo ?? throw new ArgumentNullException(nameof(salesReturnDetailRepo));
-            _returnNumberGenerator = returnNumberGenerator ?? throw new ArgumentNullException(nameof(returnNumberGenerator));
-            _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
-            _taxRateService = taxRateService ?? throw new ArgumentNullException(nameof(taxRateService));
-        }
 
         /// <inheritdoc />
         public Task AggregateDuplicateLines(IEnumerable<SaleDetail> details)
