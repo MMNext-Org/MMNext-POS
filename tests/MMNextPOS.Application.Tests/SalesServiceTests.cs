@@ -72,7 +72,7 @@ namespace MMNextPOS.Application.Tests
                             .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(r => r.CommitAsync(It.IsAny<CancellationToken>()))
                             .Returns(Task.CompletedTask);
-                        _salePrintServiceMock.Setup(s => s.GenerateSalePrintAsync(It.IsAny<Sale>()), Times.Once());
+            _salePrintServiceMock.Setup(s => s.GenerateSalePrintAsync(It.IsAny<Sale>()));
 
             // Default tax rate service setup - returns 0 (no tax) by default
             _taxRateServiceMock.Setup(t => t.GetTaxRateForCustomerAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
@@ -559,7 +559,7 @@ namespace MMNextPOS.Application.Tests
             Sale? capturedSale = null;
             List<SaleDetail>? capturedDetails = null;
             _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
-                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { capturedSale = s; capturedDetails = d.ToList(); })
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { s.Id = 42; capturedSale = s; capturedDetails = d.ToList(); })
                          .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
 
             // Act
