@@ -935,7 +935,42 @@ namespace MMNextPOS.Application.Tests
         }
         
         [Fact]
-        public async Task CreateSaleAsync_PriceDiscount_Percentage_AppliesDiscount()
+        [Fact]
+        public async Task CreateSaleAsync_Rounding_Change_Calculation()
+        {
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+            var details = new List<SaleDetail>
+            {
+                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 10.99m }
+            };
+            var sale = new Sale { CustomerId = 1 };
+            await service.CreateSaleAsync(sale, details);
+            
+            // Act
+            var change = 15m - sale!.TotalAmount; // 15 - 10.99 = 4.01
+            
+            // Assert
+            Assert.Equal(4.01m, change);
+        }
+
+        [Fact]
+        public async Task CreateSaleAsync_PartPayment_RemainingBalance()
+        {
+            // Arrange — create sale with 60, then payment of 40 (leaving 20 outstanding)
+            var service = CreateService();
+            var sale = new Sale { CustomerId = 1, TotalAmount = 60m };
+            var details = new List<SaleDetail> { new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 60m } };
+            await service.CreateSaleAsync(sale, details);
+
+            // Act — apply partial payment
+            await service.AddPaymentToSaleAsync(sale.Id, 40m);
+
+            // Assert — verify outstanding record for customer 1 has balance 20m
+            _outstandingMock.Verify(o => o.AddCustomerOutstandingAsync(
+                It.Is<CustomerOutstanding>(co => co.CustomerId == 1 && co.Balance == 20m), Times.Once);
+        }
         {
             // Arrange
             SetupHappyPath();
