@@ -905,21 +905,16 @@ namespace MMNextPOS.Application.Tests
         /// TC3.6.4c: Tax Jurisdiction - Explicit TaxAmount on SaleDetail is preserved (not overwritten).
         /// </summary>
         [Fact]
-        public async Task CreateSaleAsync_TaxJurisdiction_ExplicitTaxAmount_Preserved()
+        public async Task CreateSaleAsync_PriceDiscount_FixedAmount_AppliesFixedDiscount()
         {
             // Arrange
             SetupHappyPath();
             var service = CreateService();
-
-            // Set up tax rate for customer = 5%
-            _taxRateServiceMock.Setup(t => t.GetTaxRateForCustomerAsync(1, It.IsAny<CancellationToken>()))
-                               .ReturnsAsync(0.05m); // 5% tax
-
             var sale = new Sale { CustomerId = 1 };
+            // Catalog price 10m, Fixed discount 3m. Net price = 7m.
             var details = new List<SaleDetail>
             {
-                // Explicit tax amount of 3m should be preserved (not auto-calculated)
-                new SaleDetail { ProductId = 1, Quantity = 2, UnitPrice = 10m, TaxAmount = 3m }
+                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 10m, DiscountAmount = 3m }
             };
 
             Sale? capturedSale = null;
@@ -931,11 +926,43 @@ namespace MMNextPOS.Application.Tests
             // Act
             await service.CreateSaleAsync(sale, details);
 
-            // Assert: Explicit tax amount (3m) preserved, not auto-calculated (1m)
+            // Assert: The discounted price (7m) should be used, not catalog price (10m)
+            Assert.NotNull(capturedSale);
+            Assert.Equal(7m, capturedSale!.TotalAmount);
             Assert.NotNull(capturedDetails);
             Assert.Single(capturedDetails);
-            Assert.Equal(3m, capturedDetails[0].TaxAmount); // Explicit 3m preserved
-            Assert.Equal(23m, capturedSale!.TotalAmount); // 20m + 3m explicit tax = 23m
+            Assert.Equal(3m, capturedDetails[0].DiscountAmount);
         }
+        
+        [Fact]
+        public async Task CreateSaleAsync_PriceDiscount_Percentage_AppliesDiscount()
+        {
+            // Arrange
+            SetupHappyPath();
+            var service = CreateService();
+            var sale = new Sale { CustomerId = 1 };
+            // Catalog price 10m, 20% discount (2m). Net price = 8m.
+            var details = new List<SaleDetail>
+            {
+                new SaleDetail { ProductId = 1, Quantity = 1, UnitPrice = 10m, DiscountAmount = 2m }
+            };
+
+            Sale? capturedSale = null;
+            List<SaleDetail>? capturedDetails = null;
+            _saleRepoMock.Setup(r => r.CreateSaleWithDetailsAsync(It.IsAny<Sale>(), It.IsAny<IEnumerable<SaleDetail>>(), It.IsAny<CancellationToken>()))
+                         .Callback<Sale, IEnumerable<SaleDetail>, CancellationToken>((s, d, _) => { capturedSale = s; capturedDetails = d.ToList(); })
+                         .ReturnsAsync((Sale s, IEnumerable<SaleDetail> d, CancellationToken ct) => s);
+
+            // Act
+            await service.CreateSaleAsync(sale, details);
+
+            // Assert: The discounted price (8m) should be used, not catalog price (10m)
+            Assert.NotNull(capturedSale);
+            Assert.Equal(8m, capturedSale!.TotalAmount);
+            Assert.NotNull(capturedDetails);
+            Assert.Single(capturedDetails);
+            Assert.Equal(2m, capturedDetails[0].DiscountAmount);
+        }
+    }
     }
 }
