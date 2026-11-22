@@ -29,21 +29,11 @@ namespace MMNextPOS.WinForms
         private TextEdit _newPasswordEdit = null!;
         private TextEdit _confirmPasswordEdit = null!;
         private CheckEdit _showPasswordCheck = null!;
+        private TextEdit _verificationCodeEdit = null!;
         private SimpleButton _resetButton = null!;
         private SimpleButton _cancelButton = null!;
         private LabelControl _statusLabel = null!;
         private List<User> _users = new();
-
-        private void GenerateVerificationCode()
-        {
-            if (_userLookup.EditValue == null) return;
-
-            var userId = (int)_userLookup.EditValue;
-            var verificationCode = _userService.GenerateVerificationCodeAsync(userId, _cts.Token).Result;
-            _verificationCodeEdit.Text = verificationCode;
-            _statusLabel.Text = $"Verification code generated for user ID {userId}. Send this code to the user.";
-            _statusLabel.Appearance.ForeColor = System.Drawing.Color.Blue;
-        }
 
         public ResetPasswordForm(
             IUserService userService,
@@ -123,20 +113,14 @@ namespace MMNextPOS.WinForms
             };
             _mainPanel.Controls.Add(userLabel);
 
-            private async void UserLookup_EditValueChanged(object sender, EventArgs e)
-        {
-            // Generate verification code when user is selected
-            GenerateVerificationCode();
-        }
-
-        // Spacer
-        var spacer2 = new PanelControl
-        {
-            Dock = DockStyle.Top,
-            Height = 15,
-            BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
-        };
-        _mainPanel.Controls.Add(spacer2);
+            // Spacer
+            var spacer2 = new PanelControl
+            {
+                Dock = DockStyle.Top,
+                Height = 15,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
+            };
+            _mainPanel.Controls.Add(spacer2);
 
             // New password label
             var newPasswordLabel = new LabelControl
@@ -147,7 +131,7 @@ namespace MMNextPOS.WinForms
                 Height = 22,
                 Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
             };
-        _mainPanel.Controls.Add(newPasswordLabel);
+            _mainPanel.Controls.Add(newPasswordLabel);
 
             // New password edit
             _newPasswordEdit = new TextEdit
@@ -164,38 +148,38 @@ namespace MMNextPOS.WinForms
                     NullValuePromptShowForEmptyValue = true,
                     UseSystemPasswordChar = true
                 }
-};
-_newPasswordEdit.KeyDown += OnKeyDown;
-_mainPanel.Controls.Add(_newPasswordEdit);
+            };
+            _newPasswordEdit.KeyDown += OnKeyDown;
+            _mainPanel.Controls.Add(_newPasswordEdit);
 
-// Spacer
-var spacer3 = new PanelControl
-{
-    Dock = DockStyle.Top,
-    Height = 15,
-    BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
-};
-_mainPanel.Controls.Add(spacer3);
+            // Spacer
+            var spacer3 = new PanelControl
+            {
+                Dock = DockStyle.Top,
+                Height = 15,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
+            };
+            _mainPanel.Controls.Add(spacer3);
 
-// Confirm password label
-var confirmPasswordLabel = new LabelControl
-{
-    Text = "Confirm New Password",
-    AutoSizeMode = LabelAutoSizeMode.None,
-    Dock = DockStyle.Top,
-    Height = 22,
-    Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
-};
-_mainPanel.Controls.Add(confirmPasswordLabel);
+            // Confirm password label
+            var confirmPasswordLabel = new LabelControl
+            {
+                Text = "Confirm New Password",
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Dock = DockStyle.Top,
+                Height = 22,
+                Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
+            };
+            _mainPanel.Controls.Add(confirmPasswordLabel);
 
-// Confirm password edit
-// Confirm password edit
-_confirmPasswordEdit = new TextEdit
-{
-    Dock = DockStyle.Top,
-    Height = 38,
-    Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
-    Properties =
+            // Confirm password edit
+            // Confirm password edit
+            _confirmPasswordEdit = new TextEdit
+            {
+                Dock = DockStyle.Top,
+                Height = 38,
+                Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                Properties =
                 {
                     AutoHeight = false,
                     PasswordChar = '●',
@@ -204,288 +188,276 @@ _confirmPasswordEdit = new TextEdit
                     NullValuePromptShowForEmptyValue = true,
                     UseSystemPasswordChar = true
                 }
-};
-_confirmPasswordEdit.KeyDown += OnKeyDown;
-_mainPanel.Controls.Add(_confirmPasswordEdit);
+            };
+            _confirmPasswordEdit.KeyDown += OnKeyDown;
+            _mainPanel.Controls.Add(_confirmPasswordEdit);
 
-// Verification code field
-_verificationCodeEdit = new TextEdit
-{
-    Dock = DockStyle.Top,
-    Height = 38,
-    Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
-    Properties =
+            // Verification code field
+            _verificationCodeEdit = new TextEdit
+            {
+                Dock = DockStyle.Top,
+                Height = 38,
+                Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                Properties =
                             {
                                 AutoHeight = false,
                                 NullText = "Enter verification code",
                                 Padding = new Padding(10, 0, 10, 0)
                             }
-};
-_verificationCodeEdit.KeyDown += OnKeyDown;
-_mainPanel.Controls.Add(_verificationCodeEdit);
+            };
+            _verificationCodeEdit.KeyDown += OnKeyDown;
+            _mainPanel.Controls.Add(_verificationCodeEdit);
 
-// Spacer
-var spacer4 = new PanelControl
-{
-    Dock = DockStyle.Top,
-    Height = 10,
-    BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
-};
-_mainPanel.Controls.Add(spacer4);
+            // Spacer
+            var spacer4 = new PanelControl
+            {
+                Dock = DockStyle.Top,
+                Height = 10,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
+            };
+            _mainPanel.Controls.Add(spacer4);
 
-// Show password checkbox
-_showPasswordCheck = new CheckEdit
-{
-    Dock = DockStyle.Top,
-    Height = 28,
-    Text = "Show password",
-    Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
-};
-_showPasswordCheck.CheckedChanged += (s, e) =>
-{
-    var useSystemChar = !_showPasswordCheck.Checked;
-    _newPasswordEdit.Properties.UseSystemPasswordChar = useSystemChar;
-    _confirmPasswordEdit.Properties.UseSystemPasswordChar = useSystemChar;
-};
-_mainPanel.Controls.Add(_showPasswordCheck);
+            // Show password checkbox
+            _showPasswordCheck = new CheckEdit
+            {
+                Dock = DockStyle.Top,
+                Height = 28,
+                Text = "Show password",
+                Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
+            };
+            _showPasswordCheck.CheckedChanged += (s, e) =>
+            {
+                var useSystemChar = !_showPasswordCheck.Checked;
+                _newPasswordEdit.Properties.UseSystemPasswordChar = useSystemChar;
+                _confirmPasswordEdit.Properties.UseSystemPasswordChar = useSystemChar;
+            };
+            _mainPanel.Controls.Add(_showPasswordCheck);
 
-// Spacer
-var spacer5 = new PanelControl
-{
-    Dock = DockStyle.Top,
-    Height = 20,
-    BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
-};
-_mainPanel.Controls.Add(spacer5);
+            // Spacer
+            var spacer5 = new PanelControl
+            {
+                Dock = DockStyle.Top,
+                Height = 20,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
+            };
+            _mainPanel.Controls.Add(spacer5);
 
-// Reset button
-_resetButton = new SimpleButton
-{
-    Text = "Reset Password",
-    Dock = DockStyle.Top,
-    Height = 44,
-    Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point),
-    Appearance =
+            // Reset button
+            _resetButton = new SimpleButton
+            {
+                Text = "Reset Password",
+                Dock = DockStyle.Top,
+                Height = 44,
+                Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point),
+                Appearance =
                 {
                     BackColor = System.Drawing.Color.FromArgb(200, 80, 80),
                     ForeColor = System.Drawing.Color.White
                 }
-};
-_resetButton.Click += OnResetClick;
-_mainPanel.Controls.Add(_resetButton);
+            };
+            _resetButton.Click += OnResetClick;
+            _mainPanel.Controls.Add(_resetButton);
 
-// Cancel button
-_cancelButton = new SimpleButton
-{
-    Text = "Cancel",
-    Dock = DockStyle.Top,
-    Height = 40,
-    Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
-    Appearance =
+            // Cancel button
+            _cancelButton = new SimpleButton
+            {
+                Text = "Cancel",
+                Dock = DockStyle.Top,
+                Height = 40,
+                Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point),
+                Appearance =
                 {
                     BackColor = System.Drawing.Color.Transparent,
                     ForeColor = System.Drawing.Color.FromArgb(100, 100, 100)
                 },
-    ButtonStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple
-};
-_cancelButton.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
-_mainPanel.Controls.Add(_cancelButton);
+                ButtonStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple
+            };
+            _cancelButton.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
+            _mainPanel.Controls.Add(_cancelButton);
 
-// Spacer
-var spacer6 = new PanelControl
-{
-    Dock = DockStyle.Top,
-    Height = 15,
-    BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
-};
-_mainPanel.Controls.Add(spacer6);
+            // Spacer
+            var spacer6 = new PanelControl
+            {
+                Dock = DockStyle.Top,
+                Height = 15,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
+            };
+            _mainPanel.Controls.Add(spacer6);
 
-// Status label
-_statusLabel = new LabelControl
-{
-    Text = "",
-    AutoSizeMode = LabelAutoSizeMode.None,
-    Dock = DockStyle.Top,
-    Height = 24,
-    Appearance = { TextOptions = { HAlignment = HorzAlignment.Center }, ForeColor = System.Drawing.Color.Red },
-    Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
-};
-_mainPanel.Controls.Add(_statusLabel);
+            // Status label
+            _statusLabel = new LabelControl
+            {
+                Text = "",
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Dock = DockStyle.Top,
+                Height = 24,
+                Appearance = { TextOptions = { HAlignment = HorzAlignment.Center }, ForeColor = System.Drawing.Color.Red },
+                Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
+            };
+            _mainPanel.Controls.Add(_statusLabel);
 
-// Load users on form load
-this.Load += async (s, e) => await LoadUsersAsync();
+            // Load users on form load
+            this.Load += async (s, e) => await LoadUsersAsync();
         }
 
         private async Task LoadUsersAsync()
-{
-    try
-    {
-        await RunAsync(async ct =>
         {
-            var users = await _userService.GetAllAsync(ct);
-            _users = users.Where(u => u.IsActive && !u.IsDeleted).OrderBy(u => u.Username).ToList();
-
-            // Add DisplayName property for lookup
-            var displayList = _users.Select(u => new
+            try
             {
-                Id = u.Id,
-                DisplayName = $"{u.Username} ({u.FullName})"
-            }).ToList();
+                await RunAsync(async ct =>
+                {
+                    var users = await _userService.GetAllAsync(ct);
+                    _users = users.Where(u => u.IsActive && !u.IsDeleted).OrderBy(u => u.Username).ToList();
 
+                    // Add DisplayName property for lookup
+                    var displayList = _users.Select(u => new
+                    {
+                        Id = u.Id,
+                        DisplayName = $"{u.Username} ({u.FullName})"
+                    }).ToList();
+
+                    if (InvokeRequired)
+                    {
+                        Invoke(new Action(() => BindUsers(displayList)));
+                    }
+                    else
+                    {
+                        BindUsers(displayList);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                ShowStatus($"Failed to load users: {ex.Message}", true);
+            }
+        }
+
+
+        private void BindUsers<T>(IEnumerable<T> users) where T : class
+        {
+            _userLookup.Properties.DataSource = users;
+            _userLookup.Properties.DisplayMember = "DisplayName";
+            _userLookup.Properties.ValueMember = "Id";
+        }
+
+        private void OnKeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                OnResetClick(_resetButton, EventArgs.Empty);
+            }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                this.DialogResult = DialogResult.Cancel;
+            }
+        }
+
+        private async void OnResetClick(object? sender, EventArgs e)
+        {
+            var userId = _userLookup.EditValue as int?;
+            var newPassword = _newPasswordEdit.Text;
+            var confirmPassword = _confirmPasswordEdit.Text;
+
+            if (!userId.HasValue)
+            {
+                ShowStatus("Please select a user", true);
+                return;
+            }
+
+            int resolvedUserId = userId.Value;
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                ShowStatus("Please enter a new password", true);
+                _newPasswordEdit.Focus();
+                return;
+            }
+
+            if (newPassword.Length < 6)
+            {
+                ShowStatus("New password must be at least 6 characters", true);
+                _newPasswordEdit.Focus();
+                return;
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                ShowStatus("New passwords do not match", true);
+                _confirmPasswordEdit.Focus();
+                return;
+            }
+
+            // Verify code matches confirmation (if verification code is required)
+            var verificationCode = _verificationCodeEdit.Text;
+            if (string.IsNullOrWhiteSpace(verificationCode))
+            {
+                ShowStatus("Please enter the verification code", true);
+                _verificationCodeEdit.Focus();
+                return;
+            }
+
+            // Prevent admin from resetting their own password through this form
+            if (_userSession.IsAuthenticated && resolvedUserId == _userSession.CurrentUser!.Id)
+            {
+                ShowStatus("Use 'Change Password' to change your own password", true);
+                return;
+            }
+
+            _resetButton.Enabled = false;
+            _cancelButton.Enabled = false;
+            _userLookup.Enabled = false;
+            _newPasswordEdit.Enabled = false;
+            _confirmPasswordEdit.Enabled = false;
+            _showPasswordCheck.Enabled = false;
+            ShowStatus("Resetting password...", false);
+
+            try
+            {
+                await RunAsync(async ct =>
+                {
+                    var success = await _userService.ResetPasswordAsync(resolvedUserId, newPassword, verificationCode, ct);
+                    if (!success)
+                        throw new InvalidOperationException("User not found or inactive");
+                });
+
+                // Success
+                var selectedUser = _users.FirstOrDefault(u => u.Id == resolvedUserId);
+                ShowStatus($"Password reset for '{selectedUser?.Username}' successfully!", false);
+                await Task.Delay(1500);
+                this.DialogResult = DialogResult.OK;
+            }
+            catch (ArgumentException ex)
+            {
+                ShowStatus(ex.Message, true);
+            }
+            // Intentional broad catch at the UI boundary: unexpected service or
+            // repository failures are surfaced to the user instead of crashing the form.
+            catch (Exception ex)
+            {
+                ShowStatus($"Failed to reset password: {ex.Message}", true);
+            }
+            finally
+            {
+                _resetButton.Enabled = true;
+                _cancelButton.Enabled = true;
+                _userLookup.Enabled = true;
+                _newPasswordEdit.Enabled = true;
+                _confirmPasswordEdit.Enabled = true;
+                _showPasswordCheck.Enabled = true;
+            }
+        }
+
+        private void ShowStatus(string message, bool isError)
+        {
             if (InvokeRequired)
             {
-                Invoke(new Action(() => BindUsers(displayList)));
+                Invoke(new Action<string, bool>(ShowStatus), message, isError);
+                return;
             }
-            else
-            {
-                BindUsers(displayList);
-            }
-        });
-    }
-    catch (Exception ex)
-    {
-        ShowStatus($"Failed to load users: {ex.Message}", true);
-    }
-}
 
-private void GenerateVerificationCode()
-{
-    if (_userLookup.EditValue == null) return;
-
-    var userId = (int)_userLookup.EditValue;
-    var verificationCode = _userService.GenerateVerificationCodeAsync(userId, _cts.Token).Result;
-    _verificationCodeEdit.Text = verificationCode;
-    _statusLabel.Text = $"Verification code generated for user ID {userId}. Send this code to the user.";
-    _statusLabel.Appearance.ForeColor = System.Drawing.Color.Blue;
-}
-
-private void BindUsers<T>(IEnumerable<T> users) where T : class
-{
-    _userLookup.Properties.DataSource = users;
-    _userLookup.Properties.DisplayMember = "DisplayName";
-    _userLookup.Properties.ValueMember = "Id";
-}
-
-private void OnKeyDown(object? sender, KeyEventArgs e)
-{
-    if (e.KeyCode == Keys.Enter)
-    {
-        e.SuppressKeyPress = true;
-        OnResetClick(_resetButton, EventArgs.Empty);
-    }
-    else if (e.KeyCode == Keys.Escape)
-    {
-        this.DialogResult = DialogResult.Cancel;
-    }
-}
-
-private async void OnResetClick(object? sender, EventArgs e)
-{
-    var userId = _userLookup.EditValue as int?;
-    var newPassword = _newPasswordEdit.Text;
-    var confirmPassword = _confirmPasswordEdit.Text;
-
-    if (!userId.HasValue)
-    {
-        ShowStatus("Please select a user", true);
-        return;
-    }
-
-    // Generate verification code if not already provided
-    if (string.IsNullOrWhiteSpace(verificationCode))
-    {
-        GenerateVerificationCode();
-    }
-
-    if (string.IsNullOrWhiteSpace(newPassword))
-    {
-        ShowStatus("Please enter a new password", true);
-        _newPasswordEdit.Focus();
-        return;
-    }
-
-    if (newPassword.Length < 6)
-    {
-        ShowStatus("New password must be at least 6 characters", true);
-        _newPasswordEdit.Focus();
-        return;
-    }
-
-    if (newPassword != confirmPassword)
-    {
-        ShowStatus("New passwords do not match", true);
-        _confirmPasswordEdit.Focus();
-        return;
-    }
-
-    // Verify code matches confirmation (if verification code is required)
-    var verificationCode = _verificationCodeEdit.Text;
-    if (string.IsNullOrWhiteSpace(verificationCode))
-    {
-        ShowStatus("Please enter the verification code", true);
-        _verificationCodeEdit.Focus();
-        return;
-    }
-
-    // Prevent admin from resetting their own password through this form
-    if (_userSession.IsAuthenticated && userId.Value == _userSession.CurrentUser!.Id)
-    {
-        ShowStatus("Use 'Change Password' to change your own password", true);
-        return;
-    }
-
-    _resetButton.Enabled = false;
-    _cancelButton.Enabled = false;
-    _userLookup.Enabled = false;
-    _newPasswordEdit.Enabled = false;
-    _confirmPasswordEdit.Enabled = false;
-    _showPasswordCheck.Enabled = false;
-    ShowStatus("Resetting password...", false);
-
-    try
-    {
-        await RunAsync(async ct =>
-        {
-            var success = await _userService.ResetPasswordAsync(userId.Value, newPassword, verificationCode, ct);
-            if (!success)
-                throw new InvalidOperationException("User not found or inactive");
-        });
-
-        // Success
-        var selectedUser = _users.FirstOrDefault(u => u.Id == userId.Value);
-        ShowStatus($"Password reset for '{selectedUser?.Username}' successfully!", false);
-        await Task.Delay(1500);
-        this.DialogResult = DialogResult.OK;
-    }
-    catch (ArgumentException ex)
-    {
-        ShowStatus(ex.Message, true);
-    }
-    catch (Exception ex)
-    {
-        ShowStatus($"Failed to reset password: {ex.Message}", true);
-    }
-    finally
-    {
-        _resetButton.Enabled = true;
-        _cancelButton.Enabled = true;
-        _userLookup.Enabled = true;
-        _newPasswordEdit.Enabled = true;
-        _confirmPasswordEdit.Enabled = true;
-        _showPasswordCheck.Enabled = true;
-    }
-}
-
-private void ShowStatus(string message, bool isError)
-{
-    if (InvokeRequired)
-    {
-        Invoke(new Action<string, bool>(ShowStatus), message, isError);
-        return;
-    }
-
-    _statusLabel.Text = message;
-    _statusLabel.Appearance.ForeColor = isError ? System.Drawing.Color.Red : System.Drawing.Color.Green;
-}
+            _statusLabel.Text = message;
+            _statusLabel.Appearance.ForeColor = isError ? System.Drawing.Color.Red : System.Drawing.Color.Green;
+        }
     }
 }

@@ -261,7 +261,7 @@ namespace MMNextPOS.WinForms.Services
         /// <summary>
         /// Generates a strongly-typed report by code with parameters.
         /// </summary>
-        public async Task<byte[]> GenerateReportByCodeAsync(string reportCode, Dictionary<string, object> parameters, CancellationToken cancellationToken = default)
+        public Task<byte[]> GenerateReportByCodeAsync(string reportCode, Dictionary<string, object> parameters, CancellationToken cancellationToken = default)
         {
             var report = CreateReport(reportCode);
             if (report == null)
@@ -287,7 +287,7 @@ namespace MMNextPOS.WinForms.Services
             // Export to PDF bytes
             using var stream = new MemoryStream();
             report.ExportToPdf(stream);
-            return stream.ToArray();
+            return Task.FromResult(stream.ToArray());
         }
     }
 }

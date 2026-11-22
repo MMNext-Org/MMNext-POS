@@ -110,14 +110,16 @@ namespace MMNextPOS.WinForms
             return sales.OrderByDescending(s => s.SaleDate).Take(100);
         }
 
-        protected override async Task OnEditAsync(Sale entity)
+        protected override Task OnEditAsync(Sale entity)
         {
             // Edit handled by derived forms
+            return Task.CompletedTask;
         }
 
-        protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)
+        protected override Task DeleteAsync(int id, CancellationToken cancellationToken)
         {
             // Delete handled by derived forms
+            return Task.CompletedTask;
         }
 
         private async Task OnResumeDraftAsync()

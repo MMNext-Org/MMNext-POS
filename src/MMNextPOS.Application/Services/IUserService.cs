@@ -49,5 +49,13 @@ namespace MMNextPOS.Application.Services
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if password was reset successfully.</returns>
         Task<bool> ResetPasswordAsync(int userId, string newPassword, string verificationCode, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Generates a verification code for password reset.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The generated verification code.</returns>
+        Task<string> GenerateVerificationCodeAsync(int userId, CancellationToken cancellationToken = default);
     }
 }

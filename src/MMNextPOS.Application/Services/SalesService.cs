@@ -26,6 +26,7 @@ namespace MMNextPOS.Application.Services
         private readonly IReturnNumberGenerator _returnNumberGenerator;
         private readonly IPaymentService _paymentService;
         private readonly ITaxRateService _taxRateService;
+        private readonly ISalePrintService _salePrintService;
 
         public SalesService(
             ISaleRepository saleRepo,
@@ -41,7 +42,7 @@ namespace MMNextPOS.Application.Services
             ISalesReturnDetailRepository salesReturnDetailRepo,
             IReturnNumberGenerator returnNumberGenerator,
             IPaymentService paymentService,
-            ITaxRateService taxRateService)
+            ITaxRateService taxRateService, ISalePrintService salePrintService)
         {
             _saleRepo = saleRepo ?? throw new ArgumentNullException(nameof(saleRepo));
             _saleDetailRepo = saleDetailRepo ?? throw new ArgumentNullException(nameof(saleDetailRepo));
@@ -57,6 +58,7 @@ namespace MMNextPOS.Application.Services
             _returnNumberGenerator = returnNumberGenerator ?? throw new ArgumentNullException(nameof(returnNumberGenerator));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
             _taxRateService = taxRateService ?? throw new ArgumentNullException(nameof(taxRateService));
+            _salePrintService = salePrintService ?? throw new ArgumentNullException(nameof(salePrintService));
         }
 
         /// <inheritdoc />
@@ -202,6 +204,10 @@ namespace MMNextPOS.Application.Services
                     userName: null,
                     description: $"Sale {invoiceNo} posted: {rounded.Count} lines, total {createdSale.TotalAmount:C2}",
                     cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                // Generate print output for the completed sale
+                var printOutput = await _salePrintService.GenerateSalePrintAsync(createdSale).ConfigureAwait(false);
+                // Optionally log or store print output here if needed for later retrieval
 
                 // 9) Create payment record for the sale amount (cash payment on completion).
                 //    This links the payment to the sale so the cashier can track
@@ -359,7 +365,7 @@ namespace MMNextPOS.Application.Services
                         ProductId = d.ProductId,
                         Quantity = d.Quantity,
                         UnitPrice = d.UnitPrice,
-                        DiscountAmount = Math.Round(d.UnitPrice * (d.DiscountPercentage / 100m), 2, MidpointRounding.ToEven),
+                        DiscountAmount = d.DiscountAmount,
                         TaxAmount = d.TaxAmount
                     };
                     order.Add(d.ProductId);

@@ -46,14 +46,16 @@ namespace MMNextPOS.WinForms
             return await _service.GetAllAsync(cancellationToken);
         }
 
-        protected override async Task OnEditAsync(Product entity)
+        protected override Task OnEditAsync(Product entity)
         {
             // Edit handled by derived forms
+            return Task.CompletedTask;
         }
 
-        protected override async Task DeleteAsync(int id, CancellationToken cancellationToken)
+        protected override Task DeleteAsync(int id, CancellationToken cancellationToken)
         {
             // Delete handled by derived forms
+            return Task.CompletedTask;
         }
     }
 }

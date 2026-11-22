@@ -244,8 +244,7 @@ namespace MMNextPOS.WinForms
             // Progress indicator
             _progressBar = new ProgressBarControl
             {
-                Dock = DockStyle.Fill,
-                Visibility = DevExpress.XtraBars.BarVisibility.Never
+                Dock = DockStyle.Fill
             };
             buttonPanel.Controls.Add(_progressBar);
 
@@ -300,9 +299,9 @@ namespace MMNextPOS.WinForms
             }
         }
 
-        private async Task LoadDraftAsync()
+        private Task LoadDraftAsync()
         {
-            if (_currentDraft == null) return;
+            if (_currentDraft == null) return Task.CompletedTask;
 
             try
             {
@@ -336,6 +335,8 @@ namespace MMNextPOS.WinForms
                 HideProgress();
                 SetWaitCursor(false);
             }
+
+            return Task.CompletedTask;
         }
 
         private void DetailsView_CellValueChanged(object sender, DevExpress.XtraGrid.Views.Base.CellValueChangedEventArgs e)

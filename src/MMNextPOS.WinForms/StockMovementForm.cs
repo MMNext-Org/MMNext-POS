@@ -423,12 +423,12 @@ namespace MMNextPOS.WinForms
             _supplierLookup.Visible = isReceive;
         }
 
-        private async Task AddProductLineAsync()
+        private Task AddProductLineAsync()
         {
             // Product selector dialog
             using var selector = new ProductSelectorForm(_allProducts);
             if (selector.ShowDialog(this) != DialogResult.OK || selector.SelectedProduct == null)
-                return;
+                return Task.CompletedTask;
 
             var selectedProduct = selector.SelectedProduct;
 
@@ -438,7 +438,7 @@ namespace MMNextPOS.WinForms
                 existing.Quantity++;
                 _detailsView.RefreshData();
                 UpdateTotal();
-                return;
+                return Task.CompletedTask;
             }
 
             var line = new StockMovementDetailViewModel
@@ -454,6 +454,7 @@ namespace MMNextPOS.WinForms
             _lineItems.Add(line);
             _detailsView.BestFitColumns();
             UpdateTotal();
+            return Task.CompletedTask;
         }
 
         private void RemoveSelectedLine()
