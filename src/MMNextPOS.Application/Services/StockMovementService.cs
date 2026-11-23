@@ -172,6 +172,11 @@ namespace MMNextPOS.Application.Services
             string? reason,
             CancellationToken cancellationToken = default)
         {
+                    if (quantity <= 0)
+                        throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Quantity must be positive for a void movement.");
+                    if (unitCost < 0m)
+                        throw new ArgumentOutOfRangeException(nameof(unitCost), unitCost, "Unit cost must be non-negative.");
+
             var movementNo = $"SM-VOID-{DateTime.UtcNow:yyyyMMddHHmmss}-S-{saleId}";
 
             var movement = new StockMovement
