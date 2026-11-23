@@ -13,7 +13,7 @@ namespace MMNextPOS.Infrastructure.Repositories
         Task<IReadOnlyList<Sale>> GetRecentAsync(int count = 20, CancellationToken cancellationToken = default);
         Task<Sale?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Sale>> GetAllAsync(CancellationToken cancellationToken = default);
-                Task<decimal> GetTodayTotalAsync(CancellationToken cancellationToken = default);
+        Task<decimal> GetTodayTotalAsync(CancellationToken cancellationToken = default);
         Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default);
     }
 }

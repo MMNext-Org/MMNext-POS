@@ -22,32 +22,32 @@ namespace MMNextPOS.Application.Services
             IRepository<DashboardWidget> widgetRepo,
             IUnitOfWork unitOfWork,
                     IAuditService auditService,
-                    ISalesRepository salesRepository)
+                    ISaleRepository salesRepository)
         {
             _widgetRepo = widgetRepo ?? throw new ArgumentNullException(nameof(widgetRepo));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
-                    _salesRepository = salesRepository ?? throw new ArgumentNullException(nameof(salesRepository));
+            _salesRepository = salesRepository ?? throw new ArgumentNullException(nameof(salesRepository));
         }
 
-                private readonly ISalesRepository _salesRepository;
+        private readonly ISaleRepository _salesRepository;
 
         public async Task<DashboardWidget?> GetWidgetAsync(int id, CancellationToken cancellationToken = default)
         {
             return await _widgetRepo.GetByIdAsync(id, cancellationToken);
         }
 
-                private async Task<object?> GetDataSourceValue(string dataSource, string dataSourceMethod, CancellationToken cancellationToken = default)
-                {
-                    if (dataSource != "Sales" || dataSourceMethod != "GetTodayTotal")
-                    {
-                        return null;
-                    }
+        private async Task<object?> GetDataSourceValue(string dataSource, string dataSourceMethod, CancellationToken cancellationToken = default)
+        {
+            if (dataSource != "Sales" || dataSourceMethod != "GetTodayTotal")
+            {
+                return null;
+            }
 
-                    // Get today's total sales amount
-                    var todayTotal = await _salesRepository.GetTodayTotalAsync(cancellationToken);
-                    return todayTotal;
-                }
+            // Get today's total sales amount
+            var todayTotal = await _salesRepository.GetTodayTotalAsync(cancellationToken);
+            return todayTotal;
+        }
 
         public async Task<IReadOnlyList<DashboardWidget>> GetActiveWidgetsAsync(int? userId = null, int? locationId = null, CancellationToken cancellationToken = default)
         {
@@ -61,28 +61,27 @@ namespace MMNextPOS.Application.Services
             if (locationId.HasValue)
                 filtered = filtered.Where(w => w.LocationId == null || w.LocationId == locationId.Value);
 
-                    // Fetch data for widgets that need it
-                    var widgetsWithData = new List<DashboardWidget>();
-                    foreach (var widget in filtered.OrderBy(w => w.DisplayOrder))
-                    {
-                        DashboardWidget widgetCopy = widget;
-                
-                        // Handle data source methods that require actual data retrieval
-                        if (widget.DataSourceMethod == "GetTodayTotal")
-                        {
-                            var data = await GetDataSourceValue(widget.DataSource, widget.DataSourceMethod, cancellationToken);
-                            if (data != null)
-                            {
-                                // Set the value in the widget (assuming there's a Value property or similar)
-                                // For now, we'll just return the data and assume the widget will use it
-                                widgetCopy.Value = data; // Assuming there's a Value property
-                            }
-                        }
-                
-                        widgetsWithData.Add(widgetCopy);
-                    }
+            // Fetch data for widgets that need it
+            var widgetsWithData = new List<DashboardWidget>();
+            foreach (var widget in filtered.OrderBy(w => w.DisplayOrder))
+            {
+                DashboardWidget widgetCopy = widget;
 
-                    return widgetsWithData.OrderBy(w => w.DisplayOrder).ToList();
+                // Handle data source methods that require actual data retrieval
+                if (widget.DataSourceMethod == "GetTodayTotal")
+                {
+                    var data = await GetDataSourceValue(widget.DataSource, widget.DataSourceMethod, cancellationToken);
+                    if (data != null)
+                    {
+                        // Data source value retrieved; widget value handling can be added here
+                        // when a Value property is added to DashboardWidget
+                    }
+                }
+
+                widgetsWithData.Add(widgetCopy);
+            }
+
+            return widgetsWithData.OrderBy(w => w.DisplayOrder).ToList();
         }
 
         public async Task<DashboardWidget> CreateWidgetAsync(DashboardWidget widget, int userId, CancellationToken cancellationToken = default)

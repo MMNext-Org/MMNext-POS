@@ -53,7 +53,7 @@ namespace MMNextPOS.WinForms.Reports
             Margins = new Margins(50, 50, 50, 50);
             PaperKind = DXPaperKind.A4;
             using var reportFont = new Font("Segoe UI", 9);
-        Font = reportFont;
+            Font = reportFont;
 
             var headerBand = new ReportHeaderBand { HeightF = 120 };
             var detailBand = new DetailBand { HeightF = 25 };
