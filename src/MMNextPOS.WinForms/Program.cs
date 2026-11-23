@@ -18,6 +18,7 @@ using MMNextPOS.Application;
 using MMNextPOS.Application.Services;
 using MMNextPOS.Infrastructure;
 using MMNextPOS.Infrastructure.Repositories;
+using MMNextPOS.WinForms.Reports;
 using MMNextPOS.WinForms.Services;
 
 namespace MMNextPOS.WinForms
@@ -149,7 +150,9 @@ namespace MMNextPOS.WinForms
 
                     // Ensure DB schema exists before launching UI
                     var dbInit = serviceProvider.GetRequiredService<DatabaseInitializer>();
-                    dbInit.InitializeAsync().GetAwaiter().GetResult();
+                    await dbInit.InitializeAsync();
+
+                    await ReportMenuInitializer.InitializeAsync(serviceProvider);
 
                     // Initialise WinForms application styles (required before any form is shown).
                     System.Windows.Forms.Application.SetHighDpiMode(HighDpiMode.SystemAware);
