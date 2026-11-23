@@ -69,17 +69,18 @@ namespace MMNextPOS.Infrastructure.Repositories
             return result.AsList();
         }
 
-                public async Task<decimal> GetTodayTotalAsync(CancellationToken cancellationToken = default)
-                {
-                    var today = DateTime.UtcNow.Date;
-                    const string sql = @"SELECT COALESCE(SUM(s.TotalAmount), 0) 
+        public async Task<decimal> GetTodayTotalAsync(CancellationToken cancellationToken = default)
+        {
+            var today = DateTime.UtcNow.Date;
+            const string sql = @"SELECT COALESCE(SUM(s.TotalAmount), 0) 
                                             FROM Sales s 
                                            WHERE s.IsDeleted = 0 
                                              AND s.SaleDate >= @TodayStart 
                                              AND s.SaleDate < @TodayEnd";
-                    var result = await Connection.QuerySingleAsync<decimal>(sql, new { TodayStart = today, TodayEnd = today.AddDays(1) }, Transaction, System.Data.CommandType.Text, cancellationToken).ConfigureAwait(false);
-                    return result;
-                }
+            var result = await Connection.QuerySingleAsync<decimal>(
+            new CommandDefinition(sql, new { TodayStart = today, TodayEnd = today.AddDays(1) }, Transaction, commandType: System.Data.CommandType.Text, cancellationToken: cancellationToken)).ConfigureAwait(false);
+            return result;
+        }
 
         // Implement required IRepository methods that may not be fully covered
         // Note: GenericRepository provides AddAsync, UpdateAsync, DeleteAsync, GetByIdAsync, GetAllAsync, GetPageAsync

@@ -52,7 +52,8 @@ namespace MMNextPOS.WinForms.Reports
             PageHeight = 1169; // A4 height
             Margins = new Margins(50, 50, 50, 50);
             PaperKind = DXPaperKind.A4;
-            Font = new Font("Segoe UI", 9);
+            using var reportFont = new Font("Segoe UI", 9);
+            Font = reportFont;
 
             var headerBand = new ReportHeaderBand { HeightF = 120 };
             var detailBand = new DetailBand { HeightF = 25 };
@@ -82,10 +83,11 @@ namespace MMNextPOS.WinForms.Reports
             yPos += 25;
 
             // Date parameter
+            using var dateFont = new Font("Segoe UI", 10);
             _reportDateLabel = new XRLabel
             {
                 Text = "Date: ",
-                Font = new Font("Segoe UI", 10),
+                Font = dateFont,
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(827, 22),
                 TextAlignment = TextAlignment.MiddleLeft
@@ -115,11 +117,12 @@ namespace MMNextPOS.WinForms.Reports
 
         private void BuildDetail(DetailBand band)
         {
+            using var detailFont = new Font("Segoe UI", 9);
             _detailTable = new XRTable
             {
                 LocationF = new PointF(0, 0),
                 SizeF = new SizeF(827, 25),
-                Font = new Font("Segoe UI", 9)
+                Font = detailFont
             };
             // Add a placeholder row (will be replaced with actual data)
             _detailTable.Rows.Add(CreateDetailRow(new[] { "", "", "", "", "", "" }));
@@ -141,20 +144,22 @@ namespace MMNextPOS.WinForms.Reports
             yPos += 10;
 
             // Summary labels
+            using var boldProductsFont = new Font("Segoe UI", 10, FontStyle.Bold);
             _totalProductsLabel = new XRLabel
             {
                 Text = "Total Products: ",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Font = boldProductsFont,
                 LocationF = new PointF(0, yPos),
                 SizeF = new SizeF(250, 22),
                 TextAlignment = TextAlignment.MiddleLeft
             };
             band.Controls.Add(_totalProductsLabel);
 
+            using var boldReorderFont = new Font("Segoe UI", 10, FontStyle.Bold);
             _totalReorderLabel = new XRLabel
             {
                 Text = "Products Needing Reorder: ",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Font = boldReorderFont,
                 LocationF = new PointF(270, yPos),
                 SizeF = new SizeF(350, 22),
                 TextAlignment = TextAlignment.MiddleLeft
@@ -186,24 +191,27 @@ namespace MMNextPOS.WinForms.Reports
             decimal totalProducts = 0;
             int totalReorderNeeded = 0;
 
-            foreach (var report in filteredReports.OrderBy(r => r.ProductName))
+            if (_detailTable != null)
             {
-                // Create a detail row for each product
-                var row = _detailTable.Rows.Add(CreateDetailRow(new[]
+                foreach (var report in filteredReports.OrderBy(r => r.ProductName))
                 {
-                    report.ProductName,
-                    report.CurrentStock.ToString(),
-                    report.ReorderLevel.ToString(),
-                    report.ReorderQuantity.ToString(),
-                    report.SupplierName,
-                    report.DaysOfStock.ToString()
-                }));
+                    // Create a detail row for each product
+                    var row = _detailTable.Rows.Add(CreateDetailRow(new[]
+                    {
+                        report.ProductName,
+                        report.CurrentStock.ToString(),
+                        report.ReorderLevel.ToString(),
+                        report.ReorderQuantity.ToString(),
+                        report.SupplierName,
+                        report.DaysOfStock.ToString()
+                    }));
 
-                if (report.CurrentStock < report.ReorderLevel)
-                {
-                    totalReorderNeeded++;
+                    if (report.CurrentStock < report.ReorderLevel)
+                    {
+                        totalReorderNeeded++;
+                    }
+                    totalProducts++;
                 }
-                totalProducts++;
             }
 
             // Update footer labels

@@ -19,13 +19,15 @@ namespace MMNextPOS.Application.Tests
         private readonly Mock<IRepository<DashboardWidget>> _widgetRepoMock = new();
         private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
         private readonly Mock<IAuditService> _auditServiceMock = new();
+        private readonly Mock<ISaleRepository> _salesRepositoryMock = new();
 
         private IDashboardService CreateService()
         {
             return new DashboardService(
                 _widgetRepoMock.Object,
                 _unitOfWorkMock.Object,
-                _auditServiceMock.Object);
+                _auditServiceMock.Object,
+                _salesRepositoryMock.Object);
         }
 
         private void SetupHappyPath()
