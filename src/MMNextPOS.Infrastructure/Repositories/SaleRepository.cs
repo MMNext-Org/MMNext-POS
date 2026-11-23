@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -76,7 +77,7 @@ namespace MMNextPOS.Infrastructure.Repositories
                                            WHERE s.IsDeleted = 0 
                                              AND s.SaleDate >= @TodayStart 
                                              AND s.SaleDate < @TodayEnd";
-                    var result = await Connection.QuerySingleAsync<decimal>(sql, new { TodayStart = today, TodayEnd = today.AddDays(1) }, Transaction, cancellationToken).ConfigureAwait(false);
+                    var result = await Connection.QuerySingleAsync<decimal>(sql, new { TodayStart = today, TodayEnd = today.AddDays(1) }, Transaction, System.Data.CommandType.Text, cancellationToken).ConfigureAwait(false);
                     return result;
                 }
 
