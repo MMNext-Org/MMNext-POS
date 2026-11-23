@@ -44,6 +44,9 @@ namespace MMNextPOS.Application.Tests
             _repoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new[] { backupSetting });
 
+            _repoMock.Setup(r => r.GetBackupHistoryAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<BackupResult>());
+
             _repoMock.Setup(r => r.AddAsync(It.IsAny<BackupSetting>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((BackupSetting bs, CancellationToken _) => { bs.Id = 1; return bs; });
 
