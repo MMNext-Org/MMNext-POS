@@ -176,7 +176,7 @@ namespace MMNextPOS.Infrastructure.Tests
             var history = await migrationRunner.GetMigrationHistoryAsync(20);
 
             // Assert
-            Assert.Equal(18, history.Count); // 18 migrations total (000-017)
+            Assert.Equal(19, history.Count); // 19 migrations total (000-018)
 
             // Should be ordered by AppliedAt DESC (newest first). Because DATETIME has second
             // precision, adjacent migrations can share a timestamp, so verify the set and
