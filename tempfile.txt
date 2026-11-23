@@ -1,0 +1,200 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using MMNextPOS.Application.Services;
+using MMNextPOS.Domain.Models;
+using MMNextPOS.Infrastructure.Repositories;
+
+namespace MMNextPOS.Application.Services
+{
+    public class InventoryService : IInventoryService
+    {
+        private readonly IStockMovementRepository _stockMovementRepo;
+        private readonly IStockMovementDetailRepository _stockMovementDetailRepo;
+        private readonly IAssemblyRepository _assemblyRepo;
+        private readonly IAssemblyDetailRepository _assemblyDetailRepo;
+        private readonly IProductRepository _productRepo;
+        private readonly IStockTransferRepository _stockTransferRepo;
+        private readonly IStockTransferDetailRepository _stockTransferDetailRepo;
+        private readonly IAuditService _auditService;
+
+        public InventoryService(
+            IStockMovementRepository stockMovementRepo,
+            IStockMovementDetailRepository stockMovementDetailRepo,
+            IAssemblyRepository assemblyRepo,
+            IAssemblyDetailRepository assemblyDetailRepo,
+            IProductRepository productRepo,
+            IStockTransferRepository stockTransferRepo,
+            IStockTransferDetailRepository stockTransferDetailRepo,
+            IAuditService auditService)
+        {
+            _stockMovementRepo = stockMovementRepo ?? throw new ArgumentNullException(nameof(stockMovementRepo));
+            _stockMovementDetailRepo = stockMovementDetailRepo ?? throw new ArgumentNullException(nameof(stockMovementDetailRepo));
+            _assemblyRepo = assemblyRepo ?? throw new ArgumentNullException(nameof(assemblyRepo));
+            _assemblyDetailRepo = assemblyDetailRepo ?? throw new ArgumentNullException(nameof(assemblyDetailRepo));
+            _productRepo = productRepo ?? throw new ArgumentNullException(nameof(productRepo));
+            _stockTransferRepo = stockTransferRepo ?? throw new ArgumentNullException(nameof(stockTransferRepo));
+            _stockTransferDetailRepo = stockTransferDetailRepo ?? throw new ArgumentNullException(nameof(stockTransferDetailRepo));
+            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+        }
+
+        // Stock Movement
+        public Task<StockMovement?> GetStockMovementByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return _stockMovementRepo.GetByIdAsync(id, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<StockMovement>> GetStockMovementsAsync(int? locationId = null, string? movementType = null, CancellationToken cancellationToken = default)
+        {
+            var all = await _stockMovementRepo.GetAllAsync(cancellationToken);
+            var result = all.AsQueryable();
+
+            if (locationId.HasValue)
+                result = result.Where(m => m.LocationId == locationId.Value);
+            if (!string.IsNullOrEmpty(movementType))
+                result = result.Where(m => m.MovementType == movementType);
+
+            return result.OrderByDescending(m => m.MovementDate).ToList();
+        }
+
+        public async Task<PagedResult<StockMovement>> GetStockMovementsPageAsync(int page, int pageSize, int? locationId = null, string? movementType = null, CancellationToken cancellationToken = default)
+        {
+            return await _stockMovementRepo.GetPageAsync(page, pageSize, cancellationToken);
+        }
+
+        public async Task<StockMovement> AddStockMovementAsync(StockMovement movement, IEnumerable<StockMovementDetail> details, CancellationToken cancellationToken = default)
+        {
+            var result = await _stockMovementRepo.AddAsync(movement, cancellationToken).ConfigureAwait(false);
+
+            foreach (var detail in details)
+            {
+                detail.StockMovementId = result.Id;
+                await _stockMovementDetailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
+                await UpdateProductStockFromDetailAsync(detail, cancellationToken);
+            }
+
+            await _auditService.LogAsync(nameof(StockMovement), result.Id, "Create", null, movement, 1, "System", $"Created stock movement {result.MovementNo}", cancellationToken).ConfigureAwait(false);
+            return result;
+        }
+
+        public async Task UpdateStockMovementAsync(StockMovement movement, IEnumerable<StockMovementDetail> details, CancellationToken cancellationToken = default)
+        {
+            var existing = await _stockMovementRepo.GetByIdAsync(movement.Id, cancellationToken).ConfigureAwait(false);
+            await _stockMovementRepo.UpdateAsync(movement, cancellationToken).ConfigureAwait(false);
+
+            var existingDetails = await _stockMovementDetailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            var movementDetails = existingDetails.Where(d => d.StockMovementId == movement.Id).ToList();
+            foreach (var detail in movementDetails)
+            {
+                await _stockMovementDetailRepo.DeleteAsync(detail.Id, cancellationToken).ConfigureAwait(false);
+            }
+
+            foreach (var detail in details)
+            {
+                detail.StockMovementId = movement.Id;
+                await _stockMovementDetailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
+                await UpdateProductStockFromDetailAsync(detail, cancellationToken);
+            }
+
+            await _auditService.LogAsync(nameof(StockMovement), movement.Id, "Update", null, movement, 1, "System", $"Updated stock movement {movement.MovementNo}", cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task DeleteStockMovementAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var existing = await _stockMovementRepo.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
+
+            var allDetails = await _stockMovementDetailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            var movementDetails = allDetails.Where(d => d.StockMovementId == id).ToList();
+            foreach (var detail in movementDetails)
+            {
+                await ReverseProductStockFromDetailAsync(detail, cancellationToken);
+                await _stockMovementDetailRepo.DeleteAsync(detail.Id, cancellationToken).ConfigureAwait(false);
+            }
+
+            await _stockMovementRepo.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
+            await _auditService.LogAsync(nameof(StockMovement), id, "Delete", null, null, 1, "System", $"Deleted stock movement {existing?.MovementNo ?? id.ToString()}", cancellationToken).ConfigureAwait(false);
+        }
+
+        // Stock Movement Details
+        public async Task<IReadOnlyList<StockMovementDetail>> GetStockMovementDetailsAsync(int stockMovementId, CancellationToken cancellationToken = default)
+        {
+            var all = await _stockMovementDetailRepo.GetAllAsync(cancellationToken);
+            return all.Where(d => d.StockMovementId == stockMovementId).ToList();
+        }
+
+        public async Task<StockMovementDetail> AddStockMovementDetailAsync(StockMovementDetail detail, CancellationToken cancellationToken = default)
+        {
+            var result = await _stockMovementDetailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
+            await UpdateProductStockFromDetailAsync(detail, cancellationToken);
+            await _auditService.LogAsync(nameof(StockMovementDetail), result.Id, "Create", null, result, 1, "System", $"Created stock movement detail", cancellationToken).ConfigureAwait(false);
+            return result;
+        }
+
+        public async Task UpdateStockMovementDetailAsync(StockMovementDetail detail, CancellationToken cancellationToken = default)
+        {
+            var existing = await _stockMovementDetailRepo.GetByIdAsync(detail.Id, cancellationToken).ConfigureAwait(false);
+
+            await ReverseProductStockFromDetailAsync(existing, cancellationToken);
+            await _stockMovementDetailRepo.UpdateAsync(detail, cancellationToken).ConfigureAwait(false);
+            await UpdateProductStockFromDetailAsync(detail, cancellationToken);
+
+            await _auditService.LogAsync(nameof(StockMovementDetail), detail.Id, "Update", existing, detail, 1, "System", $"Updated stock movement detail", cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task DeleteStockMovementDetailAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var existing = await _stockMovementDetailRepo.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
+            await ReverseProductStockFromDetailAsync(existing, cancellationToken);
+            await _stockMovementDetailRepo.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
+            await _auditService.LogAsync(nameof(StockMovementDetail), id, "Delete", existing, null, 1, "System", $"Deleted stock movement detail {existing?.Id ?? id}", cancellationToken).ConfigureAwait(false);
+        }
+
+        // Assembly (BOM)
+        public Task<Assembly?> GetAssemblyByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return _assemblyRepo.GetByIdAsync(id, cancellationToken);
+        }
+
+        public Task<IReadOnlyList<Assembly>> GetAssembliesAsync(CancellationToken cancellationToken = default)
+        {
+            return _assemblyRepo.GetAllAsync(cancellationToken);
+        }
+
+        public async Task<Assembly> AddAssemblyAsync(Assembly assembly, IEnumerable<AssemblyDetail> details, CancellationToken cancellationToken = default)
+        {
+            var result = await _assemblyRepo.AddAsync(assembly, cancellationToken).ConfigureAwait(false);
+
+            foreach (var detail in details)
+            {
+                detail.AssemblyId = result.Id;
+                await _assemblyDetailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
+            }
+
+            await _auditService.LogAsync(nameof(Assembly), result.Id, "Create", null, assembly, 1, "System", $"Created assembly {result.AssemblyNo}", cancellationToken).ConfigureAwait(false);
+            return result;
+        }
+
+        public async Task UpdateAssemblyAsync(Assembly assembly, IEnumerable<AssemblyDetail> details, CancellationToken cancellationToken = default)
+        {
+            var existing = await _assemblyRepo.GetByIdAsync(assembly.Id, cancellationToken).ConfigureAwait(false);
+            await _assemblyRepo.UpdateAsync(assembly, cancellationToken).ConfigureAwait(false);
+
+            var existingDetails = await _assemblyDetailRepo.GetAllAsync(cancellationToken).ConfigureAwait(false);
+            var assemblyDetails = existingDetails.Where(d => d.AssemblyId == assembly.Id).ToList();
+            foreach (var detail in assemblyDetails)
+            {
+                await _assemblyDetailRepo.DeleteAsync(detail.Id, cancellationToken).ConfigureAwait(false);
+            }
+
+            foreach (var detail in details)
+            {
+                detail.AssemblyId = assembly.Id;
+                await _assemblyDetailRepo.AddAsync(detail, cancellationToken).ConfigureAwait(false);
+            }
+
+            await _auditService.LogAsync(nameof(Assembly), assembly.Id, "Update", null, assembly, 1, "System", $"Updated assembly {assembly.AssemblyNo}", cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task DeleteAssemblyAsync(int id, CancellationToken cancellationToken = default)

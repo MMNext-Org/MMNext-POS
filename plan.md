@@ -114,7 +114,7 @@ This replaces the previous “create the foundation” step because the foundati
 - Current migration count: **10 migrations (000–009)**, all idempotent, version `"009"`.
 - See `docs/baseline/BUILD-TEST-BASELINE.md` and `docs/parity/Sales-Hardening-Parity.md` (to be created) for the scenario catalogue.
 
-### Phase 3 — Purchasing, Contacts, Payments, and Expenses
+### *Phase 3 — Purchasing, Contacts, Payments, and Expenses*
 
 Implement and test supplier/customer management, imports, purchases, purchase returns, customer/supplier outstanding, payments, expense types, expense entry, and monthly summaries. The work must reuse the existing services and list-page patterns rather than creating a parallel architecture.
 

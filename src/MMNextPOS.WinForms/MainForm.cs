@@ -148,7 +148,8 @@ namespace MMNextPOS.WinForms
                     IThemeService themeService,
                     ILanguageService languageService,
                     ITranslationService translationService,
-                    WinFormsReportService reportService)
+                            WinFormsReportService reportService,
+                            IDashboardService dashboardService)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
@@ -449,6 +450,12 @@ namespace MMNextPOS.WinForms
             if (isAdmin || isManager)
             {
                 AddNavigationPage("Reports", _reportsViewerForm);
+            }
+            
+            // Dashboard - visible to Admin, Manager
+            if (isAdmin || isManager)
+            {
+                AddNavigationPage("Dashboard", new DashboardPage(_serviceProvider, _dashboardService, _reportService, _navigationService));
             }
 
             // ============ TRANSACTIONS ============
