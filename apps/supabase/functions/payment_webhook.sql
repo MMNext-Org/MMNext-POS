@@ -1,0 +1,3 @@
+-- Placeholder for payment webhook function
+-- This function will be triggered by payment provider callbacks.
+-- It verifies signatures, updates payment status, and handles idempotency.

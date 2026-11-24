@@ -1,0 +1,2 @@
+-- Seed data for BREWFLOW POS
+-- Insert sample organizations, branches, products, etc.

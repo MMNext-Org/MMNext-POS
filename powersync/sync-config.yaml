@@ -1,0 +1,36 @@
+# Adds YAML Schema support for VSCode users with the YAML extension installed. This enables features like validation and autocompletion based on the provided schema.
+# yaml-language-server: $schema=https://unpkg.com/@powersync/service-sync-rules@latest/schema/sync_config.json
+
+# See https://docs.powersync.com/sync/advanced/compatibility
+config:
+  edition: 3
+
+# Define Sync Streams to control which data is synced to each user
+# Docs: https://docs.powersync.com/sync/streams/overview
+streams:
+  global:
+    # Streams without parameters sync the same data to all users
+    auto_subscribe: true
+    queries:
+      # Sync all rows
+      - SELECT * FROM mytable
+      # Only sync some rows
+      - SELECT * FROM mytable WHERE mycolumn = false
+      # Wildcards can be used, useful in development to quickly sync all tables
+      #- SELECT * FROM "%"
+      # Tenant-scoped streams for catalog and orders
+      - SELECT * FROM catalog WHERE organization_id = {{organization_id}} AND branch_code = {{branch_code}}
+        # Sync catalog items every 5 minutes
+        auto_subscribe: true
+        interval: 300
+        conflict_policy: merge
+      - SELECT * FROM orders WHERE organization_id = {{organization_id}} AND branch_code = {{branch_code}}
+        # Sync orders every 10 minutes
+        auto_subscribe: true
+        interval: 600
+        conflict_policy: last_write_wins
+
+  by_user:
+    # Only sync rows belonging to the user, using fields from the auth token
+    auto_subscribe: true
+    query: SELECT * FROM mytable WHERE mytable.user_id = auth.user_id()

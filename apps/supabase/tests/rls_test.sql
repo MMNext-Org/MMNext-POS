@@ -1,0 +1,3 @@
+-- pgTAP test for RLS policies
+-- Test that Tenant A cannot access Tenant B data
+-- Tests basic row-level security enforcement

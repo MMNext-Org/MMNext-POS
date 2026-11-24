@@ -1,0 +1,3 @@
+-- Initial schema migration for BREWFLOW POS
+-- This migration creates the core tables, constraints, and indexes.
+-- Run with supabase db push or equivalent migration tool.

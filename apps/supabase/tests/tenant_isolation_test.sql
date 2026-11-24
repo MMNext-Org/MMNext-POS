@@ -1,0 +1,4 @@
+-- pgTAP test for tenant isolation via RLS
+-- This test verifies that a user belonging to organization A cannot access data belonging to organization B.
+-- Requires that auth_users table contains a user with a known organization_id.
+-- Run with `supabase db push` or equivalent test harness.

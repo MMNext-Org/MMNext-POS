@@ -1,0 +1,4 @@
+# Supabase Project Files
+
+## schema.sql
+<!-- Database schema with RLS policies, constraints, and indexes for tenancy -->

@@ -1,0 +1,69 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Database / test artifacts
+*.db
+*.sqlite
+*.sqlite3
+.dbtest
+dbtest_output*
+dbtest_raw*
+test_output.txt
+test_decimal.js
+temp.txt
+
+# Logs
+*.log
+dev_server_*.log
+
+# Build / dist
+dist
+dist-ssr
+build
+*.local
+
+# Session / tooling artifacts
+.impeccable
+plan.md
+checkpoints/
+files/
+test-idempotency.js
+test-tsconfig.js
+
+# Temp / backup / iteration files
+*.tmp
+*_backup/
+*_old/
+*_temp/
+backup_api/
+rename_api/
+rm_api/
+OrderContext_*
+test_import_context.tsx
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
