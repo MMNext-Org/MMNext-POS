@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { Organization, Branch } from './types';
+import { Organization, Branch } from '../types';
 
 // Mock data for organizations and branches for PoC
 const mockOrganizations: Organization[] = [

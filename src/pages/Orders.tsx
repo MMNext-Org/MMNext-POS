@@ -89,7 +89,7 @@ export default function Orders() {
                 <option disabled>
                   Loading products...
                 </option>
-              : products.map((product) => (
+              ) : products.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name} - ${product.price}
                 </option>

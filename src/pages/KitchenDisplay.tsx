@@ -47,7 +47,7 @@ export const KitchenDisplay = () => {
       <div className="kitchen-orders">
         {filteredOrders.length === 0 ? (
           <p className="empty-state">No orders for this branch</p>
-        : (
+        ) : (
           <div className="order-list">
             {filteredOrders.map(order => (
               <div 

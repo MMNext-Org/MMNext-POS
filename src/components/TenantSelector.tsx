@@ -1,7 +1,7 @@
 import { useTenant } from '../context/TenantContext';
 import { Select } from '@chakra-ui/react';
 import { Box, VStack } from '@chakra-ui/react';
-import { Organization, Branch } from './types';
+import { Organization, Branch } from '../types';
 
 export const TenantSelector = () => {
   const {
@@ -56,7 +56,7 @@ export const TenantSelector = () => {
                   <option key={branch.id} value={branch}>
                     {branch.name} ({branch.address})
                   </option>
-                ))
+                )))
             : (
               branches.map((branch) => (
                 <option key={branch.id} value={branch}>

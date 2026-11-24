@@ -178,7 +178,9 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
   console.error('Error updating inventory for order:', err);
   // Re-throw to let addOrder handle the error (setError, queue item)
   throw err;
+  }
 };
+
 
   if (loading) {
     return <div>Loading orders and synchronizing...</div>;

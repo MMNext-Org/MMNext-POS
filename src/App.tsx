@@ -10,7 +10,7 @@ import { Profile } from './pages/Profile';
 import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
 import { TenantTest } from './pages/TenantTest';
-import { TenantProvider } from '../context/TenantContext';
+import { TenantProvider } from './context/TenantContext';
 import { TenantSelector } from './components/TenantSelector';
 import { AuthProvider } from './context/AuthContext';
 import { PowerSyncProvider } from './context/PowerSyncContext';  // Changed from ../context/AuthContext
