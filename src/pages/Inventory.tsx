@@ -103,13 +103,14 @@ export default function Inventory() {
                           return;
                         }
                         handleStockChange(editingProduct!.id, delta);
-                      }}
+                                              }}
               >
                 Save
               </button>
             </div>
           </div>
         </div>
+                )}
     </section>
   );
 }

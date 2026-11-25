@@ -21,6 +21,8 @@
     "decimal.js": "^10.6.0",
     "express": "^5.3.0",
     "framer-motion": "^14.14.0",
+    "glob": "^14.0.6",
+    "minimatch": "^11.0.9",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.6",
@@ -29,6 +31,7 @@
     "uuid": "^14.0.3"
   },
   "devDependencies": {
+    "@powersync/adapter-sql-js": "^0.0.28",
     "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^24.19.2",
@@ -41,7 +44,7 @@
     "prettier": "^3.10.1",
     "typescript": "^5.5.4",
     "vite": "^8.3.6",
-    "vite-plugin-pwa": "^1.1.0",
+    "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.1.1"
   },
   "allowScripts": {

@@ -107,7 +107,7 @@ export const InventoryService = {
           transaction_id: goodsReceiptId,
           status: 'pending',
         });
-    });
+  }
 
     // Mark the receipt as rejected or return status
     await supabase

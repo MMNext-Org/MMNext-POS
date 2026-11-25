@@ -12,6 +12,6 @@ export const UnitSchema = z.object({
   name: z.string().min(1),
   abbreviation: z.string().min(1),
   baseValue: z.number().int().positive(),
-}
+});
 
 export type UnitDTO = z.infer<typeof UnitSchema>;

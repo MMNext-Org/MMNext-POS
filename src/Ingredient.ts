@@ -21,6 +21,6 @@ export const IngredientSchema = z.object({
   category: z.string().min(1),
   unitId: z.number().int().positive(),
   baseQuantity: z.number().int().nonnegative(),
-}
+});
 
 export type IngredientDTO = z.infer<typeof IngredientSchema>;
