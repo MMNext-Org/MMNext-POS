@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type View = 'search' | 'detail';
 
@@ -26,6 +28,7 @@ export const Loyalty = () => {
     customer: ReturnType<typeof findCustomer>;
     account: ReturnType<typeof getAccount>;
   } | null>(null);
+    const [confirmDisenrollOpen, setConfirmDisenrollOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
@@ -39,6 +42,25 @@ export const Loyalty = () => {
   const [disenrolling, setDisenrolling] = useState(false);
   const earnRef = useRef<HTMLInputElement>(null);
   const redeemRef = useRef<HTMLInputElement>(null);
+
+    const openConfirm = () => setConfirmDisenrollOpen(true);
+    const handleConfirm = async () => {
+      try {
+        const ok = await disenrollCustomer(selectedCustomer?.customer?.id ?? '');
+        if (ok) {
+          setSelectedCustomer(null);
+          setView('search');
+        }
+        setConfirmDisenrollOpen(false);
+      } catch (err) {
+        setConfirmDisenrollOpen(false);
+      }
+    };
+    const handleCancel = () => setConfirmDisenrollOpen(false);
+        const handleDisenroll = () => {
+          openConfirm();
+          return handleConfirm();
+        };
 
   const searchResults = searchCustomers(searchQuery);
 
@@ -103,28 +125,34 @@ export const Loyalty = () => {
     }
   };
 
-  const handleDisenroll = async () => {
-    if (!selectedCustomer) return;
-    if (!window.confirm('Are you sure you want to disenroll this customer from loyalty? This cannot be undone.')) return;
-    setDisenrolling(true);
-    try {
-      const ok = await disenrollCustomer(selectedCustomer.customer.id);
-      if (ok) {
-        setSelectedCustomer(null);
-        setView('search');
-      }
-    } finally {
-      setDisenrolling(false);
-    }
+  const handleDisenroll = () => {
+      setConfirmDisenrollOpen(true);
   };
-
+  
+    const handleConfirm = async () => {
+      if (!selectedCustomer) return;
+      try {
+        const ok = await disenrollCustomer(selectedCustomer.customer.id);
+        if (ok) {
+          setSelectedCustomer(null);
+          setView('search');
+        }
+      } catch (err) {
+        // optional error handling
+      } finally {
+        setConfirmDisenrollOpen(false);
+      }
+    };
+  
+    const handleCancel = () => setConfirmDisenrollOpen(false);
+  
   const customerTransactions = selectedCustomer
     ? getCustomerTransactions(selectedCustomer.customer.id)
     : [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto">
         <div className="flex justify-between items-end mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Loyalty Program</h1>
@@ -282,6 +310,16 @@ export const Loyalty = () => {
               <Button variant="danger" size="sm" onClick={handleDisenroll}>
                 Disenroll
               </Button>
+
+                            {confirmDisenrollOpen && (
+                              <ConfirmDialog
+                                isOpen={confirmDisenrollOpen}
+                                onConfirm={handleConfirm}
+                                onCancel={handleCancel}
+                              >
+                                Are you sure you want to disenroll this customer?
+                              </ConfirmDialog>
+                            )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">

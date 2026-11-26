@@ -106,5 +106,5 @@ A multi-tenant, offline-first Point of Sale (POS) system with a SaaS administrat
 - **Appendix C**: Wireframes/Mockups (to be added later).
 
 *Signed-off by:*  
-[Your Name / Team]  
+[Leo Smitt / MMNext Team]  
 Date: 2026-11-24

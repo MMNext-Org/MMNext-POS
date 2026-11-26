@@ -93,7 +93,7 @@ export default function CustomerList() {
         {loading ? (
           <div className="text-center py-8 text-gray-500">Loading customers...</div>
         ) : (
-          <div className="overflow-hidden rounded-lg shadow border border-gray-200">
+          <div className="overflow-x-auto rounded-lg shadow border border-gray-200">
             <table className="w-full text-left">
               <thead className="bg-gray-100">
                 <tr>

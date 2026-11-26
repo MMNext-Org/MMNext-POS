@@ -58,3 +58,10 @@
     align-items: flex-start;
   }
 }
+
+/* Additional spacing for very small screens */
+@media (max-width: 480px) {
+  #spacer {
+    height: 60px;
+  }
+}

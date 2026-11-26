@@ -31,7 +31,7 @@ export const ShiftHandover: React.FC<ShiftHandoverProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white w-full max-w-md p-6 rounded-lg shadow-xl">
+      <div className="relative bg-white w-full max-w-md p-3 md:p-6 rounded-lg shadow-xl">
         <h2 className="text-lg font-bold mb-4">Shift Handover</h2>
         <p className="text-sm text-gray-600 mb-6">
           Hand over the open shift <span className="font-mono">{shift.id.slice(0, 8)}</span> to another staff member.

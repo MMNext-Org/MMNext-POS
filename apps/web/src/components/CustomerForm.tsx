@@ -107,7 +107,7 @@ export default function CustomerForm({ customer, onSave, onClose }: CustomerForm
           <input
             type="text"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-5 py-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
@@ -117,7 +117,7 @@ export default function CustomerForm({ customer, onSave, onClose }: CustomerForm
           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
             type="email"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-5 py-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
@@ -127,7 +127,7 @@ export default function CustomerForm({ customer, onSave, onClose }: CustomerForm
           <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
           <input
             type="tel"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-5 py-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
@@ -137,7 +137,7 @@ export default function CustomerForm({ customer, onSave, onClose }: CustomerForm
           <label className="block text-sm font-medium text-gray-700 mb-1">Birthday</label>
           <input
             type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-5 py-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={form.birthday}
             onChange={(e) => setForm({ ...form, birthday: e.target.value })}
           />
@@ -147,7 +147,7 @@ export default function CustomerForm({ customer, onSave, onClose }: CustomerForm
           <label className="block text-sm font-medium text-gray-700 mb-1">Preferences (JSON)</label>
           <textarea
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
             value={form.preferences}
             onChange={(e) => setForm({ ...form, preferences: e.target.value })}
             placeholder='{"key": "value"}'
@@ -173,14 +173,14 @@ export default function CustomerForm({ customer, onSave, onClose }: CustomerForm
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+            className="px-5 py-3 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="px-5 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Saving...' : 'Save Customer'}
           </button>

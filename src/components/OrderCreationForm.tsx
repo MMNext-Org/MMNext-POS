@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from '@chakra-ui/react';
 
 // Define product type
 interface Product {
@@ -48,7 +49,7 @@ const OrderCreationForm: React.FC = () => {
 
   const handleAddToOrder = () => {
     if (selectedProductId && quantity > 0) {
-      alert(
+      toast.success(
         `Added ${quantity} × ${mockProducts.find((p) => p.id === selectedProductId)?.name} to order with modifiers: ${modifiers.join(', ') || 'none'}`
       );
       // In a real app, this would update OrderContext queue
@@ -56,12 +57,12 @@ const OrderCreationForm: React.FC = () => {
       setQuantity(1);
       setModifiers([]);
     } else {
-      alert('Please select a product and set quantity.');
+      toast.error('Please select a product and set quantity.');
     }
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', padding: '16px', fontFamily: 'inherit' }}>
       <h1>Create Order</h1>
       <div style={{ marginBottom: '20px' }}>
         <label htmlFor="product-select" style={{ display: 'block', marginBottom: '5px' }}>

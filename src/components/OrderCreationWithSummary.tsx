@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from '@chakra-ui/react';
 
 // Define product type
 interface Product {
@@ -85,19 +86,19 @@ const OrderCreationWithSummary: React.FC = () => {
   const handleAddToOrder = () => {
     // Validate product selection
     if (!selectedProduct) {
-      alert('Please select a product.');
+          toast.error('Please select a product.');
       return;
     }
 
     // Validate quantity
     if (quantity <= 0) {
-      alert('Please enter a valid quantity (greater than 0).');
+      toast.error('Please enter a valid quantity (greater than 0).');
       return;
     }
 
     // Validate payment method
     if (!paymentMethod) {
-      alert('Please select a payment method.');
+      toast.error('Please select a payment method.');
       return;
     }
 
@@ -105,20 +106,20 @@ const OrderCreationWithSummary: React.FC = () => {
       // Cash payment validation
       const { total } = calculateTotals();
       if (!cashValid) {
-        alert('Please enter a valid cash amount.');
+              toast.error('Please enter a valid cash amount.');
         return;
       }
       // Cash payment is immediate
       setPaymentStatus('settled');
-      alert(`Payment successful! Total: $${total.toFixed(2)}`);
+            toast.success(`Payment successful! Total: $${total.toFixed(2)}`);
     } else if (paymentMethod === 'card') {
       // Card payment validation
       if (!cardNumber) {
-        alert('Please enter a card number.');
+              toast.error('Please enter a card number.');
         return;
       }
       if (!isValidCardNumber(cardNumber)) {
-        alert('Please enter a valid card number (16 digits).');
+              toast.error('Please enter a valid card number (16 digits).');
         return;
       }
       // Simulate API call
@@ -142,7 +143,7 @@ const OrderCreationWithSummary: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', padding: '16px', fontFamily: 'inherit' }}>
       <h1>Create Order</h1>
       <div style={{ marginBottom: '20px' }}>
         <label htmlFor="product-select" style={{ display: 'block', marginBottom: '5px' }}>

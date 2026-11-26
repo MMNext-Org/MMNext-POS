@@ -1,0 +1,1 @@
+<div className="flex-1 p-3 mobile:p-5 md:p-6 lg:p-8">
