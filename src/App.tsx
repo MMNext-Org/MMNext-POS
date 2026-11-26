@@ -12,15 +12,11 @@ import { SignUp } from './pages/SignUp';
 import { TenantTest } from './pages/TenantTest';
 import { TenantProvider } from './context/TenantContext';
 import { TenantSelector } from './components/TenantSelector';
-import { AuthProvider } from './context/AuthContext';
 import { PowerSyncProvider } from './context/PowerSyncContext';  // Changed from ../context/AuthContext
 import { getDeviceId } from '@/utils/deviceId';
 import { OrderProvider } from '@/context/OrderContext';
 import { ProductsProvider } from '@/context/ProductsContext';
 import { InventoryProvider } from '@/context/InventoryContext';
-import { ChakraProvider } from '@chakra-ui/react';
-import { ColorModeProvider } from '@chakra-ui/react';
-import { useColorMode } from '@chakra-ui/react';
 import { CssBaseline } from '@chakra-ui/react';
 import { PrivateRoute } from './context/PrivateRoute';
 import { KitchenDisplay } from './pages/KitchenDisplay';
@@ -36,8 +32,6 @@ function App() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  const { colorMode, toggleColorMode } = useColorMode();
 
   // Initialize PowerSync client once on app mount
   useEffect(() => {
@@ -88,40 +82,34 @@ function App() {
   return (
     <div className="app">
       <CssBaseline />
-      <ColorModeProvider colorScheme={colorMode}>
-        <ChakraProvider>
-          <PowerSyncProvider>
-            <AuthProvider>
-              <OrderProvider>
-                <ShiftProvider>
-                  <ProductsProvider>
-                    <TenantProvider>
-                      <TenantSelector />
-                    </TenantProvider>
-                  </ProductsProvider>
-                </ShiftProvider>
-              </OrderProvider>
-              <LoyaltyProvider>
-                <ReportsProvider>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/shifts" element={<Shifts />} />
-                    <Route path="/loyalty" element={<Loyalty />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/signin" element={<SignIn />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/tenant-test" element={<TenantTest />} />
-                  </Routes>
-                </ReportsProvider>
-              </LoyaltyProvider>
-            </AuthProvider>
-          </PowerSyncProvider>
-        </ChakraProvider>
-      </ColorModeProvider>
+      <PowerSyncProvider>
+        <OrderProvider>
+          <ShiftProvider>
+            <ProductsProvider>
+              <TenantProvider>
+                <TenantSelector />
+              </TenantProvider>
+            </ProductsProvider>
+          </ShiftProvider>
+        </OrderProvider>
+        <LoyaltyProvider>
+          <ReportsProvider>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/shifts" element={<Shifts />} />
+              <Route path="/loyalty" element={<Loyalty />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/tenant-test" element={<TenantTest />} />
+            </Routes>
+          </ReportsProvider>
+        </LoyaltyProvider>
+      </PowerSyncProvider>
     </div>
   );
 }
