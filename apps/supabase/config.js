@@ -13,13 +13,13 @@
 
 const supabaseConfig = {
   // Supabase project URL (e.g., https://your-project.europe-west1.supabase.co)
-  supabaseUrl: 'https://YOUR_SUPABASE_PROJECT.supabase.co',
+  supabaseUrl: process.env.SUPABASE_URL || 'https://your-project.supabase.co',
 
   // Anon public key or service role key (choose appropriate)
-  anonKey: 'YOUR_ANON_PUBLIC_KEY',
+  anonKey: process.env.SUPABASE_ANON_KEY || 'your-anon-key',
   
   // Service role key (for server-side operations)
-  serviceRoleKey: 'YOUR_SERVICE_ROLE_KEY',
+  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-service-role-key',
   
   // Optional: Force the client to use the service role key for certain operations
   // (requires proper security considerations)
