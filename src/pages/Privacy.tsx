@@ -4,6 +4,7 @@ import { useLoyaltyContext, type LoyaltyCustomer } from '@/context/LoyaltyContex
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/utils/supabase';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 
 type ConsentType = 'loyalty_enrollment' | 'marketing' | 'data_processing' | 'terms_of_service';
 type DataType = 'customer_profile' | 'loyalty_transactions' | 'consent_history' | 'loyalty_accounts';
@@ -27,9 +28,6 @@ export const Privacy = () => {
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Consent history state
   const [consentHistory, setConsentHistory] = useState<Array<{
@@ -43,7 +41,6 @@ export const Privacy = () => {
     created_at: string;
   }>>([]);
   const [consentLoading, setConsentLoading] = useState(false);
-  const [consentError, setConsentError] = useState<string | null>(null);
   const [recordingConsent, setRecordingConsent] = useState(false);
   const [newConsentCustomerId, setNewConsentCustomerId] = useState<string | null>(null);
   const [newConsentType, setNewConsentType] = useState<ConsentType>('loyalty_enrollment');
@@ -61,7 +58,6 @@ export const Privacy = () => {
     updated_at: string;
   }>>([]);
   const [retentionLoading, setRetentionLoading] = useState(false);
-  const [retentionError, setRetentionError] = useState<string | null>(null);
   const [settingPolicy, setSettingPolicy] = useState(false);
   const [newPolicyDataType, setNewPolicyDataType] = useState<DataType>('customer_profile');
   const [newPolicyDays, setNewPolicyDays] = useState('');
@@ -73,6 +69,8 @@ export const Privacy = () => {
     days_past_retention: number;
     action: string;
   }>>([]);
+
+  const { toast } = useToast();
 
   useEffect(() => {
     loadConsentHistory();
@@ -88,7 +86,6 @@ export const Privacy = () => {
 
   const loadConsentHistory = async () => {
     setConsentLoading(true);
-    setConsentError(null);
     try {
       const { data, error } = await supabase
         .from('consent_history')
@@ -97,7 +94,7 @@ export const Privacy = () => {
       if (error) throw error;
       setConsentHistory((data || []) as any);
     } catch (err) {
-      setConsentError(err instanceof Error ? err.message : 'Failed to load consent history');
+      toast({ title: 'Failed to load consent history', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setConsentLoading(false);
     }
@@ -106,7 +103,6 @@ export const Privacy = () => {
   const handleRecordConsent = async () => {
     if (!newConsentCustomerId) return;
     setRecordingConsent(true);
-    setConsentError(null);
     try {
       const { error } = await supabase.rpc('rpc_record_consent', {
         p_user_id: userId,
@@ -117,13 +113,14 @@ export const Privacy = () => {
         p_consent_version: newConsentVersion,
       });
       if (error) throw error;
+      toast({ title: 'Consent recorded', description: 'Customer consent has been saved.', type: 'success' });
       setNewConsentCustomerId(null);
       setNewConsentType('loyalty_enrollment');
       setNewConsentGiven(true);
       setNewConsentVersion('1.0');
       await loadConsentHistory();
     } catch (err) {
-      setConsentError(err instanceof Error ? err.message : 'Failed to record consent');
+      toast({ title: 'Failed to record consent', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setRecordingConsent(false);
     }
@@ -131,7 +128,6 @@ export const Privacy = () => {
 
   const loadRetentionPolicies = async () => {
     setRetentionLoading(true);
-    setRetentionError(null);
     try {
       const { data, error } = await supabase
         .from('retention_policy')
@@ -140,7 +136,7 @@ export const Privacy = () => {
       if (error) throw error;
       setRetentionPolicies((data || []) as any);
     } catch (err) {
-      setRetentionError(err instanceof Error ? err.message : 'Failed to load retention policies');
+      toast({ title: 'Failed to load retention policies', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setRetentionLoading(false);
     }
@@ -149,7 +145,6 @@ export const Privacy = () => {
   const handleSetRetentionPolicy = async () => {
     if (!newPolicyDays || parseInt(newPolicyDays, 10) <= 0) return;
     setSettingPolicy(true);
-    setRetentionError(null);
     try {
       const { error } = await supabase.rpc('rpc_set_retention_policy', {
         p_user_id: userId,
@@ -159,11 +154,12 @@ export const Privacy = () => {
         p_auto_delete: newPolicyAutoDelete,
       });
       if (error) throw error;
+      toast({ title: 'Retention policy set', description: `${newPolicyDataType} retention updated to ${newPolicyDays} days.`, type: 'success' });
       setNewPolicyDays('');
       setNewPolicyAutoDelete(false);
       await loadRetentionPolicies();
     } catch (err) {
-      setRetentionError(err instanceof Error ? err.message : 'Failed to set retention policy');
+      toast({ title: 'Failed to set retention policy', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setSettingPolicy(false);
     }
@@ -171,7 +167,6 @@ export const Privacy = () => {
 
   const handleApplyRetention = async () => {
     setApplyingRetention(true);
-    setRetentionError(null);
     try {
       const { data, error } = await supabase.rpc('rpc_apply_retention', {
         p_user_id: userId,
@@ -179,9 +174,11 @@ export const Privacy = () => {
         p_data_type: null,
       });
       if (error) throw error;
-      setExpiredRecords((data || []) as any);
+      const expired = (data || []) as any;
+      setExpiredRecords(expired);
+      toast({ title: 'Retention applied', description: `${expired.length} record(s) past retention found.`, type: 'success' });
     } catch (err) {
-      setRetentionError(err instanceof Error ? err.message : 'Failed to apply retention');
+      toast({ title: 'Failed to apply retention', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setApplyingRetention(false);
     }
@@ -199,7 +196,7 @@ export const Privacy = () => {
           name: customer.name,
           email: customer.email,
           phone: customer.phone,
-          consent: customer.consent ?? false,
+          consent: customerConsent.length > 0,
           createdAt: customer.createdAt,
           updatedAt: customer.updatedAt,
         },
@@ -251,7 +248,7 @@ export const Privacy = () => {
     const json = JSON.stringify(exportData, null, 2);
     setExportJson(json);
     setExportReady(true);
-    setStatusMessage(null);
+    toast({ title: 'Export ready', description: `${customers.length} customer(s) included. Click Download to save.`, type: 'success' });
   };
 
   const downloadExport = () => {
@@ -265,26 +262,24 @@ export const Privacy = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setStatusMessage('Export downloaded successfully.');
+    toast({ title: 'Export downloaded', description: 'Your data export has been saved.', type: 'success' });
   };
 
   const handleDeleteConfirm = () => {
     if (!deleteCustomerId) return;
     setDeleteLoading(true);
-    setDeleteError(null);
-    setDeleteSuccess(null);
 
     try {
       const ok = disenrollCustomer(deleteCustomerId);
       if (ok) {
-        setDeleteSuccess(`Customer ${deleteCustomerId} and all associated data have been permanently deleted.`);
+        toast({ title: 'Customer deleted', description: `Customer ${deleteCustomerId} and all associated data have been permanently deleted.`, type: 'success' });
         setDeleteCustomerId(null);
         setDeleteConfirm(false);
       } else {
-        setDeleteError('Customer not found or could not be deleted.');
+        toast({ title: 'Deletion failed', description: 'Customer not found or could not be deleted.', type: 'error' });
       }
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : 'An unexpected error occurred.');
+      toast({ title: 'Deletion failed', description: error instanceof Error ? error.message : 'An unexpected error occurred.', type: 'error' });
     } finally {
       setDeleteLoading(false);
     }
@@ -293,16 +288,14 @@ export const Privacy = () => {
   const handleDeleteCancel = () => {
     setDeleteCustomerId(null);
     setDeleteConfirm(false);
-    setDeleteError(null);
-    setDeleteSuccess(null);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+  <div className="min-h-screen bg-gray-50 p-4" aria-labelledby="privacy-heading">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Privacy & Data</h1>
+          <h1 id="privacy-heading" className="text-2xl font-bold text-gray-900">Privacy & Data</h1>
             <p className="text-gray-600">
               Manage your personal data: export a copy of your records or request deletion per privacy law.
             </p>
@@ -311,12 +304,6 @@ export const Privacy = () => {
             ← Back to Home
           </Link>
         </div>
-
-        {statusMessage && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md text-blue-800 text-sm">
-            {statusMessage}
-          </div>
-        )}
 
         {/* Export section */}
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-8">
@@ -358,22 +345,12 @@ export const Privacy = () => {
             Permanently delete a customer and all associated loyalty data (points, transactions, account). This action cannot be undone.
           </p>
 
-          {deleteSuccess && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
-              {deleteSuccess}
-            </div>
-          )}
-          {deleteError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
-              {deleteError}
-            </div>
-          )}
-
           {!deleteConfirm && !deleteLoading ? (
             <>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Select customer to delete</label>
+                <label htmlFor="privacy-delete-customer" className="block text-sm font-medium mb-2">Select customer to delete</label>
                 <select
+                  id="privacy-delete-customer"
                   value={deleteCustomerId || ''}
                   onChange={(e) => setDeleteCustomerId(e.target.value || null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -401,7 +378,7 @@ export const Privacy = () => {
                 <p className="text-sm text-red-700 mb-3">
                   All loyalty data for this customer will be permanently removed and cannot be recovered.
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Button variant="secondary" onClick={handleDeleteCancel}>
                     Cancel
                   </Button>
@@ -434,16 +411,11 @@ export const Privacy = () => {
             Audit trail of customer consent given or withdrawn for loyalty program data processing.
           </p>
 
-          {consentError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
-              {consentError}
-            </div>
-          )}
-
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+              <label htmlFor="privacy-consent-customer" className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
               <select
+                id="privacy-consent-customer"
                 value={newConsentCustomerId || ''}
                 onChange={(e) => setNewConsentCustomerId(e.target.value || null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -457,8 +429,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Consent type</label>
+              <label htmlFor="privacy-consent-type" className="block text-sm font-medium text-gray-700 mb-1">Consent type</label>
               <select
+                id="privacy-consent-type"
                 value={newConsentType}
                 onChange={(e) => setNewConsentType(e.target.value as ConsentType)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -470,8 +443,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Consent given?</label>
+              <label htmlFor="privacy-consent-given" className="block text-sm font-medium text-gray-700 mb-1">Consent given?</label>
               <select
+                id="privacy-consent-given"
                 value={newConsentGiven ? 'true' : 'false'}
                 onChange={(e) => setNewConsentGiven(e.target.value === 'true')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -481,8 +455,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
+              <label htmlFor="privacy-consent-version" className="block text-sm font-medium text-gray-700 mb-1">Version</label>
               <input
+                id="privacy-consent-version"
                 value={newConsentVersion}
                 onChange={(e) => setNewConsentVersion(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -547,16 +522,11 @@ export const Privacy = () => {
             Define how long loyalty-related data is retained before deletion or review per privacy law.
           </p>
 
-          {retentionError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
-              {retentionError}
-            </div>
-          )}
-
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data type</label>
+              <label htmlFor="privacy-retention-data-type" className="block text-sm font-medium text-gray-700 mb-1">Data type</label>
               <select
+                id="privacy-retention-data-type"
                 value={newPolicyDataType}
                 onChange={(e) => setNewPolicyDataType(e.target.value as DataType)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -568,8 +538,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Retention period (days)</label>
+              <label htmlFor="privacy-retention-days" className="block text-sm font-medium text-gray-700 mb-1">Retention period (days)</label>
               <input
+                id="privacy-retention-days"
                 type="number"
                 min="1"
                 value={newPolicyDays}

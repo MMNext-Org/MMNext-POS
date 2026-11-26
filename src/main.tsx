@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './context/AuthContext'
-import { ColorModeProvider, ChakraProvider } from '@chakra-ui/react'
+import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
@@ -20,12 +20,10 @@ if ('serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ColorModeProvider>
-      <ChakraProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </ChakraProvider>
-    </ColorModeProvider>
+    <ChakraProvider value={defaultSystem}>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ChakraProvider>
   </StrictMode>,
 )

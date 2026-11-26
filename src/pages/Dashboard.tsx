@@ -1,58 +1,70 @@
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { SyncQueue } from '@/components/SyncQueue';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export const Dashboard = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <LoadingSpinner message="Loading…" size="lg" />;
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
-        <main className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h1>
-          <p className="text-gray-600">Please sign in to access the dashboard.</p>
-          <Link to="/signin" className="text-coffee-brown hover:underline">
-            Sign In
-          </Link>
-        </main>
-      </div>
-    );
+    navigate('/signin');
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
-      <main className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h1>
-        <p className="text-gray-600 mb-6">
-          Welcome, {user.name || 'User'}! This is the main dashboard for authenticated users.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8" aria-labelledby="dashboard-heading">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-end mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900" id="dashboard-heading">
+              Dashboard
+            </h1>
+            <p className="text-gray-600">
+              Welcome, {user.name || 'User'}! This is the main dashboard for authenticated users.
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="text-sm text-gray-600 hover:text-gray-900 underline"
+          >
+            ← Back to Home
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Link
             to="/orders"
-            className="bg-coffee-brown text-white px-4 py-2 rounded-md hover:bg-green-600"
+            className="block bg-white rounded-lg shadow border border-gray-200 p-6 hover:shadow-md transition-shadow"
           >
-            Orders
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Orders</h2>
+            <p className="text-sm text-gray-500">View and create orders</p>
           </Link>
           <Link
             to="/profile"
-            className="border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50"
+            className="block bg-white rounded-lg shadow border border-gray-200 p-6 hover:shadow-md transition-shadow"
           >
-            Profile
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Profile</h2>
+            <p className="text-sm text-gray-500">Manage your account</p>
           </Link>
         </div>
+
         <SyncQueue aria-label="Sync queue status" />
-        <button
-          onClick={() => user?.logout()}
-          className="bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200"
-          aria-label="Logout"
-        >
-          Logout
-        </button>
-      </main>
+
+        <div className="mt-8">
+          <button
+            onClick={() => user?.logout()}
+            className="bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200"
+            aria-label="Logout"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

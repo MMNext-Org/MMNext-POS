@@ -2,15 +2,13 @@ import { supabase } from '@/utils/supabase';
 
 async function seed() {
   // Create sample organization and branch if not exists
-  const org = await supabase
+  await supabase
     .from('organizations')
-    .upsert({ id: 'org-1', name: 'Central Café', description: 'Main location' })
-    .select();
+    .upsert({ id: 'org-1', name: 'Central Café', description: 'Main location' });
 
-  const branch = await supabase
+  await supabase
     .from('branches')
-    .upsert({ id: 'branch-1', organizationId: 'org-1', name: 'Main Street', address: '123 Main St' })
-    .select();
+    .upsert({ id: 'branch-1', organizationId: 'org-1', name: 'Main Street', address: '123 Main St' });
 
   // Insert sample products with stock
   const sampleProducts = [

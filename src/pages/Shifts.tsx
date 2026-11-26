@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { ShiftHandover } from '@/components/ShiftHandover';
 import { TipsAllocation } from '@/components/TipsAllocation';
 import { ShiftApproval } from '@/components/ShiftApproval';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 
 export const Shifts = () => {
   const {
@@ -17,9 +19,11 @@ export const Shifts = () => {
     requestClose,
     closeShift,
   } = useShiftContext();
+  const { toast } = useToast();
   const [openHandover, setOpenHandover] = useState(false);
   const [openTips, setOpenTips] = useState(false);
   const [openApproval, setOpenApproval] = useState(false);
+  const [closeConfirm, setCloseConfirm] = useState(false);
   const [staffId, setStaffId] = useState('staff-1');
   const [openingFloat, setOpeningFloat] = useState('0');
   const cashAmountRef = useRef<HTMLInputElement>(null);
@@ -27,11 +31,11 @@ export const Shifts = () => {
   const staffMember = staff.find((s) => s.id === staffId);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4" aria-labelledby="shifts-heading">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Shift Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900" id="shifts-heading">Shift Management</h1>
             <p className="text-gray-600">
               Open, close, hand over, and allocate tips for register shifts.
             </p>
@@ -48,8 +52,9 @@ export const Shifts = () => {
               No active shift. Open a register shift to begin taking cash sales.
             </p>
             <div className="space-y-4">
-              <label className="block text-sm font-medium">Staff member opening the shift</label>
+              <label htmlFor="shift-staff-select" className="block text-sm font-medium">Staff member opening the shift</label>
               <select
+                id="shift-staff-select"
                 value={staffId}
                 onChange={(e) => setStaffId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -60,22 +65,27 @@ export const Shifts = () => {
                   </option>
                 ))}
               </select>
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">Opening float ($)</label>
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
+                <div className="flex-1 relative">
+                  <label htmlFor="shift-opening-float" className="block text-sm font-medium mb-1">Opening float</label>
+                  <span className="absolute left-3 top-8 -translate-y-1/2 text-gray-500">$</span>
                   <input
+                    id="shift-opening-float"
                     value={openingFloat}
                     onChange={(e) => setOpeningFloat(e.target.value)}
                     type="number"
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
+                    className="w-full pl-8 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
                   />
                 </div>
                 <Button
                   variant="primary"
-                  onClick={() => openShift(staffId, staffMember?.name || 'Unknown', parseFloat(openingFloat) || 0)}
+                  onClick={() => {
+                    openShift(staffId, staffMember?.name || 'Unknown', parseFloat(openingFloat) || 0);
+                    toast({ title: 'Shift opened', description: `${staffMember?.name || 'Unknown'} opened a register shift.`, type: 'success' });
+                  }}
                 >
                   Open Shift
                 </Button>
@@ -107,28 +117,39 @@ export const Shifts = () => {
 
             <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
               <h2 className="text-lg font-bold mb-4">Cash Drawer</h2>
-              <div className="flex gap-3 mb-6 items-end">
-                <span className="text-lg font-medium text-gray-900">$</span>
-                <input
-                  ref={cashAmountRef}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  aria-label="Cash amount"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
-                />
-                <Button variant="primary" size="sm" onClick={() => cashIn(parseFloat(cashAmountRef.current?.value || '0') || 0)} aria-label="Cash in">
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    ref={cashAmountRef}
+                    id="cash-drawer-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Amount"
+                    aria-label="Cash drawer amount"
+                    className="flex-1 pl-8 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
+                  />
+                </div>
+                <Button variant="primary" size="sm" onClick={() => {
+                  const amount = parseFloat(cashAmountRef.current?.value || '0') || 0;
+                  cashIn(amount);
+                  toast({ title: 'Cash in', description: `Added $${amount.toFixed(2)} to the drawer.`, type: 'success' });
+                }}>
                   Cash In
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => cashOut(parseFloat(cashAmountRef.current?.value || '0') || 0)} aria-label="Cash out">
+                <Button variant="secondary" size="sm" onClick={() => {
+                  const amount = parseFloat(cashAmountRef.current?.value || '0') || 0;
+                  cashOut(amount);
+                  toast({ title: 'Cash out', description: `Removed $${amount.toFixed(2)} from the drawer.`, type: 'success' });
+                }}>
                   Cash Out
                 </Button>
-              </div>
+                </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {shift.status === 'open' && (
-                  <Button variant="danger" onClick={requestClose} className="w-full">
+                  <Button variant="danger" onClick={() => setCloseConfirm(true)} className="w-full">
                     Request Shift Close (needs manager approval)
                   </Button>
                 )}
@@ -138,7 +159,10 @@ export const Shifts = () => {
                   </Button>
                 )}
                 {shift.approvalStatus === 'approved' && shift.status === 'pending_approval' && (
-                  <Button variant="primary" onClick={() => closeShift('staff-4', 'Casey Moore')} className="w-full">
+                  <Button variant="primary" onClick={() => {
+                    closeShift('staff-4', 'Casey Moore');
+                    toast({ title: 'Shift finalized', description: 'Shift closed and finalized.', type: 'success' });
+                  }} className="w-full">
                     Finalize Close (approved)
                   </Button>
                 )}
@@ -219,6 +243,22 @@ export const Shifts = () => {
             </table>
           </div>
         )}
+
+        <ConfirmDialog
+          isOpen={closeConfirm}
+          title="Request Shift Close"
+          message="Are you sure you want to request closing this shift? A manager must approve before it can be finalized."
+          confirmLabel="Request Close"
+          cancelLabel="Cancel"
+          variant="danger"
+          loading={false}
+          onConfirm={() => {
+            requestClose();
+            toast({ title: 'Close requested', description: 'Shift close request sent for manager approval.', type: 'success' });
+            setCloseConfirm(false);
+          }}
+          onCancel={() => setCloseConfirm(false)}
+        />
       </div>
     </div>
   );

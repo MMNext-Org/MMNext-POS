@@ -1,5 +1,4 @@
-import { supabase } from '../supabaseClient';
-import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/utils/supabase';
 
 export interface StockAdjustment {
   product_id: string;
@@ -14,7 +13,6 @@ export const InventoryService = {
   async receiveGoods(
     items: { supplier_item_id: string; quantity: number }[],
     receiptId: string,
-    productVariantId: string,
     organizationId: string
   ): Promise<void> {
     // Insert goods receipt items
@@ -119,15 +117,19 @@ export const InventoryService = {
   async updateStock(
     productId: string,
     delta: number,
-    reason: string,
-    organizationId: string
+    reason: string
   ): Promise<void> {
-    // Direct stock update (assuming a products table with stock column)
+    const { data: product } = await supabase
+      .from('products')
+      .select('stock')
+      .eq('id', productId)
+      .single();
+
+    const currentStock = product?.stock ?? 0;
     const { error: updateError } = await supabase
       .from('products')
-      .update({ stock: delta > 0 ? 'stock + ?' : 'stock - ?' })
-      .eq('id', productId)
-      .params(delta);
+      .update({ stock: currentStock + delta })
+      .eq('id', productId);
 
     if (updateError) throw updateError;
 

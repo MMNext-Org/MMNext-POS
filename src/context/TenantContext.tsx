@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { Organization, Branch } from '../types';
+import type { Organization, Branch } from '../types';
 
 // Mock data for organizations and branches for PoC
 const mockOrganizations: Organization[] = [
@@ -12,14 +12,6 @@ const mockBranches: Branch[] = [
   { id: 'branch-2', organizationId: 'org-1', name: 'Downtown', address: '456 Downtown', branch_code: 'BR-002' },
   { id: 'branch-3', organizationId: 'org-2', name: 'North Hill', address: '789 Hill', branch_code: 'BR-003' },
 ];
-
-// Extend AuthContext type to include tenant context
-type AuthContextType = {
-  user: any;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  loading: boolean;
-};
 
 type TenantContextType = {
   selectedOrganization: Organization | null;

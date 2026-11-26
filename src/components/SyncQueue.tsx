@@ -1,20 +1,20 @@
 import { useOrderContext } from '@/context/OrderContext';
-import { QueueItem } from '@/context/OrderContext';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export const SyncQueue = () => {
   const { queueItems, error } = useOrderContext();
 
   if (queueItems.length === 0 && !error) {
-    return <div>Sync queue is empty.</div>;
+    return <EmptyState icon="📭" title="Sync queue is empty" />;
   }
 
   return (
-    <div style={{ border: '1px solid #ccc', padding: '1rem', margin: '1rem 0' }}>
-      <h3>Sync Queue</h3>
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+    <div className="border border-gray-300 p-4 m-4">
+      <h3 className="font-semibold text-gray-900 mb-2">Sync Queue</h3>
+      {error && <p className="text-red-600 text-sm mb-3">Error: {error}</p>}
       <ul>
         {queueItems.map((item) => (
-          <li key={item.id} style={{ marginBottom: '0.5rem' }}>
+          <li key={item.id} className="mb-2">
             <strong>{item.order.id}</strong> - Status: {item.status} &nbsp;|&nbsp;
             <em>{new Date(item.createdAt).toLocaleString()}</em>
           </li>

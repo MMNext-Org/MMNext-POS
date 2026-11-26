@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useSupabaseClient } from '@/utils/supabase';
-import { Product } from '@/types/product';
+import { supabase } from '@/utils/supabase';
+import type { Product } from '@/types/product';
 
 interface ProductsContextType {
   products: Product[];
@@ -20,7 +20,6 @@ export const useProducts = () => {
 };
 
 export const ProductsProvider = ({ children }: { children: React.ReactNode }) => {
-  const supabase = useSupabaseClient();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +34,12 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data || []).map((p: any) => ({
+        ...p,
+        provisional_quantity: p.stock ?? 0,
+        organizationId: p.organization_id ?? '',
+        branchId: p.branch_id ?? '',
+      })));
     } catch (err) {
       setError(err.message || 'Failed to fetch products');
     } finally {
@@ -52,12 +56,11 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     fetchProducts();
   }, [fetchProducts]);
 
-  return {
-    products,
-    loading,
-    error,
-    refresh: refreshProducts,
-  };
+  return (
+    <ProductsContext.Provider value={{ products, loading, error, refresh: refreshProducts }}>
+      {children}
+    </ProductsContext.Provider>
+  );
 };
 
 export default ProductsProvider;

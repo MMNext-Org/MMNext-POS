@@ -1,27 +1,32 @@
-import { SVGProps } from 'react';
+import type { SVGProps } from 'react';
 
 interface LoadingSpinnerProps extends SVGProps<SVGSVGElement> {
-  size?: number;
-  color?: string;
+  size?: 'sm' | 'md' | 'lg';
+  message?: string;
 }
 
-export const LoadingSpinner = ({ size = 24, color = 'currentColor', ...props }: LoadingSpinnerProps) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={color}
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="animate-spin"
-    {...props}
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z" />
-  </svg>
+const sizeClasses: Record<string, string> = {
+  sm: 'w-4 h-4',
+  md: 'w-6 h-6',
+  lg: 'w-8 h-8',
+};
+
+export const LoadingSpinner = ({ size = 'md', message, ...props }: LoadingSpinnerProps) => (
+  <div className="flex flex-col items-center justify-center gap-2 animate-pulse">
+    <svg
+      {...props}
+      className={`animate-spin rounded-full border-2 border-t-transparent text-gray-600 ${sizeClasses[size]}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-label="Loading"
+      role="status"
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    </svg>
+    {message && <span className="text-sm text-gray-600">{message}</span>}
+  </div>
 );
 
 LoadingSpinner.displayName = 'LoadingSpinner';

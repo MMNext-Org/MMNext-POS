@@ -1,4 +1,6 @@
 import { createContext, useContext } from 'react';
+import { useTenant } from './TenantContext';
+import { getDeviceId } from '@/utils/deviceId';
 
 type PowerSyncConfig = {
   deviceId: string;
@@ -18,7 +20,7 @@ export const usePowerSyncConfig = () => {
 };
 
 export const PowerSyncProvider = ({ children }: { children: React.ReactNode }) => {
-  const { selectedOrganization, selectedBranch, setSelectedOrganization, setSelectedBranch } = useTenant();
+  const { selectedOrganization, selectedBranch } = useTenant();
   const deviceId = getDeviceId();
 
   const config: PowerSyncConfig = {

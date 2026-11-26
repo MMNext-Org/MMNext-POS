@@ -1,9 +1,7 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect } from 'react';
 import { usePowerSyncStatus } from '../context/PowerSyncStatusContext';
 import { useTenant } from '../context/TenantContext';
-import { OrderProvider } from '@/context/OrderContext';
-import { useOrders } from '../context/OrderContext';
-import { ReceiptView } from './ReceiptView';
+import { useOrderContext } from '@/context/OrderContext';
 
 export // Status-to-class mapping hoisted out of the render path so it is not
 // recreated on every render.
@@ -62,15 +60,13 @@ const OrderCard = memo(({ order }: OrderCardProps) => {
 
 export const KitchenDisplay = () => {
   const { status } = usePowerSyncStatus();
-  const { selectedOrganization, selectedBranch } = useTenant();
-  const { orders } = useOrders();
+  const { selectedBranch } = useTenant();
+  const { orders } = useOrderContext();
 
   // Filter orders for this branch/kitchen
   const filteredOrders = orders.filter((order) =>
     order.branchId === selectedBranch?.id
   );
-
-  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     // This would ideally listen to real-time order updates
@@ -83,9 +79,9 @@ export const KitchenDisplay = () => {
         <h1>Kitchen Display</h1>
         <div className="connection-status" role="status" aria-live="polite">
           <span className={`status-${status}`}>
-            {status === 'connected' ? 'Ready' : 
-             status === 'disconnected' ? 'Offline' : 
-             status === 'error' ? 'Error' : 
+            {status === 'connected' ? 'Ready' :
+             status === 'disconnected' ? 'Offline' :
+             status === 'error' ? 'Error' :
              status === 'syncing' ? 'Syncing' : 'Connecting'}
           </span>
         </div>

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button';
 
 interface ErrorDisplayProps {
+  title?: string;
   message: string;
   onRetry?: () => void;
   onDismiss?: () => void;
@@ -9,6 +10,7 @@ interface ErrorDisplayProps {
 }
 
 export const ErrorDisplay = ({
+  title = 'Error',
   message,
   onRetry,
   onDismiss,
@@ -23,6 +25,7 @@ export const ErrorDisplay = ({
     <div className="flex items-start gap-3">
       <span aria-hidden="true">⚠️</span>
       <div className="flex-1">
+        {title && <p className="font-medium">{title}</p>}
         <p className="font-medium">{message}</p>
         {onRetry || onDismiss ? (
           <div className="mt-3 flex gap-2">

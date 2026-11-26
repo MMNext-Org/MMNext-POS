@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useOrderContext } from '@/context/OrderContext';
@@ -6,6 +6,7 @@ import { useShiftContext } from '@/context/ShiftContext';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { useReports } from '@/context/ReportsContext';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 type ReportType = 'orders' | 'shifts' | 'loyalty' | 'sales';
@@ -38,6 +39,7 @@ export const Reports = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [exportConfirm, setExportConfirm] = useState(false);
   const ITEMS_PER_PAGE = 25;
 
   // Memoize the derived report data so it is only recomputed when the report
@@ -75,18 +77,11 @@ export const Reports = () => {
     return source;
   }, [reportType, startDate, endDate, orders, shifts, customers]);
 
-  const data = reportData;
-
-  // Reset to page 1 when report data changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [data]);
-
-  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(reportData.length / ITEMS_PER_PAGE));
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return data.slice(start, start + ITEMS_PER_PAGE);
-  }, [data, currentPage]);
+    return reportData.slice(start, start + ITEMS_PER_PAGE);
+  }, [reportData, currentPage]);
 
   const handleExport = () => {
     exportReport(
@@ -97,14 +92,15 @@ export const Reports = () => {
         endDate: endDate || undefined,
         filename: `${reportType}-report`,
       },
-      data,
+      reportData,
     );
+    setExportConfirm(false);
   };
 
   // Get column headers from first data row
-  const headers: string[] = data.length > 0 ? Object.keys(data[0] as object) : [];
+  const headers: string[] = reportData.length > 0 ? Object.keys(reportData[0] as object) : [];
 
-  const totalCount = data.length;
+  const totalCount = reportData.length;
 
   if (!canView) {
     return (
@@ -129,11 +125,11 @@ export const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+  <div className="min-h-screen bg-gray-50 p-4" aria-labelledby="reports-heading">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Reports & Export</h1>
+          <h1 id="reports-heading" className="text-2xl font-bold text-gray-900">Reports & Export</h1>
             <p className="text-gray-600">
               Generate and export reports for your organization. Role:{' '}
               <span className="font-medium text-gray-800">{userRole}</span>
@@ -150,6 +146,7 @@ export const Reports = () => {
             {state.error}
             <button
               onClick={clearError}
+              aria-label="Dismiss error"
               className="ml-auto text-red-600 hover:text-red-800 underline text-sm"
             >
               Dismiss
@@ -169,10 +166,11 @@ export const Reports = () => {
           <h2 className="text-lg font-bold mb-4">Report Options</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-report-type" className="block text-sm font-medium text-gray-700 mb-2">
                 Report Type
               </label>
               <select
+                id="reports-report-type"
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value as ReportType)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 bg-white"
@@ -185,10 +183,11 @@ export const Reports = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-format" className="block text-sm font-medium text-gray-700 mb-2">
                 Format
               </label>
               <select
+                id="reports-format"
                 value={format}
                 onChange={(e) => setFormat(e.target.value as ReportFormat)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 bg-white"
@@ -201,10 +200,11 @@ export const Reports = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-start-date" className="block text-sm font-medium text-gray-700 mb-2">
                 Start Date
               </label>
               <input
+                id="reports-start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -212,10 +212,11 @@ export const Reports = () => {
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-end-date" className="block text-sm font-medium text-gray-700 mb-2">
                 End Date
               </label>
               <input
+                id="reports-end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -223,8 +224,8 @@ export const Reports = () => {
               />
             </div>
           </div>
-          <div className="mt-4 flex gap-3">
-            <Button variant="primary" onClick={handleExport} disabled={state.loading || data.length === 0}>
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            <Button variant="primary" onClick={() => setExportConfirm(true)} disabled={state.loading || reportData.length === 0}>
               {state.loading ? 'Exporting...' : `Export ${format.toUpperCase()}`}
             </Button>
             <Button
@@ -234,7 +235,7 @@ export const Reports = () => {
                 setStartDate('');
                 setEndDate('');
               }}
-              disabled={data.length === 0}
+              disabled={reportData.length === 0}
             >
               Clear
             </Button>
@@ -247,7 +248,7 @@ export const Reports = () => {
         {/* Data Preview */}
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
           <h2 className="text-lg font-bold mb-4">Data Preview</h2>
-          {data.length === 0 ? (
+          {reportData.length === 0 ? (
             <EmptyState
               icon="📊"
               title="No data available"
@@ -259,7 +260,7 @@ export const Reports = () => {
                 <thead className="bg-gray-100">
                   <tr>
                     {headers.map((h) => (
-                      <th key={h} className="px-4 py-2 font-semibold text-gray-600">
+                      <th key={h} scope="col" className="px-4 py-2 font-semibold text-gray-600">
                         {h}
                       </th>
                     ))}
@@ -277,10 +278,10 @@ export const Reports = () => {
                   ))}
                 </tbody>
               </table>
-              {data.length > ITEMS_PER_PAGE && (
+              {reportData.length > ITEMS_PER_PAGE && (
                 <div className="mt-4 flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    Page {currentPage} of {totalPages} ({data.length} records)
+                    Page {currentPage} of {totalPages} ({reportData.length} records)
                   </p>
                   <div className="flex gap-1">
                     <Button
@@ -308,6 +309,18 @@ export const Reports = () => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={exportConfirm}
+        title="Export Report"
+        message={`Export ${totalCount} record${totalCount !== 1 ? 's' : ''} as ${format.toUpperCase()}? This cannot be undone.`}
+        confirmLabel="Export"
+        cancelLabel="Cancel"
+        variant="secondary"
+        loading={state.loading}
+        onConfirm={handleExport}
+        onCancel={() => setExportConfirm(false)}
+      />
     </div>
   );
 };

@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/utils/supabase';
 
 type AuthContextType = {
   user: any | null;
   loading: boolean;
   registrationLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
   register: (email: string, password: string, name?: string) => Promise<void>;
   setAppContext: (organizationId: string, branchId: string, roleId: string) => Promise<void>;
 };
@@ -20,11 +22,6 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const supabase = createClient(
-    process.env.REACT_APP_SUPABASE_URL || 'http://localhost:54321',
-    process.env.REACT_APP_SUPABASE_ANON_KEY || 'public-anon-key'
-  );
-  
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [registrationLoading, setRegistrationLoading] = useState<boolean>(false);
@@ -38,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     };
     
     // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -73,10 +70,9 @@ export const AuthProvider = ({ children }) => {
                 const organizationId = app_metadata?.organization_id;
                 const branchId = app_metadata?.branch_id;
                 const roleId = app_metadata?.role_id;
-                const roleName = app_metadata?.role_name;
           
-                if (organizationId && branchId && roleId && roleName) {
-                  await setAppContext(organizationId, branchId, roleId, roleName);
+                if (organizationId && branchId && roleId) {
+                  await setAppContext(organizationId, branchId, roleId);
                 }
               } catch (contextError) {
                 console.error('Error setting app context:', contextError);
@@ -119,10 +115,9 @@ export const AuthProvider = ({ children }) => {
           const organizationId = app_metadata?.organization_id;
           const branchId = app_metadata?.branch_id;
           const roleId = app_metadata?.role_id;
-                const roleName = app_metadata?.role_name;
           
-                if (organizationId && branchId && roleId && roleName) {
-                  await setAppContext(organizationId, branchId, roleId, roleName);
+                if (organizationId && branchId && roleId) {
+                  await setAppContext(organizationId, branchId, roleId);
           }
               } catch (contextError) {
                 console.error('Error setting app context:', contextError);
@@ -136,8 +131,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const setAppContext = async (organizationId: string, branchId: string, roleId: string, roleName: string) => {
-    const { data, error } = await supabase.rpc('set_app_context', {
+  const setAppContext = async (organizationId: string, branchId: string, roleId: string) => {
+    const { error } = await supabase.rpc('set_app_context', {
       organization_id: organizationId,
       branch_id: branchId,
       role_id: roleId,
@@ -153,6 +148,8 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     registrationLoading,
+    login,
+    logout,
     register,
     setAppContext,
   };

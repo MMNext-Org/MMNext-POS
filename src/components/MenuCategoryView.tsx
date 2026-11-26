@@ -1,4 +1,5 @@
 import React from 'react';
+import { useToast } from '@/components/ui/Toast';
 
 // Define types
 interface Product {
@@ -41,37 +42,27 @@ const categories: Category[] = [
 ];
 
 const MenuCategoryView: React.FC = () => {
+  const { toast } = useToast();
+
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Menu Categories</h1>
+    <div className="p-4 font-sans">
+      <h1 className="text-xl font-bold mb-4">Menu Categories</h1>
       {categories.map((category) => (
-        <div key={category.name} style={{ marginBottom: '30px' }}>
-          <h2>{category.name}</h2>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+        <div key={category.name} className="mb-6">
+          <h2 className="text-lg font-semibold mb-2">{category.name}</h2>
+          <ul className="list-none p-0 space-y-2">
             {category.products.map((product) => (
               <li
                 key={product.id}
-                style={{
-                  border: '1px solid #ccc',
-                  margin: '10px 0',
-                  padding: '10px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
+                className="border border-gray-200 p-4 rounded flex justify-between items-center bg-white"
               >
-                <span>{product.name}</span>
-                <span>${product.price.toFixed(2)}</span>
+                <div>
+                  <span className="font-medium">{product.name}</span>
+                  <span className="ml-2 text-gray-500">${product.price.toFixed(2)}</span>
+                </div>
                 <button
-                  onClick={() => alert(`Add ${product.name} to order`)}
-                  style={{
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    padding: '5px 10px',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                  }}
+                  onClick={() => toast({ title: 'Added to order', description: product.name, type: 'success' })}
+                  className="bg-coffee-brown text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
                 >
                   Add
                 </button>

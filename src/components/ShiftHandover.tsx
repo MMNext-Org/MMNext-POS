@@ -22,7 +22,8 @@ export const ShiftHandover: React.FC<ShiftHandoverProps> = ({ onClose }) => {
       setError('Select a colleague to hand the shift to.');
       return;
     }
-    requestHandover(toUserId);
+    const target = eligible.find((s) => s.id === toUserId);
+    requestHandover(toUserId, target ? target.name : '');
     onClose();
   };
 
