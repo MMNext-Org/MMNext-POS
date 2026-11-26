@@ -31,7 +31,7 @@ export const Shifts = () => {
   const staffMember = staff.find((s) => s.id === staffId);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4" aria-label="Shift Management">
+    <div className="min-h-screen bg-gray-50 p-4" aria-labelledby="shifts-heading">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-end mb-6">
           <div>

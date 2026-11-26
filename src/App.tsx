@@ -7,7 +7,6 @@ import Orders from './pages/Orders';
 import { Profile } from './pages/Profile';
 import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
-import { TenantTest } from './pages/TenantTest';
 import { Shifts } from './pages/Shifts';
 import { Loyalty } from './pages/Loyalty';
 import { Privacy } from './pages/Privacy';
@@ -92,7 +91,6 @@ function App() {
               <Route path="/reports" element={<Reports />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
-              <Route path="/tenant-test" element={<TenantTest />} />
             </Routes>
             </main>
           </ReportsProvider>

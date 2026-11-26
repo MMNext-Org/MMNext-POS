@@ -65,8 +65,8 @@ export default function Orders() {
   };
 
   return (
-    <section className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-coffee-brown">Orders</h1>
+    <section className="max-w-4xl mx-auto p-4 sm:p-6" aria-labelledby="orders-heading">
+      <h1 id="orders-heading" className="text-2xl font-bold mb-4 text-coffee-brown">Orders</h1>
 
       <div className="space-y-6">
         {/* Order Item Input Section */}
