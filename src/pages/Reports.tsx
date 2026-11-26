@@ -41,6 +41,8 @@ export const Reports = () => {
 
   const [data, setData] = useState<unknown[]>([]);
   const [exportConfirm, setExportConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
 
   // Compute data for the selected report type and date filters (derived during render)
   const reportData: unknown[] = (() => {
@@ -78,7 +80,12 @@ export const Reports = () => {
 
   useEffect(() => {
     setData(reportData);
+    setCurrentPage(1);
   }, [reportData]);
+
+  // Paginated slice of data
+  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE) || 1;
+  const paginatedData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleExport = () => {
     exportReport(
@@ -256,7 +263,7 @@ export const Reports = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {data.slice(0, 50).map((item, idx) => (
+                  {paginatedData.map((item, idx) => (
                     <tr key={idx}>
                       {headers.map((h) => (
                         <td key={h} className="px-4 py-3">
@@ -265,15 +272,39 @@ export const Reports = () => {
                       ))}
                     </tr>
                   ))}
-                  {data.length > 50 && (
+                  {data.length > ITEMS_PER_PAGE && (
                     <tr>
                       <td colSpan={headers.length} className="px-4 py-3 text-center text-gray-500 text-sm">
-                        Showing first 50 of {data.length} records
+                        Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, data.length)} of {data.length} records
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {data.length > ITEMS_PER_PAGE && (
+            <div className="mt-4 flex justify-between items-center">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                ← Previous
+              </Button>
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next →
+              </Button>
             </div>
           )}
         </div>

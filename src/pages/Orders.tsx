@@ -4,6 +4,7 @@ import { useProducts } from '@/context/ProductsContext';
 import { v4 as uuidv4 } from 'uuid';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 
 export default function Orders() {
   const { addOrder } = useOrderContext();
@@ -12,7 +13,8 @@ export default function Orders() {
   const [quantity, setQuantity] = useState<number>(1);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const { toast } = useToast();
 
   // Load products for order line item selection
   useEffect(() => {
@@ -21,12 +23,11 @@ export default function Orders() {
 
   const handleGenerateOrder = async () => {
     if (!selectedProductId || quantity <= 0) {
-      setError('Please select a product and enter a valid quantity.');
+      toast({ title: 'Invalid order', description: 'Please select a product and enter a valid quantity.', type: 'error' });
       return;
     }
 
     setIsGenerating(true);
-    setError(null);
 
     try {
       const selectedProduct = products.find(p => p.id === selectedProductId);
@@ -54,9 +55,10 @@ export default function Orders() {
       setOrderItems([...orderItems, orderItem]);
       setSelectedProductId(null);
       setQuantity(1);
+      toast({ title: 'Order created', description: `Order for ${selectedProduct.name} × ${quantity} added.`, type: 'success' });
     } catch (err) {
       console.error('Error generating order:', err);
-      setError('Failed to generate order.');
+      toast({ title: 'Failed to generate order', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setIsGenerating(false);
     }
@@ -77,7 +79,6 @@ export default function Orders() {
             className="w-full px-3 py-2 border rounded text-gray-700 focus:outline-none focus:ring-2 focus:ring-coffee-brown"
             value={selectedProductId}
             onChange={(e) => setSelectedProductId(e.target.value)}
-            aria-describedby={error ? 'product-error' : undefined}
           >
             <option value="" disabled>
               Select a product
@@ -88,11 +89,6 @@ export default function Orders() {
                 </option>
               ))}
           </select>
-          {error && (
-            <p id="product-error" className="text-red-500 text-sm mt-1" role="alert">
-              {error}
-            </p>
-          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 items-center">

@@ -1,0 +1,169 @@
+npm notice run pos@0.0.0 build
+npm notice run tsc -b && vite build
+src/App.tsx(1,31): error TS6133: 'useRef' is declared but its value is never read.
+src/App.tsx(5,1): error TS6133: 'Navigation' is declared but its value is never read.
+src/App.tsx(8,10): error TS2614: Module '"./pages/Orders"' has no exported member 'Orders'. Did you mean to use 'import Orders from "./pages/Orders"' instead?
+src/App.tsx(19,1): error TS6133: 'InventoryProvider' is declared but its value is never read.
+src/App.tsx(20,10): error TS2305: Module '"@chakra-ui/react"' has no exported member 'CssBaseline'.
+src/App.tsx(21,1): error TS6133: 'PrivateRoute' is declared but its value is never read.
+src/App.tsx(21,10): error TS2614: Module '"./context/PrivateRoute"' has no exported member 'PrivateRoute'. Did you mean to use 'import PrivateRoute from "./context/PrivateRoute"' instead?
+src/App.tsx(22,1): error TS6133: 'KitchenDisplay' is declared but its value is never read.
+src/App.tsx(33,9): error TS6133: 'navigate' is declared but its value is never read.
+src/App.tsx(34,10): error TS6133: 'isAuthenticated' is declared but its value is never read.
+src/App.tsx(67,5): error TS2304: Cannot find name 'deviceIdRef'.
+src/App.tsx(88,14): error TS2786: 'ProductsProvider' cannot be used as a JSX component.
+  Its type '({ children }: { children: React.ReactNode; }) => { products: Product[]; loading: boolean; error: string; refresh: () => void; }' is not a valid JSX element type.
+    Type '({ children }: { children: React.ReactNode; }) => { products: Product[]; loading: boolean; error: string; refresh: () => void; }' is not assignable to type '(props: any) => ReactNode | Promise<ReactNode>'.
+      Type '{ products: Product[]; loading: boolean; error: string; refresh: () => void; }' is not assignable to type 'ReactNode | Promise<ReactNode>'.
+src/components/OrderCreationWithSummary.tsx(99,10): error TS2304: Cannot find name 'paymentMethod'.
+src/components/OrderCreationWithSummary.tsx(104,9): error TS2304: Cannot find name 'paymentMethod'.
+src/components/OrderCreationWithSummary.tsx(112,7): error TS2304: Cannot find name 'setPaymentStatus'.
+src/components/OrderCreationWithSummary.tsx(114,16): error TS2304: Cannot find name 'paymentMethod'.
+src/components/OrderCreationWithSummary.tsx(116,12): error TS2304: Cannot find name 'cardNumber'.
+src/components/OrderCreationWithSummary.tsx(120,30): error TS2304: Cannot find name 'cardNumber'.
+src/components/OrderCreationWithSummary.tsx(125,7): error TS2304: Cannot find name 'simulateProviderApi'.
+src/components/OrderCreationWithSummary.tsx(125,27): error TS2304: Cannot find name 'paymentMethod'.
+src/components/OrderCreationWithSummary.tsx(126,16): error TS2304: Cannot find name 'paymentMethod'.
+src/components/OrderCreationWithSummary.tsx(128,7): error TS2304: Cannot find name 'simulateProviderApi'.
+src/components/OrderCreationWithSummary.tsx(128,27): error TS2304: Cannot find name 'paymentMethod'.
+src/components/OrderCreationWithSummary.tsx(217,9): error TS2322: Type '{ selectedProductId: string; quantity: number; selectedProduct: Product; }' is not assignable to type 'IntrinsicAttributes & OrderSummaryProps'.
+  Property 'selectedProductId' does not exist on type 'IntrinsicAttributes & OrderSummaryProps'. Did you mean 'selectedProduct'?
+src/components/OrderCreationWithSummary.tsx(227,85): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+src/components/ShiftHandover.tsx(25,5): error TS2554: Expected 2 arguments, but got 1.
+src/components/SyncQueue.tsx(2,1): error TS6133: 'QueueItem' is declared but its value is never read.
+src/components/SyncQueue.tsx(2,10): error TS2614: Module '"@/context/OrderContext"' has no exported member 'QueueItem'. Did you mean to use 'import QueueItem from "@/context/OrderContext"' instead?
+src/components/SyncQueue.tsx(5,11): error TS2339: Property 'queueItems' does not exist on type 'OrderContextType'.
+src/components/SyncQueue.tsx(5,23): error TS2339: Property 'error' does not exist on type 'OrderContextType'.
+src/components/TenantSelector.tsx(4,1): error TS6192: All imports in import declaration are unused.
+src/components/TenantSelector.tsx(4,10): error TS1484: 'Organization' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/TenantSelector.tsx(4,24): error TS1484: 'Branch' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/TenantSelector.tsx(9,5): error TS6133: 'selectedBranch' is declared but its value is never read.
+src/components/TenantSelector.tsx(31,15): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement>'.
+  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement>'.
+src/components/TenantSelector.tsx(32,10): error TS2604: JSX element type 'Select' does not have any construct or call signatures.
+src/components/TenantSelector.tsx(32,10): error TS2786: 'Select' cannot be used as a JSX component.
+  Its type 'typeof import("D:/New/POS/node_modules/@chakra-ui/react/dist/types/components/select/namespace")' is not a valid JSX element type.
+src/components/TenantSelector.tsx(39,34): error TS2322: Type 'Organization' is not assignable to type 'string | number | readonly string[]'.
+src/components/TenantSelector.tsx(45,10): error TS2604: JSX element type 'Select' does not have any construct or call signatures.
+src/components/TenantSelector.tsx(45,10): error TS2786: 'Select' cannot be used as a JSX component.
+  Its type 'typeof import("D:/New/POS/node_modules/@chakra-ui/react/dist/types/components/select/namespace")' is not a valid JSX element type.
+src/components/TenantSelector.tsx(56,43): error TS2322: Type 'Branch' is not assignable to type 'string | number | readonly string[]'.
+src/components/TenantSelector.tsx(62,41): error TS2322: Type 'Branch' is not assignable to type 'string | number | readonly string[]'.
+src/components/TipsAllocation.tsx(93,21): error TS6133: 'user' is declared but its value is never read.
+src/context/AuthContext.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/context/AuthContext.tsx(41,73): error TS6133: 'event' is declared but its value is never read.
+src/context/AuthContext.tsx(55,9): error TS6133: 'login' is declared but its value is never read.
+src/context/AuthContext.tsx(91,9): error TS6133: 'logout' is declared but its value is never read.
+src/context/AuthContext.tsx(139,90): error TS6133: 'roleName' is declared but its value is never read.
+src/context/AuthContext.tsx(140,13): error TS6133: 'data' is declared but its value is never read.
+src/context/AuthContext.tsx(161,27): error TS2322: Type '{ user: any; loading: boolean; registrationLoading: boolean; register: (email: string, password: string, name?: string) => Promise<void>; setAppContext: (organizationId: string, branchId: string, roleId: string, roleName: string) => Promise<...>; }' is not assignable to type 'AuthContextType'.
+  Types of property 'setAppContext' are incompatible.
+    Type '(organizationId: string, branchId: string, roleId: string, roleName: string) => Promise<void>' is not assignable to type '(organizationId: string, branchId: string, roleId: string) => Promise<void>'.
+      Target signature provides too few arguments. Expected 4 or more, but got 3.
+src/context/InventoryContext.tsx(2,10): error TS2305: Module '"@/utils/supabase"' has no exported member 'useSupabaseClient'.
+src/context/InventoryContext.tsx(3,10): error TS1484: 'Product' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/context/InventoryContext.tsx(23,35): error TS6133: 'children' is declared but its value is never read.
+src/context/InventoryContext.tsx(28,10): error TS6133: 'offlineQueue' is declared but its value is never read.
+src/context/InventoryContext.tsx(29,24): error TS6133: 'setOnlineStatus' is declared but its value is never read.
+src/context/InventoryContext.tsx(144,21): error TS2339: Property 'productId' does not exist on type '{ delta: number; reason: string; timestamp: string; }'.
+src/context/InventoryContext.tsx(144,39): error TS6133: 'reason' is declared but its value is never read.
+src/context/InventoryContext.tsx(144,47): error TS6133: 'timestamp' is declared but its value is never read.
+src/context/OrderContext.tsx(3,10): error TS1484: 'Order' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/context/OrderContext.tsx(4,10): error TS2305: Module '"@/utils/powersyncClient"' has no exported member 'powersyncClient'.
+src/context/OrderContext.tsx(5,10): error TS2614: Module '"@/context/InventoryContext"' has no exported member 'updateStock'. Did you mean to use 'import updateStock from "@/context/InventoryContext"' instead?
+src/context/OrderContext.tsx(7,1): error TS6133: 'Database' is declared but its value is never read.
+src/context/OrderContext.tsx(7,10): error TS2305: Module '"@powersync/node"' has no exported member 'Database'.
+src/context/OrderContext.tsx(27,10): error TS6133: 'queueItems' is declared but its value is never read.
+src/context/OrderContext.tsx(28,10): error TS6133: 'error' is declared but its value is never read.
+src/context/OrderContext.tsx(66,25): error TS2345: Argument of type '(prev: QueueItem[]) => (QueueItem | { id: string; order: { id: string; productId: string; quantity: number; unitPrice: number; created_at: string; }; status: "error"; createdAt: Date; })[]' is not assignable to parameter of type 'SetStateAction<QueueItem[]>'.
+  Type '(prev: QueueItem[]) => (QueueItem | { id: string; order: { id: string; productId: string; quantity: number; unitPrice: number; created_at: string; }; status: "error"; createdAt: Date; })[]' is not assignable to type '(prevState: QueueItem[]) => QueueItem[]'.
+    Type '(QueueItem | { id: string; order: { id: string; productId: string; quantity: number; unitPrice: number; created_at: string; }; status: "error"; createdAt: Date; })[]' is not assignable to type 'QueueItem[]'.
+      Type 'QueueItem | { id: string; order: { id: string; productId: string; quantity: number; unitPrice: number; created_at: string; }; status: "error"; createdAt: Date; }' is not assignable to type 'QueueItem'.
+        Type '{ id: string; order: { id: string; productId: string; quantity: number; unitPrice: number; created_at: string; }; status: "error"; createdAt: Date; }' is not assignable to type 'QueueItem'.
+          Types of property 'order' are incompatible.
+            Type '{ id: string; productId: string; quantity: number; unitPrice: number; created_at: string; }' is missing the following properties from type 'Order': organizationId, branchId, status, total, items
+src/context/OrderContext.tsx(148,41): error TS2339: Property 'product_variant_id' does not exist on type 'OrderItem'.
+src/context/PowerSyncContext.tsx(21,49): error TS6133: 'setSelectedOrganization' is declared but its value is never read.
+src/context/PowerSyncContext.tsx(21,74): error TS6133: 'setSelectedBranch' is declared but its value is never read.
+src/context/PowerSyncContext.tsx(21,96): error TS2304: Cannot find name 'useTenant'.
+src/context/PowerSyncContext.tsx(22,20): error TS2552: Cannot find name 'getDeviceId'. Did you mean 'deviceId'?
+src/context/PowerSyncStatusContext.tsx(60,7): error TS2322: Type 'PowerSyncStatus' is not assignable to type '"error" | "disconnected" | "connecting" | "connected" | "syncing"'.
+src/context/PrivateRoute.tsx(1,10): error TS1484: 'ReactElement' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/context/PrivateRoute.tsx(3,6): error TS6196: 'AuthState' is declared but never used.
+src/context/ProductsContext.tsx(2,10): error TS2305: Module '"@/utils/supabase"' has no exported member 'useSupabaseClient'.
+src/context/ProductsContext.tsx(3,10): error TS1484: 'Product' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/context/ProductsContext.tsx(22,34): error TS6133: 'children' is declared but its value is never read.
+src/context/recipeService.ts(1,1): error TS6133: 'createClient' is declared but its value is never read.
+src/context/recipeService.ts(2,10): error TS1484: 'IngredientInfo' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/context/recipeService.ts(14,56): error TS2304: Cannot find name 'supabase'.
+src/context/recipeService.ts(29,33): error TS6133: 'variantRecipeError' is declared but its value is never read.
+src/context/recipeService.ts(29,62): error TS2304: Cannot find name 'supabase'.
+src/context/recipeService.ts(39,72): error TS2304: Cannot find name 'supabase'.
+src/context/recipeService.ts(62,58): error TS2304: Cannot find name 'supabase'.
+src/context/recipeService.ts(75,66): error TS2304: Cannot find name 'supabase'.
+src/context/recipeService.ts(110,51): error TS6133: 'unit' is declared but its value is never read.
+src/context/ShiftContext.tsx(286,5): error TS18004: No value exists in scope for the shorthand property 'loading'. Either declare one or provide an initializer.
+src/context/TenantContext.tsx(2,10): error TS1484: 'Organization' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/context/TenantContext.tsx(2,24): error TS1484: 'Branch' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/context/TenantContext.tsx(17,6): error TS6196: 'AuthContextType' is declared but never used.
+src/ingredients-api.ts(3,20): error TS2307: Cannot find module '../db' or its corresponding type declarations.
+src/ingredients-api.ts(4,10): error TS6133: 'Ingredient' is declared but its value is never read.
+src/ingredients-api.ts(4,34): error TS2307: Cannot find module '../models/Ingredient' or its corresponding type declarations.
+src/ingredients-api.ts(5,31): error TS2307: Cannot find module '../services/unit-conversion' or its corresponding type declarations.
+src/ingredients-api.ts(24,35): error TS6133: 'req' is declared but its value is never read.
+src/main.tsx(6,10): error TS2305: Module '"@chakra-ui/react"' has no exported member 'ColorModeProvider'.
+src/main.tsx(24,8): error TS2741: Property 'value' is missing in type '{ children: Element; }' but required in type 'ChakraProviderProps'.
+src/pages/Inventory.tsx(1,20): error TS6133: 'useEffect' is declared but its value is never read.
+src/pages/Inventory.tsx(3,10): error TS1484: 'Product' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/Inventory.tsx(6,37): error TS6133: 'refresh' is declared but its value is never read.
+src/pages/Inventory.tsx(7,10): error TS6133: 'selectedProductId' is declared but its value is never read.
+src/pages/Inventory.tsx(7,29): error TS6133: 'setSelectedProductId' is declared but its value is never read.
+src/pages/KitchenDisplay.tsx(4,1): error TS6133: 'OrderProvider' is declared but its value is never read.
+src/pages/KitchenDisplay.tsx(5,10): error TS2614: Module '"@/context/OrderContext"' has no exported member 'useOrders'. Did you mean to use 'import useOrders from "@/context/OrderContext"' instead?
+src/pages/KitchenDisplay.tsx(6,1): error TS6133: 'ReceiptView' is declared but its value is never read.
+src/pages/KitchenDisplay.tsx(10,11): error TS6133: 'selectedOrganization' is declared but its value is never read.
+src/pages/KitchenDisplay.tsx(18,10): error TS6133: 'filterStatus' is declared but its value is never read.
+src/pages/KitchenDisplay.tsx(18,24): error TS6133: 'setFilterStatus' is declared but its value is never read.
+src/pages/KitchenDisplay.tsx(64,43): error TS6133: 'index' is declared but its value is never read.
+src/pages/Loyalty.tsx(19,5): error TS6133: 'loading' is declared but its value is never read.
+src/pages/Loyalty.tsx(20,5): error TS6133: 'error' is declared but its value is never read.
+src/pages/Loyalty.tsx(39,10): error TS6133: 'disenrolling' is declared but its value is never read.
+src/pages/OrderCreation.tsx(2,10): error TS2305: Module '"@/utils/supabase"' has no exported member 'useSupabaseClient'.
+src/pages/OrderCreation.tsx(6,10): error TS1484: 'Product' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/OrderCreation.tsx(7,10): error TS1484: 'OrderItem' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/OrderCreation.tsx(7,21): error TS1484: 'Order' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/OrderCreation.tsx(19,11): error TS6133: 'orders' is declared but its value is never read.
+src/pages/OrderCreation.tsx(25,14): error TS6133: 'loyaltyLoading' is declared but its value is never read.
+src/pages/OrderCreation.tsx(27,21): error TS2339: Property 'refreshProducts' does not exist on type 'ProductsContextType'.
+src/pages/OrderCreation.tsx(61,7): error TS2304: Cannot find name 'setIsOnline'.
+src/pages/Orders.tsx(4,10): error TS2724: '"react-router-dom"' has no exported member named 'useRouter'. Did you mean 'useRoutes'?
+src/pages/Orders.tsx(8,11): error TS6133: 'orders' is declared but its value is never read.
+src/pages/Orders.tsx(9,54): error TS6133: 'productsError' is declared but its value is never read.
+src/pages/Orders.tsx(10,9): error TS6133: 'navigate' is declared but its value is never read.
+src/pages/Orders.tsx(22,9): error TS6133: 'handleAddProduct' is declared but its value is never read.
+src/pages/Privacy.tsx(195,29): error TS2339: Property 'consent' does not exist on type 'LoyaltyCustomer'.
+src/pages/Products.tsx(1,1): error TS6133: 'useState' is declared but its value is never read.
+src/pages/Products.tsx(3,10): error TS2724: '"react-router-dom"' has no exported member named 'useRouter'. Did you mean 'useRoutes'?
+src/pages/Products.tsx(5,1): error TS6133: 'OrderItem' is declared but its value is never read.
+src/pages/Products.tsx(5,10): error TS1484: 'OrderItem' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/Products.tsx(6,1): error TS6133: 'uuidv4' is declared but its value is never read.
+src/pages/Products.tsx(10,9): error TS6133: 'router' is declared but its value is never read.
+src/pages/Products.tsx(11,9): error TS6133: 'addOrder' is declared but its value is never read.
+src/pages/Reports.tsx(215,56): error TS2304: Cannot find name 'setData'.
+src/pages/SignIn.tsx(6,11): error TS2339: Property 'login' does not exist on type 'AuthContextType'.
+src/pages/SignUp.tsx(4,10): error TS2724: '"@chakra-ui/react"' has no exported member named 'Form'. Did you mean 'For'?
+src/pages/SignUp.tsx(4,10): error TS6133: 'Form' is declared but its value is never read.
+src/pages/SignUp.tsx(69,15): error TS2322: Type '{ children: string; type: "submit"; colorScheme: "teal"; isLoading: boolean; onClick: (e: FormEvent<Element>) => Promise<void>; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+  Property 'isLoading' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'. Did you mean 'loading'?
+src/pages/SignUp.tsx(75,22): error TS2604: JSX element type 'Alert' does not have any construct or call signatures.
+src/pages/SignUp.tsx(75,22): error TS2786: 'Alert' cannot be used as a JSX component.
+  Its type 'typeof import("D:/New/POS/node_modules/@chakra-ui/react/dist/types/components/alert/namespace")' is not a valid JSX element type.
+src/services/inventoryService.ts(1,26): error TS2307: Cannot find module '../supabaseClient' or its corresponding type declarations.
+src/services/inventoryService.ts(2,1): error TS6133: 'uuidv4' is declared but its value is never read.
+src/services/inventoryService.ts(17,5): error TS6133: 'productVariantId' is declared but its value is never read.
+src/services/inventoryService.ts(123,5): error TS6133: 'organizationId' is declared but its value is never read.
+src/services/purchaseOrderService.ts(1,26): error TS2307: Cannot find module '../supabaseClient' or its corresponding type declarations.
+src/services/purchaseOrderService.ts(2,1): error TS6133: 'uuidv4' is declared but its value is never read.
+src/services/purchaseOrderService.ts(42,31): error TS2339: Property 'organization_id' does not exist on type 'PurchaseOrderItem'.
+src/services/purchaseOrderService.ts(51,22): error TS6133: 'poId' is declared but its value is never read.
+src/services/unit-conversion.ts(1,10): error TS1484: 'Unit' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.

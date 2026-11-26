@@ -1,7 +1,24 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
+type StrengthLevel = { label: string; color: string; bg: string; width: string };
+
+function computePasswordStrength(pw: string): StrengthLevel {
+  let score = 0;
+  if (pw.length >= 8) score += 1;
+  if (pw.length >= 12) score += 1;
+  if (/[A-Z]/.test(pw)) score += 1;
+  if (/[0-9]/.test(pw)) score += 1;
+  if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+
+  if (pw.length === 0) return { label: '', color: 'text-gray-400', bg: 'bg-gray-200', width: 'w-0' };
+  if (score <= 2) return { label: 'Weak', color: 'text-red-600', bg: 'bg-red-200', width: 'w-1/4' };
+  if (score <= 3) return { label: 'Fair', color: 'text-yellow-600', bg: 'bg-yellow-200', width: 'w-2/4' };
+  if (score <= 4) return { label: 'Good', color: 'text-blue-600', bg: 'bg-blue-200', width: 'w-3/4' };
+  return { label: 'Strong', color: 'text-green-600', bg: 'bg-green-200', width: 'w-full' };
+}
 
 export const SignUp = () => {
   const { register, loading } = useAuth();
@@ -10,6 +27,8 @@ export const SignUp = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+
+  const passwordStrength = useMemo(() => computePasswordStrength(password), [password]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +81,30 @@ export const SignUp = () => {
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:outline-none"
             />
+            {password.length > 0 && (
+              <div className="mt-2 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className={`font-medium ${passwordStrength.color}`}>
+                    {passwordStrength.label}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden bg-gray-200">
+                  <div
+                    className={`h-full transition-all duration-300 ${passwordStrength.bg} ${passwordStrength.width}`}
+                    role="progressbar"
+                    aria-valuenow={passwordStrength.width === 'w-full' ? 100 : passwordStrength.width === 'w-3/4' ? 75 : passwordStrength.width === 'w-2/4' ? 50 : 25}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Password strength"
+                  />
+                </div>
+                {passwordStrength.label === 'Weak' && (
+                  <p className="text-xs text-red-600">
+                    Use 8+ characters with uppercase, numbers, and symbols.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">

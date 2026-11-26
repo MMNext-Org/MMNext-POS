@@ -4,6 +4,7 @@ import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
 
 type View = 'search' | 'detail';
 
@@ -34,20 +35,24 @@ export const Loyalty = () => {
   const [redeemAmount, setRedeemAmount] = useState('');
   const [redeemReason, setRedeemReason] = useState('');
   const [enrolling, setEnrolling] = useState(false);
+  const [enrollError, setEnrollError] = useState('');
   const [disenrolling, setDisenrolling] = useState(false);
   const [earning, setEarning] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
   const [disenrollConfirm, setDisenrollConfirm] = useState(false);
   const earnRef = useRef<HTMLInputElement>(null);
   const redeemRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const searchResults = searchCustomers(searchQuery);
 
   const handleEnroll = async () => {
     setEnrolling(true);
+    setEnrollError('');
     try {
       const customer = await enrollCustomer(newName, newEmail || undefined, newPhone || undefined);
       if (customer) {
+        toast({ title: 'Customer enrolled', description: `${newName} has been added to the loyalty program.`, type: 'success' });
         setSelectedCustomer({
           customer,
           account: getAccount(customer.id),
@@ -57,6 +62,10 @@ export const Loyalty = () => {
         setNewEmail('');
         setNewPhone('');
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast({ title: 'Enrollment failed', description: message, type: 'error' });
+      setEnrollError(message);
     } finally {
       setEnrolling(false);
     }
@@ -71,13 +80,18 @@ export const Loyalty = () => {
     try {
       const ok = await earnPoints(customer.id, points, earnReason || undefined);
       if (ok) {
+        toast({ title: 'Points earned', description: `${points} points awarded to ${customer.name}.`, type: 'success' });
         setEarnAmount('');
         setEarnReason('');
         setSelectedCustomer({
           customer: findCustomer(customer.id)!,
           account: getAccount(customer.id),
         });
+      } else {
+        toast({ title: 'Earn failed', description: 'Could not award points.', type: 'error' });
       }
+    } catch (err) {
+      toast({ title: 'Earn failed', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setEarning(false);
     }
@@ -92,13 +106,18 @@ export const Loyalty = () => {
     try {
       const ok = await redeemPoints(customer.id, points, redeemReason || undefined);
       if (ok) {
+        toast({ title: 'Points redeemed', description: `${points} points deducted from ${customer.name}'s balance.`, type: 'success' });
         setRedeemAmount('');
         setRedeemReason('');
         setSelectedCustomer({
           customer: findCustomer(customer.id)!,
           account: getAccount(customer.id),
         });
+      } else {
+        toast({ title: 'Redeem failed', description: 'Could not redeem points.', type: 'error' });
       }
+    } catch (err) {
+      toast({ title: 'Redeem failed', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setRedeeming(false);
     }
@@ -115,9 +134,14 @@ export const Loyalty = () => {
     try {
       const ok = await disenrollCustomer(selectedCustomer.customer.id);
       if (ok) {
+        toast({ title: 'Customer disenrolled', description: `${selectedCustomer.customer.name} has been removed from the loyalty program.`, type: 'success' });
         setSelectedCustomer(null);
         setView('search');
+      } else {
+        toast({ title: 'Disenroll failed', description: 'Could not disenroll customer.', type: 'error' });
       }
+    } catch (err) {
+      toast({ title: 'Disenroll failed', description: err instanceof Error ? err.message : 'Unknown error', type: 'error' });
     } finally {
       setDisenrolling(false);
     }
@@ -149,10 +173,12 @@ export const Loyalty = () => {
               <div className="space-y-4">
                 <div className="flex gap-3">
                   <input
+                    id="loyalty-search"
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by name, email, or phone..."
+                    aria-label="Search customers by name, email, or phone"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
                   />
                   <Button variant="secondary" size="sm" onClick={() => setSearchQuery('')}>
@@ -187,8 +213,9 @@ export const Loyalty = () => {
                   <h3 className="text-sm font-semibold text-gray-600 mb-3">Or enroll a new customer</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
+                        <label htmlFor="loyalty-enroll-name" className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
                       <input
+                          id="loyalty-enroll-name"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
                         placeholder="Jane Smith"
@@ -196,8 +223,9 @@ export const Loyalty = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label htmlFor="loyalty-enroll-email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                       <input
+                          id="loyalty-enroll-email"
                         value={newEmail}
                         onChange={(e) => setNewEmail(e.target.value)}
                         placeholder="jane@example.com"
@@ -206,8 +234,9 @@ export const Loyalty = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        <label htmlFor="loyalty-enroll-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                       <input
+                          id="loyalty-enroll-phone"
                         value={newPhone}
                         onChange={(e) => setNewPhone(e.target.value)}
                         placeholder="+1 555-0000"
@@ -218,6 +247,11 @@ export const Loyalty = () => {
                   <Button variant="primary" onClick={handleEnroll} disabled={!newName.trim() || enrolling}>
                     {enrolling ? 'Enrolling...' : 'Enroll Customer'}
                   </Button>
+                  {enrollError && (
+                    <p className="mt-2 text-sm text-red-600" role="alert" aria-live="polite">
+                      {enrollError}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -254,6 +288,7 @@ export const Loyalty = () => {
                                 setSelectedCustomer({ customer: c, account });
                                 setView('detail');
                               }}
+                              aria-label={`View details for ${c.name}`}
                             >
                               View
                             </Button>
@@ -324,9 +359,10 @@ export const Loyalty = () => {
                 </p>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Points to earn</label>
+                    <label htmlFor="loyalty-earn-points" className="block text-sm font-medium mb-1">Points to earn</label>
                     <input
                       ref={earnRef}
+                      id="loyalty-earn-points"
                       value={earnAmount}
                       onChange={(e) => setEarnAmount(e.target.value)}
                       type="number"
@@ -335,8 +371,9 @@ export const Loyalty = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Reason</label>
+                    <label htmlFor="loyalty-earn-reason" className="block text-sm font-medium mb-1">Reason</label>
                     <input
+                      id="loyalty-earn-reason"
                       value={earnReason}
                       onChange={(e) => setEarnReason(e.target.value)}
                       placeholder="e.g. Coffee purchase"
@@ -356,9 +393,10 @@ export const Loyalty = () => {
                 </p>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Points to redeem</label>
+                    <label htmlFor="loyalty-redeem-points" className="block text-sm font-medium mb-1">Points to redeem</label>
                     <input
                       ref={redeemRef}
+                      id="loyalty-redeem-points"
                       value={redeemAmount}
                       onChange={(e) => setRedeemAmount(e.target.value)}
                       type="number"
@@ -371,8 +409,9 @@ export const Loyalty = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Reason</label>
+                    <label htmlFor="loyalty-redeem-reason" className="block text-sm font-medium mb-1">Reason</label>
                     <input
+                      id="loyalty-redeem-reason"
                       value={redeemReason}
                       onChange={(e) => setRedeemReason(e.target.value)}
                       placeholder="e.g. Free coffee reward"
