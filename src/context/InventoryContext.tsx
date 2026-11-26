@@ -93,6 +93,12 @@ export const InventoryProvider = ({ children }: { children: React.ReactNode }) =
     }
 
     try {
+      // Cache the authenticated user once instead of calling auth.getUser()
+      // twice (once for the org filter, once for the movement user_id).
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const orgId = authUser?.user_metadata?.organization_id ?? '';
+      const userId = authUser?.user_metadata?.user_id ?? null;
+
       // Get current stock from DB
       const { data, error: dbError } = await supabase
         .from('products')
@@ -107,7 +113,7 @@ export const InventoryProvider = ({ children }: { children: React.ReactNode }) =
         .from('products')
         .update({ stock: updatedStock })
         .eq('id', productId)
-        .eq('organization_id', (await supabase.auth.getUser()).data.user?.user_metadata?.organization_id ?? '');
+        .eq('organization_id', orgId);
 
       if (updateError) throw updateError;
 
@@ -121,7 +127,7 @@ export const InventoryProvider = ({ children }: { children: React.ReactNode }) =
           product_id: productId,
           delta: delta,
           reason: reason,
-          user_id: (await supabase.auth.getUser()).data.user?.user_metadata?.user_id ?? null,
+          user_id: userId,
           status: 'pending',
         });
     } catch (err) {
@@ -136,49 +142,52 @@ export const InventoryProvider = ({ children }: { children: React.ReactNode }) =
 
   // Handle online/offline events to manage queue
   useEffect(() => {
+      const processOfflineEntry = async (entry: { productId: string; delta: number; reason: string; timestamp: string }) => {
+        try {
+          const { productId, delta, reason } = entry;
+          const { data, error: fetchError } = await supabase
+            .from('products')
+            .select('stock')
+            .eq('id', productId)
+            .single();
+
+          if (fetchError) {
+            console.error('Failed to fetch product stock for offline processing', fetchError);
+            return;
+          }
+
+          const currentStock = data?.stock ?? 0;
+          const newStock = currentStock + delta;
+
+          if (newStock < 0) {
+            console.warn('Insufficient stock for product', productId, 'during offline processing');
+            return;
+          }
+
+          await supabase
+            .from('products')
+            .update({ stock: newStock })
+            .eq('id', productId);
+
+          await supabase
+            .from('stock_movements')
+            .update({ status: 'committed' })
+            .eq('product_id', productId);
+        } catch (err) {
+          console.error('Error processing offline stock change', err);
+        }
+      };
+
       const handleOnline = async () => {
         // Process offline queue when going online
         const queue = getOfflineQueue();
-        for (const entry of Object.values(queue)) {
-          try {
-            const { productId, delta, reason, timestamp } = entry;
-            const { data, error: fetchError } = await supabase
-              .from('products')
-              .select('stock')
-              .eq('id', productId)
-              .single();
-
-            if (fetchError) {
-              console.error('Failed to fetch product stock for offline processing', fetchError);
-              continue;
-            }
-
-            const currentStock = data?.stock ?? 0;
-            const newStock = currentStock + delta;
-
-            if (newStock < 0) {
-              console.warn('Insufficient stock for product', productId, 'during offline processing');
-              // Optionally handle the error (e.g., mark entry as failed)
-              continue;
-            }
-
-            await supabase
-              .from('products')
-              .update({ stock: newStock })
-              .eq('id', productId);
-
-            await supabase
-              .from('stock_movements')
-              .update({ status: 'committed' })
-              .eq('product_id', productId);
-          } catch (err) {
-            console.error('Error processing offline stock change', err);
-          }
-        }
+        // Commit all queued stock changes in parallel instead of sequentially,
+        // reducing wall-clock time when many offline edits accumulate.
+        await Promise.all(Object.values(queue).map(processOfflineEntry));
         // Clear processed queue
-      setOfflineQueueState({});
-      setOfflineQueue({});
-    };
+        setOfflineQueueState({});
+        setOfflineQueue({});
+      };
 
     const handleOffline = () => {
       // Optionally persist queue; already persisted via localStorage

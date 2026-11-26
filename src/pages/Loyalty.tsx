@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +8,7 @@ type View = 'search' | 'detail';
 export const Loyalty = () => {
   const {
     customers,
+    accounts,
     enrollCustomer,
     findCustomer,
     searchCustomers,
@@ -40,7 +41,10 @@ export const Loyalty = () => {
   const earnRef = useRef<HTMLInputElement>(null);
   const redeemRef = useRef<HTMLInputElement>(null);
 
-  const searchResults = searchCustomers(searchQuery);
+  const searchResults = useMemo(() => searchCustomers(searchQuery), [
+    searchCustomers,
+    searchQuery,
+  ]);
 
   const handleEnroll = async () => {
     setEnrolling(true);
@@ -118,9 +122,18 @@ export const Loyalty = () => {
     }
   };
 
-  const customerTransactions = selectedCustomer
-    ? getCustomerTransactions(selectedCustomer.customer.id)
-    : [];
+  const customerTransactions = useMemo(() =>
+    selectedCustomer
+      ? getCustomerTransactions(selectedCustomer.customer.id)
+      : [],
+  [selectedCustomer, getCustomerTransactions]);
+
+  // O(1) account lookup per customer row instead of O(n) find per render.
+  const accountsMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof getAccount>>();
+    accounts.forEach((a) => map.set(a.customerId, a));
+    return map;
+  }, [accounts]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -233,7 +246,7 @@ export const Loyalty = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {customers.map((c) => {
-                      const account = getAccount(c.id);
+                      const account = accountsMap.get(c.id);
                       return (
                         <tr key={c.id}>
                           <td className="px-4 py-3 font-medium">{c.name}</td>

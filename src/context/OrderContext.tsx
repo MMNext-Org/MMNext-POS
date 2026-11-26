@@ -139,47 +139,53 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
       }]);
       throw error;
     }
-  }, []);
+  }, [updateInventoryForOrder]);
 
-    const updateInventoryForOrder = async (order: Order) => {
+    const updateInventoryForOrder = useCallback(async (order: Order) => {
       try {
         // Extract product variant IDs and quantities from order items
         const variantIdsWithQty = order.items.map((item) => ({
-                        variantId: item.product_variant_id,
-                        quantity: item.quantity,
+          variantId: item.product_variant_id,
+          quantity: item.quantity,
         }));
 
         // Fetch product IDs for all variant IDs in one query
         const { data: variants, error: variantError } = await supabase
-                        .from('product_variants')
-                        .select('id, product_id')
-                        .in('id', variantIdsWithQty.map(v => v.variantId));
+          .from('product_variants')
+          .select('id, product_id')
+          .in('id', variantIdsWithQty.map(v => v.variantId));
 
         if (variantError) {
-                        console.error('Failed to fetch product variant data:', variantError);
-                        throw variantError;
+          console.error('Failed to fetch product variant data:', variantError);
+          throw variantError;
         }
 
         // Create a map variantId => productId
         const variantToProduct = new Map<string, string>();
         variants.forEach((v: { id: string; product_id: string }) => {
-                        variantToProduct.set(v.id, v.product_id);
+          variantToProduct.set(v.id, v.product_id);
         });
 
-        for (const { variantId, quantity } of variantIdsWithQty) {
-    const productId = variantToProduct.get(variantId);
-    if (!productId) {
-      console.warn(`Variant ${variantId} not found in product_variants table`);
-      continue;
-    }
-    await updateStock(productId, -quantity);
-  }
-} catch (err) {
-  console.error('Error updating inventory for order:', err);
-  // Re-throw to let addOrder handle the error (setError, queue item)
-  throw err;
-  }
-};
+        // Fire all variant stock updates in parallel instead of sequentially,
+        // avoiding N sequential supabase round-trips (SELECT + UPDATE per variant).
+        // `updateStock` is a stable module-level import, so it is intentionally
+        // omitted from the dependency array.
+        await Promise.all(
+          variantIdsWithQty.map(async ({ variantId, quantity }) => {
+            const productId = variantToProduct.get(variantId);
+            if (!productId) {
+              console.warn(`Variant ${variantId} not found in product_variants table`);
+              return;
+            }
+            await updateStock(productId, -quantity);
+          })
+        );
+      } catch (err) {
+        console.error('Error updating inventory for order:', err);
+        // Re-throw to let addOrder handle the error (setError, queue item)
+        throw err;
+      }
+    }, []);
 
 
   if (loading) {

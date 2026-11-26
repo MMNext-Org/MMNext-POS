@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useState, useEffect } from 'react';
+import { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '@/context/AuthContext';
 
@@ -375,7 +375,7 @@ export const LoyaltyProvider = ({
     [accounts, customers, organizationId, getAccount],
   );
 
-  const value: LoyaltyContextType = {
+  const value: LoyaltyContextType = useMemo(() => ({
     customers,
     accounts,
     transactions,
@@ -390,7 +390,11 @@ export const LoyaltyProvider = ({
     redeemPoints,
     getCustomerTransactions,
     refresh,
-  };
+  }), [
+    customers, accounts, transactions, loading, error,
+    findCustomer, searchCustomers, enrollCustomer, getAccount,
+    disenrollCustomer, earnPoints, redeemPoints, getCustomerTransactions, refresh,
+  ]);
 
   return (
     <LoyaltyContext.Provider value={value}>{children}</LoyaltyContext.Provider>

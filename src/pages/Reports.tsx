@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useOrderContext } from '@/context/OrderContext';
@@ -37,8 +37,9 @@ export const Reports = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Compute data for the selected report type and date filters (derived during render)
-  const reportData: unknown[] = (() => {
+  // Memoize the derived report data so it is only recomputed when the report
+  // type, date filters, or underlying source data actually change.
+  const reportData = useMemo<unknown[]>(() => {
     let source: unknown[] = [];
     switch (reportType) {
       case 'orders':
@@ -69,7 +70,7 @@ export const Reports = () => {
       });
     }
     return source;
-  })();
+  }, [reportType, startDate, endDate, orders, shifts, customers]);
 
   const data = reportData;
 
@@ -212,7 +213,15 @@ export const Reports = () => {
             <Button variant="primary" onClick={handleExport} disabled={state.loading || data.length === 0}>
               {state.loading ? 'Exporting...' : `Export ${format.toUpperCase()}`}
             </Button>
-            <Button variant="secondary" onClick={() => setData([])} disabled={data.length === 0}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setReportType('orders');
+                setStartDate('');
+                setEndDate('');
+              }}
+              disabled={data.length === 0}
+            >
               Clear
             </Button>
             <span className="ml-auto text-sm text-gray-500">

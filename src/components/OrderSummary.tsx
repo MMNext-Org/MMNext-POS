@@ -66,4 +66,4 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ selectedProductId, quantity
   );
 };
 
-export default OrderSummary;
+export default React.memo(OrderSummary);

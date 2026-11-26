@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useLoyaltyContext } from '@/context/LoyaltyContext';
+import { useLoyaltyContext, type LoyaltyCustomer } from '@/context/LoyaltyContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/utils/supabase';
 import { Button } from '@/components/ui/Button';
@@ -78,6 +78,13 @@ export const Privacy = () => {
     loadConsentHistory();
     loadRetentionPolicies();
   }, []);
+
+  // O(1) customer lookup per consent row instead of O(n) find per render.
+  const customersMap = useMemo(() => {
+    const map = new Map<string, LoyaltyCustomer>();
+    customers.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [customers]);
 
   const loadConsentHistory = async () => {
     setConsentLoading(true);
@@ -508,7 +515,7 @@ export const Privacy = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {consentHistory.map((c) => {
-                    const customer = customers.find((x) => x.id === c.customer_id);
+                    const customer = customersMap.get(c.customer_id);
                     return (
                       <tr key={c.id}>
                         <td className="px-4 py-3 font-medium">{customer?.name || c.customer_id}</td>

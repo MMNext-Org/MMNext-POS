@@ -42,5 +42,19 @@ export default defineConfig({
       '@/components': path.resolve(__dirname, 'src/components'),
       '@/types': path.resolve(__dirname, 'src/types')
     }
-  }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split vendor libraries into separate chunks so they can be cached
+        // independently of the application code and loaded in parallel.
+        manualChunks: (id) => {
+          if (/[\\/]node_modules[\\/](react|react-dom)[\\/]/.test(id)) return 'react'
+          if (/[\\/]node_modules[\\/](@chakra-ui|@emotion)[\\/]/.test(id)) return 'ui'
+          if (/[\\/]node_modules[\\/](@supabase|@powersync)[\\/]/.test(id)) return 'data'
+          if (/[\\/]node_modules[\\/]framer-motion[\\/]/.test(id)) return 'motion'
+        },
+      },
+    },
+  },
 })
