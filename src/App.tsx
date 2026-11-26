@@ -21,9 +21,7 @@ import { ProductsProvider } from '@/context/ProductsContext';
 import { ShiftProvider } from './context/ShiftContext';
 import { LoyaltyProvider } from './context/LoyaltyContext';
 import { ReportsProvider } from './context/ReportsContext';
-import { Navigation } from './components/Navigation';
 import { ToastProvider } from './components/ui/Toast';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 function App() {
   const { user, loading: authLoading } = useAuth();
@@ -98,7 +96,6 @@ function App() {
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
               </Routes>
-            </main>
             </main>
           </ReportsProvider>
         </LoyaltyProvider>
