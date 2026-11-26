@@ -15,7 +15,7 @@ export const Profile = () => {
         <Link to="/signin">Sign In</Link>
       </div>
     );
-};
+  }
 
   return (
     <div className="profile">

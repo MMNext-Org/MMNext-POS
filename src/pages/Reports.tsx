@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useOrderContext } from '@/context/OrderContext';
@@ -6,6 +6,7 @@ import { useShiftContext } from '@/context/ShiftContext';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { useReports } from '@/context/ReportsContext';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type ReportType = 'orders' | 'shifts' | 'loyalty' | 'sales';
 type ReportFormat = 'csv' | 'pdf';
@@ -36,6 +37,8 @@ export const Reports = () => {
   const [format, setFormat] = useState<ReportFormat>('csv');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 25;
 
   // Memoize the derived report data so it is only recomputed when the report
   // type, date filters, or underlying source data actually change.
@@ -73,6 +76,17 @@ export const Reports = () => {
   }, [reportType, startDate, endDate, orders, shifts, customers]);
 
   const data = reportData;
+
+  // Reset to page 1 when report data changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [data]);
+
+  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return data.slice(start, start + ITEMS_PER_PAGE);
+  }, [data, currentPage]);
 
   const handleExport = () => {
     exportReport(
@@ -234,9 +248,11 @@ export const Reports = () => {
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
           <h2 className="text-lg font-bold mb-4">Data Preview</h2>
           {data.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">
-              No data available for the selected report and filters.
-            </p>
+            <EmptyState
+              icon="📊"
+              title="No data available"
+              description="No records match the selected report type and filters."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -250,7 +266,7 @@ export const Reports = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {data.slice(0, 50).map((item, idx) => (
+                  {paginatedData.map((item, idx) => (
                     <tr key={idx}>
                       {headers.map((h) => (
                         <td key={h} className="px-4 py-3">
@@ -259,15 +275,35 @@ export const Reports = () => {
                       ))}
                     </tr>
                   ))}
-                  {data.length > 50 && (
-                    <tr>
-                      <td colSpan={headers.length} className="px-4 py-3 text-center text-gray-500 text-sm">
-                        Showing first 50 of {data.length} records
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
+              {data.length > ITEMS_PER_PAGE && (
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages} ({data.length} records)
+                  </p>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      aria-label="Previous page"
+                    >
+                      ← Prev
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      aria-label="Next page"
+                    >
+                      Next →
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

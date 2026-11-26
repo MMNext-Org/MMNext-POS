@@ -107,19 +107,21 @@ export const Shifts = () => {
 
             <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
               <h2 className="text-lg font-bold mb-4">Cash Drawer</h2>
-              <div className="flex gap-3 mb-6">
+              <div className="flex gap-3 mb-6 items-end">
+                <span className="text-lg font-medium text-gray-900">$</span>
                 <input
                   ref={cashAmountRef}
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="Amount"
+                  placeholder="0.00"
+                  aria-label="Cash amount"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
                 />
-                <Button variant="primary" size="sm" onClick={() => cashIn(parseFloat(cashAmountRef.current?.value || '0') || 0)}>
+                <Button variant="primary" size="sm" onClick={() => cashIn(parseFloat(cashAmountRef.current?.value || '0') || 0)} aria-label="Cash in">
                   Cash In
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => cashOut(parseFloat(cashAmountRef.current?.value || '0') || 0)}>
+                <Button variant="secondary" size="sm" onClick={() => cashOut(parseFloat(cashAmountRef.current?.value || '0') || 0)} aria-label="Cash out">
                   Cash Out
                 </Button>
               </div>

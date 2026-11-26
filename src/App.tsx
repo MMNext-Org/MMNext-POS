@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Outlet } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
+import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
 import { Orders } from './pages/Orders';
@@ -76,11 +77,18 @@ function App() {
   }, [authLoading, user]);
 
   if (authLoading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="app flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="32" />
+      </div>
+    );
   }
 
   return (
     <div className="app">
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
       <CssBaseline />
       <PowerSyncProvider>
         <OrderProvider>
@@ -94,19 +102,22 @@ function App() {
         </OrderProvider>
         <LoyaltyProvider>
           <ReportsProvider>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/shifts" element={<Shifts />} />
-              <Route path="/loyalty" element={<Loyalty />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/tenant-test" element={<TenantTest />} />
-            </Routes>
+            <Navigation user={user} />
+            <main id="main-content" tabIndex={-1}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/shifts" element={<Shifts />} />
+                <Route path="/loyalty" element={<Loyalty />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/tenant-test" element={<TenantTest />} />
+              </Routes>
+            </main>
           </ReportsProvider>
         </LoyaltyProvider>
       </PowerSyncProvider>

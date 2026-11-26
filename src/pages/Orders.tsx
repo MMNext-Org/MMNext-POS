@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useOrderContext } from '@/context/OrderContext';
 import { useProducts } from '@/context/ProductsContext';
-import { useRouter } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function Orders() {
   const { orders, addOrder } = useOrderContext();
   const { products, loading: productsLoading, error: productsError, refresh: refreshProducts } = useProducts();
-  const navigate = useRouter();
+  const navigate = useNavigate();
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [orderItems, setOrderItems] = useState<any[]>([]);
@@ -67,81 +68,100 @@ export default function Orders() {
   };
 
   return (
-    <section className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-coffee-brown">Orders</h1>
+    <section className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      <main className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4 text-coffee-brown">Orders</h1>
 
-      <div className="space-y-6">
-        {/* Order Item Input Section */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Select Product
-          </label>
-          <select
-            className="w-full px-3 py-2 border rounded text-gray-700 focus:outline-none focus:ring-2 focus:ring-coffee-brown"
-            value={selectedProductId}
-            onChange={(e) => setSelectedProductId(e.target.value)}
-          >
-            <option value="" disabled>
-              Select a product
-            </option>
-            {productsLoading
-              ? (
-                <option disabled>
-                  Loading products...
+        <div className="space-y-6">
+          {/* Order Item Input Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label
+                htmlFor="product-select"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Select Product
+              </label>
+              <select
+                id="product-select"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-2 focus:ring-coffee-brown"
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                aria-label="Select product"
+              >
+                <option value="" disabled>
+                  Select a product
                 </option>
-              ) : products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} - ${product.price}
-                </option>
-              ))}
-          </select>
-          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+                {productsLoading
+                  ? (
+                    <option disabled>
+                      Loading products...
+                    </option>
+                  ) : products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - ${product.price}
+                    </option>
+                  ))}
+              </select>
+              {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+            </div>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+              <label
+                htmlFor="quantity-input"
+                className="block text-sm font-medium text-gray-700 mb-1 sm:mb-0"
+              >
+                Quantity
+              </label>
+              <input
+                id="quantity-input"
+                type="number"
+                className="w-full sm:w-24 px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-2 focus:ring-coffee-brown"
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                min="1"
+                disabled={isGenerating}
+                aria-label="Quantity"
+              />
+            </div>
+            <button
+              onClick={handleGenerateOrder}
+              className="w-full sm:w-auto bg-coffee-brown text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isGenerating}
+              aria-label={isGenerating ? 'Generating order...' : 'Create order'}
+            >
+              {isGenerating ? 'Generating...' : 'Create Order'}
+            </button>
+          </div>
+
+          {/* Order Items List */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-800">Order Items</h2>
+            {orderItems.length === 0 ? (
+              <EmptyState
+                icon="🧾"
+                title="No items in order"
+                description="Select a product and quantity, then create an order to add items."
+              />
+            ) : (
+              <ul className="list-disc pl-6">
+                {orderItems.map((item) => (
+                  <li key={item.id} className="flex justify-between items-center p-3 border-t pt-2">
+                    <div>
+                      <strong>
+                        {products.find((p) => p.id === item.productId)?.name || item.productId}
+                      </strong>
+                      <span className="text-sm ml-2 text-gray-500">
+                        × {item.quantity}
+                      </span>
+                    </div>
+                    <span className="text-gray-700">${item.unitPrice}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-
-        <div className="flex items-center">
-          <label className="block text-sm font-medium text-gray-700 mr-2">
-            Quantity
-          </label>
-          <input
-            type="number"
-            className="w-full px-3 py-2 border rounded text-gray-700 focus:outline-none focus:ring-2 focus:ring-coffee-brown"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-            min="1"
-            disabled={isGenerating}
-          />
-        </div>
-
-        <button
-          onClick={handleGenerateOrder}
-          className="w-full bg-coffee-brown text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
-          disabled={isGenerating}
-        >
-          {isGenerating ? 'Generating...' : 'Create Order'}
-        </button>
-      </div>
-
-      {/* Order Items List */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-800">Order Items</h2>
-        {orderItems.length === 0 ? (
-          <p className="text-gray-500">No items in order.</p>
-        ) : (
-          <ul className="list-disc pl-6">
-            {orderItems.map((item) => (
-              <li key={item.id} className="flex justify-between items-center p-3 border-t pt-2">
-                <div>
-                  <strong>{item.productId}</strong>
-                  <span className="text-sm ml-2 text-gray-500">
-                    × {item.quantity}
-                  </span>
-                </div>
-                <span className="text-gray-700">${item.unitPrice}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      </main>
     </section>
   );
 }

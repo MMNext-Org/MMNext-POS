@@ -2,6 +2,9 @@ import { useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { Button } from '@/components/ui/Button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type View = 'search' | 'detail';
 
@@ -38,6 +41,7 @@ export const Loyalty = () => {
   const [earning, setEarning] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
   const [disenrolling, setDisenrolling] = useState(false);
+  const [enrollError, setEnrollError] = useState<string | null>(null);
   const earnRef = useRef<HTMLInputElement>(null);
   const redeemRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +52,12 @@ export const Loyalty = () => {
 
   const handleEnroll = async () => {
     setEnrolling(true);
+    setEnrollError(null);
+    if (!newName.trim()) {
+      setEnrollError('Full name is required.');
+      setEnrolling(false);
+      return;
+    }
     try {
       const customer = await enrollCustomer(newName, newEmail || undefined, newPhone || undefined);
       if (customer) {
@@ -60,6 +70,8 @@ export const Loyalty = () => {
         setNewEmail('');
         setNewPhone('');
       }
+    } catch (err) {
+      setEnrollError(err instanceof Error ? err.message : 'Failed to enroll customer.');
     } finally {
       setEnrolling(false);
     }
@@ -134,6 +146,18 @@ export const Loyalty = () => {
     accounts.forEach((a) => map.set(a.customerId, a));
     return map;
   }, [accounts]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="32" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorDisplay message={error} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -223,14 +247,24 @@ export const Loyalty = () => {
                       />
                     </div>
                   </div>
-                  <Button variant="primary" onClick={handleEnroll} disabled={!newName.trim() || enrolling}>
+                  {enrollError && (
+                    <p className="text-sm text-red-600 mt-2" role="alert" aria-live="polite">
+                      {enrollError}
+                    </p>
+                  )}
+                  <Button
+                    variant="primary"
+                    onClick={handleEnroll}
+                    disabled={!newName.trim() || enrolling}
+                    aria-invalid={enrollError ? 'true' : 'false'}
+                  >
                     {enrolling ? 'Enrolling...' : 'Enroll Customer'}
                   </Button>
                 </div>
               </div>
             </div>
 
-            {customers.length > 0 && (
+            {customers.length > 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
                 <h2 className="text-lg font-bold mb-4">All Customers</h2>
                 <table className="w-full text-left text-sm">
@@ -262,6 +296,7 @@ export const Loyalty = () => {
                                 setSelectedCustomer({ customer: c, account });
                                 setView('detail');
                               }}
+                              aria-label={`View ${c.name} details`}
                             >
                               View
                             </Button>
@@ -272,6 +307,14 @@ export const Loyalty = () => {
                   </tbody>
                 </table>
               </div>
+            ) : (
+              <EmptyState
+                icon="👥"
+                title="No customers yet"
+                description="Enroll your first loyalty customer to get started."
+                actionLabel="Enroll a customer"
+                onAction={() => setView('search')}
+              />
             )}
           </>
         ) : (

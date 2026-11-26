@@ -4,9 +4,7 @@ import { ConnectionStatus } from './ConnectionStatus';
 
 const MANAGER_ROLES = ['Shift Lead', 'Branch Manager'];
 
-export const Navigation = ({ colorMode, toggleColorMode }) => {
-  const { user } = useAuth();
-
+export const Navigation = ({ user }: { user: any | null }) => {
   const userRole = user?.app_metadata?.role_name || user?.role || null;
   const canViewReports = userRole ? MANAGER_ROLES.includes(userRole) : false;
 

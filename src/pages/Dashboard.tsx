@@ -10,25 +10,49 @@ export const Dashboard = () => {
   }
 
   if (!user) {
-    // Redirect to Sign In if not authenticated
-    // This could be handled via navigation, but for simplicity we'll just show a message
     return (
-      <div className="dashboard">
-        <p>Please sign in to access the dashboard.</p>
-        <Link to="/signin">Sign In</Link>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+        <main className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h1>
+          <p className="text-gray-600">Please sign in to access the dashboard.</p>
+          <Link to="/signin" className="text-coffee-brown hover:underline">
+            Sign In
+          </Link>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="dashboard">
-      <h1>Dashboard</h1>
-      <p>Welcome, {user.name || 'User'}!</p>
-      <p>This is the main dashboard for authenticated users.</p>
-      <Link to="/orders">Orders</Link>
-      <Link to="/profile">Profile</Link>
-      <SyncQueue />
-      <button onClick={() => user?.logout()}>Logout</button>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      <main className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h1>
+        <p className="text-gray-600 mb-6">
+          Welcome, {user.name || 'User'}! This is the main dashboard for authenticated users.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <Link
+            to="/orders"
+            className="bg-coffee-brown text-white px-4 py-2 rounded-md hover:bg-green-600"
+          >
+            Orders
+          </Link>
+          <Link
+            to="/profile"
+            className="border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50"
+          >
+            Profile
+          </Link>
+        </div>
+        <SyncQueue aria-label="Sync queue status" />
+        <button
+          onClick={() => user?.logout()}
+          className="bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200"
+          aria-label="Logout"
+        >
+          Logout
+        </button>
+      </main>
     </div>
   );
 };
