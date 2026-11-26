@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getLocalDatabase } from './powersyncClient';
 
 export const useOfflineSync = () => {
   const [isOnline, setIsOnline] = useState(true);
-  const db = getLocalDatabase();
 
   // Listen to online/offline events to update UI state
   useEffect(() => {

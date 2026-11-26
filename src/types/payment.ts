@@ -1,5 +1,13 @@
 export type PaymentStatus = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'voided';
 
+export const PaymentStatusValues: PaymentStatus[] = [
+  'pending',
+  'confirmed',
+  'failed',
+  'refunded',
+  'voided',
+];
+
 export const PaymentStatusDescriptions = {
   pending: 'Payment initiated but not yet confirmed',
   confirmed: 'Payment verified and completed',
@@ -8,4 +16,4 @@ export const PaymentStatusDescriptions = {
   voided: 'Payment canceled before confirmation',
 };
 
-export default { PaymentStatus, PaymentStatusDescriptions };
+export default { PaymentStatusValues, PaymentStatusDescriptions };

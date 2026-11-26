@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { IngredientInfo } from './unitConversion';
+import { supabase } from '@/utils/supabase';
+import type { IngredientInfo } from './unitConversion';
 
 // Initialize Supabase client - this should be imported from your existing supabase client
 // For now, we'll assume you have a supabase client available
@@ -26,7 +26,7 @@ export const getProductVariantRecipe = async (productVariantId: string): Promise
   
   // 2. Get recipes for this product variant
   // Check if there's a direct relationship between product variants and recipes
-  const { data: variantRecipes, variantRecipeError } = await supabase
+  const { data: variantRecipes } = await supabase
     .from('recipes')
     .select('id')
     .eq('organization_id', organizationId)
@@ -92,7 +92,7 @@ export const getProductVariantRecipe = async (productVariantId: string): Promise
       return {
         quantity: convertedQuantity,
         unit: ingredient.unit,
-        conversionRate: ingredient.conversion_rate
+        conversion_rate: ingredient.conversion_rate
       };
     })
   );
@@ -107,7 +107,7 @@ export const getProductVariantRecipe = async (productVariantId: string): Promise
  * @param conversionRate - How many base units this unit represents
  * @returns Quantity in base units
  */
-export const convertQuantity = (quantity: number, unit: string, conversionRate: number): number => {
+export const convertQuantity = (quantity: number, _unit: string, conversionRate: number): number => {
   // If unit is already the base unit, return quantity as is
   // Otherwise, convert using conversion_rate
   // For example: 1 kg = 2 units, so if we have 3 kg with conversion_rate 2, 

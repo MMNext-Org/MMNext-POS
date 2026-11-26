@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useToast } from '@/components/ui/Toast';
+import OrderSummary from './OrderSummary';
 
 // Define product type
 interface Product {
@@ -20,9 +22,8 @@ const mockProducts: Product[] = [
   { id: '8', name: 'Ice Cream', category: 'Desserts', price: 4.5 },
 ];
 
-import OrderSummary from './OrderSummary';
-
 const OrderCreationWithSummary: React.FC = () => {
+  const { toast } = useToast();
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
@@ -77,60 +78,27 @@ const OrderCreationWithSummary: React.FC = () => {
     }
   };
 
-  const isValidCardNumber = (cardNumber: string) => {
-    // Simple validation: 16 digits
-    return /^\d{16}$/.test(cardNumber);
-  };
-
   const handleAddToOrder = () => {
     // Validate product selection
     if (!selectedProduct) {
-      alert('Please select a product.');
+      toast({ title: 'Product required', description: 'Please select a product.', type: 'error' });
       return;
     }
 
     // Validate quantity
     if (quantity <= 0) {
-      alert('Please enter a valid quantity (greater than 0).');
+      toast({ title: 'Invalid quantity', description: 'Please enter a valid quantity (greater than 0).', type: 'error' });
       return;
     }
 
-    // Validate payment method
-    if (!paymentMethod) {
-      alert('Please select a payment method.');
+    // Cash payment validation
+    const { total } = calculateTotals();
+    if (!cashValid) {
+      toast({ title: 'Invalid cash amount', description: 'Please enter a valid cash amount.', type: 'error' });
       return;
     }
-
-    if (paymentMethod === 'cash') {
-      // Cash payment validation
-      const { total } = calculateTotals();
-      if (!cashValid) {
-        alert('Please enter a valid cash amount.');
-        return;
-      }
-      // Cash payment is immediate
-      setPaymentStatus('settled');
-      alert(`Payment successful! Total: $${total.toFixed(2)}`);
-    } else if (paymentMethod === 'card') {
-      // Card payment validation
-      if (!cardNumber) {
-        alert('Please enter a card number.');
-        return;
-      }
-      if (!isValidCardNumber(cardNumber)) {
-        alert('Please enter a valid card number (16 digits).');
-        return;
-      }
-      // Simulate API call
-      simulateProviderApi(paymentMethod);
-    } else if (paymentMethod === 'qr') {
-      // QR payment: no specific validation needed for this simulation
-      simulateProviderApi(paymentMethod);
-    } else {
-      // Invalid payment method
-      alert('Invalid payment method.');
-      return;
-    }
+    // Cash payment is immediate
+    toast({ title: 'Payment successful', description: `Total: $${total.toFixed(2)}`, type: 'success' });
 
     // Reset form fields but keep product selection
     setQuantity(1);
@@ -142,23 +110,17 @@ const OrderCreationWithSummary: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Create Order</h1>
-      <div style={{ marginBottom: '20px' }}>
-        <label htmlFor="product-select" style={{ display: 'block', marginBottom: '5px' }}>
+    <div className="max-w-xl mx-auto p-4 font-sans">
+      <h1 className="text-xl font-bold mb-4">Create Order</h1>
+      <div className="mb-4">
+        <label htmlFor="product-select" className="block mb-1 text-sm font-medium">
           Product:
         </label>
         <select
           id="product-select"
           value={selectedProductId}
           onChange={handleSelectProduct}
-          style={{
-            width: '100%',
-            padding: '8px',
-            marginBottom: '10px',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-          }}
+          className="w-full px-3 py-2 mb-4 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-coffee-brown"
         >
           <option value="">-- Select a product --</option>
           {productOptions.map((option) => (
@@ -169,8 +131,8 @@ const OrderCreationWithSummary: React.FC = () => {
         </select>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label htmlFor="quantity" style={{ display: 'block', marginBottom: '5px' }}>
+      <div className="mb-4">
+        <label htmlFor="quantity" className="block mb-1 text-sm font-medium">
           Quantity:
         </label>
         <input
@@ -179,26 +141,20 @@ const OrderCreationWithSummary: React.FC = () => {
           min="1"
           value={quantity}
           onChange={handleQuantityChange}
-          style={{
-            width: '100%',
-            padding: '8px',
-            marginBottom: '10px',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-          }}
+          className="w-full px-3 py-2 mb-4 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-coffee-brown"
         />
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <fieldset style={{ border: '1px solid #ccc', padding: '10px' }}>
-          <legend>Modifiers:</legend>
+      <div className="mb-4">
+        <fieldset className="border border-gray-300 p-4 rounded">
+          <legend className="text-sm font-medium">Modifiers:</legend>
           {[ 
             { label: 'Size', value: 'size' }, 
             { label: 'Extra Cheese', value: 'extra_cheese' }, 
             { label: 'Toasted', value: 'toasted' }, 
             { label: 'Spicy', value: 'spicy' }, 
           ].map((mod) => (
-            <label key={mod.value} style={{ display: 'block', margin: '5px 0' }}>
+            <label key={mod.value} className="block mb-1">
               <input
                 type="checkbox"
                 name="modifier"
@@ -214,19 +170,18 @@ const OrderCreationWithSummary: React.FC = () => {
 
       {/* Order Summary Section */}
       <OrderSummary
-        selectedProductId={selectedProductId}
-        quantity={quantity}
         selectedProduct={selectedProduct}
+        quantity={quantity}
       />
 
       {/* Cash Payment Section */}
       {selectedProduct && (
-        <div style={{ marginTop: '25px', padding: '15px', border: '1px solid #e0e0e0', borderRadius: '4px' }}>
-          <h3>Cash Payment</h3>
-          <p>
-            <strong>Total Amount Due:</strong> ${selectedProduct.price * quantity * (1 - (quantity > 3 ? 0.10 : 0)).toFixed(2)}
+        <div className="mt-6 p-4 border border-gray-200 rounded bg-gray-50">
+          <h3 className="text-lg font-bold mb-2">Cash Payment</h3>
+          <p className="mb-2">
+            <strong>Total Amount Due:</strong> ${Number(selectedProduct.price * quantity * (1 - (quantity > 3 ? 0.10 : 0))).toFixed(2)}
           </p>
-          <p>
+          <p className="mb-2">
             <strong>Enter Cash Amount:</strong>
           </p>
           <input
@@ -252,62 +207,43 @@ const OrderCreationWithSummary: React.FC = () => {
                 setCashValid(true);
               }
             }}
-            style={{
-              width: '100%',
-              padding: '8px',
-              marginBottom: '10px',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-            }}
+            className="w-full px-3 py-2 mb-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-coffee-brown"
           />
 
           {cashError && (
-            <p style={{ color: 'red', marginBottom: '10px' }}>{cashError}</p>
+            <p className="mb-2 text-red-600">{cashError}</p>
           )}
 
           {cashValid && (
-            <p style={{ color: 'green', marginBottom: '10px' }}>
+            <p className="mb-2 text-green-600">
               ✅ Cash received! Change: ${change.toFixed(2)}
             </p>
           )}
 
-          <button
-            onClick={handleAddToOrder}
-            style={{
-              flexGrow: 1,
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              padding: '10px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Add to Order & Pay Cash
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleAddToOrder}
+              className="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 cursor-pointer disabled:opacity-50"
+            >
+              Add to Order & Pay Cash
+            </button>
 
-          <button
-            onClick={() => {
-              setSelectedProductId('');
-              setSelectedProduct(null);
-              setQuantity(1);
-              setModifiers([]);
-              setCashAmount(0);
-              setChange(0);
-              setCashError('');
-              setCashValid(false);
-            }}
-            style={{
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              padding: '10px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Clear
-          </button>
+            <button
+              onClick={() => {
+                setSelectedProductId('');
+                setSelectedProduct(null);
+                setQuantity(1);
+                setModifiers([]);
+                setCashAmount(0);
+                setChange(0);
+                setCashError('');
+                setCashValid(false);
+              }}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 cursor-pointer"
+            >
+              Clear
+            </button>
+          </div>
         </div>
       )}
     </div>

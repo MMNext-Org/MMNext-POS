@@ -1,9 +1,5 @@
-import { ReactElement } from 'react';
-
-type AuthState = {
-  user: any | null;
-  loading: boolean;
-};
+import type { ReactElement } from 'react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface PrivateRouteProps {
   children: ReactElement;
@@ -19,7 +15,7 @@ const PrivateRoute = ({ children, isAuthenticated }: PrivateRouteProps) => {
   
   if (isAuthenticated === null) {
     // Loading state - handle this as needed
-    return <div className="loading">Loading...</div>;
+    return <LoadingSpinner message="Loading…" />;
   }
   
   return children;

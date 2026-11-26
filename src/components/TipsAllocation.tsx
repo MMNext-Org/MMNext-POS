@@ -90,7 +90,6 @@ export const TipsAllocation: React.FC<TipsAllocationProps> = ({ onClose }) => {
               </Button>
             </div>
             {items.map((it, index) => {
-              const user = staff.find((s) => s.id === it.userId);
               return (
                 <div key={index} className="flex gap-2 items-center">
                   <select

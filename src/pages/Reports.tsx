@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useOrderContext } from '@/context/OrderContext';
@@ -6,6 +6,8 @@ import { useShiftContext } from '@/context/ShiftContext';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { useReports } from '@/context/ReportsContext';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type ReportType = 'orders' | 'shifts' | 'loyalty' | 'sales';
 type ReportFormat = 'csv' | 'pdf';
@@ -36,6 +38,9 @@ export const Reports = () => {
   const [format, setFormat] = useState<ReportFormat>('csv');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  const [data, setData] = useState<unknown[]>([]);
+  const [exportConfirm, setExportConfirm] = useState(false);
 
   // Compute data for the selected report type and date filters (derived during render)
   const reportData: unknown[] = (() => {
@@ -71,7 +76,9 @@ export const Reports = () => {
     return source;
   })();
 
-  const data = reportData;
+  useEffect(() => {
+    setData(reportData);
+  }, [reportData]);
 
   const handleExport = () => {
     exportReport(
@@ -84,6 +91,7 @@ export const Reports = () => {
       },
       data,
     );
+    setExportConfirm(false);
   };
 
   // Get column headers from first data row
@@ -114,11 +122,11 @@ export const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+  <div className="min-h-screen bg-gray-50 p-4" aria-labelledby="reports-heading">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Reports & Export</h1>
+          <h1 id="reports-heading" className="text-2xl font-bold text-gray-900">Reports & Export</h1>
             <p className="text-gray-600">
               Generate and export reports for your organization. Role:{' '}
               <span className="font-medium text-gray-800">{userRole}</span>
@@ -135,6 +143,7 @@ export const Reports = () => {
             {state.error}
             <button
               onClick={clearError}
+              aria-label="Dismiss error"
               className="ml-auto text-red-600 hover:text-red-800 underline text-sm"
             >
               Dismiss
@@ -154,10 +163,11 @@ export const Reports = () => {
           <h2 className="text-lg font-bold mb-4">Report Options</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-report-type" className="block text-sm font-medium text-gray-700 mb-2">
                 Report Type
               </label>
               <select
+                id="reports-report-type"
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value as ReportType)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 bg-white"
@@ -170,10 +180,11 @@ export const Reports = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-format" className="block text-sm font-medium text-gray-700 mb-2">
                 Format
               </label>
               <select
+                id="reports-format"
                 value={format}
                 onChange={(e) => setFormat(e.target.value as ReportFormat)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 bg-white"
@@ -186,10 +197,11 @@ export const Reports = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-start-date" className="block text-sm font-medium text-gray-700 mb-2">
                 Start Date
               </label>
               <input
+                id="reports-start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -197,10 +209,11 @@ export const Reports = () => {
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="reports-end-date" className="block text-sm font-medium text-gray-700 mb-2">
                 End Date
               </label>
               <input
+                id="reports-end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -208,8 +221,8 @@ export const Reports = () => {
               />
             </div>
           </div>
-          <div className="mt-4 flex gap-3">
-            <Button variant="primary" onClick={handleExport} disabled={state.loading || data.length === 0}>
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            <Button variant="primary" onClick={() => setExportConfirm(true)} disabled={state.loading || data.length === 0}>
               {state.loading ? 'Exporting...' : `Export ${format.toUpperCase()}`}
             </Button>
             <Button variant="secondary" onClick={() => setData([])} disabled={data.length === 0}>
@@ -225,16 +238,18 @@ export const Reports = () => {
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
           <h2 className="text-lg font-bold mb-4">Data Preview</h2>
           {data.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">
-              No data available for the selected report and filters.
-            </p>
+            <EmptyState
+              icon="📊"
+              title="No data available"
+              message="No data available for the selected report and filters."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-100">
                   <tr>
                     {headers.map((h) => (
-                      <th key={h} className="px-4 py-2 font-semibold text-gray-600">
+                      <th key={h} scope="col" className="px-4 py-2 font-semibold text-gray-600">
                         {h}
                       </th>
                     ))}
@@ -263,6 +278,18 @@ export const Reports = () => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={exportConfirm}
+        title="Export Report"
+        message={`Export ${totalCount} record${totalCount !== 1 ? 's' : ''} as ${format.toUpperCase()}? This cannot be undone.`}
+        confirmLabel="Export"
+        cancelLabel="Cancel"
+        variant="secondary"
+        loading={state.loading}
+        onConfirm={handleExport}
+        onCancel={() => setExportConfirm(false)}
+      />
     </div>
   );
 };

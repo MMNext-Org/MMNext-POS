@@ -17,22 +17,22 @@ export class Decimal {
 
   add(other: number | string): Decimal {
     const otherValue = new Decimal(other);
-    return new Decimal(this.value + otherValue.value);
+    return new Decimal(this.toNumber() + otherValue.toNumber());
   }
 
   subtract(other: number | string): Decimal {
     const otherValue = new Decimal(other);
-    return new Decimal(this.value - otherValue.value);
+    return new Decimal(this.toNumber() - otherValue.toNumber());
   }
 
   multiply(other: number | string): Decimal {
     const otherValue = new Decimal(other);
-    return new Decimal((this.value * otherValue.value));
+    return new Decimal(this.toNumber() * otherValue.toNumber());
   }
 
   divide(other: number | string): Decimal {
     const otherValue = new Decimal(other);
-    return new Decimal(this.value / otherValue.value);
+    return new Decimal(this.toNumber() / otherValue.toNumber());
   }
 
   round(decimals: number = 2): Decimal {
@@ -41,7 +41,7 @@ export class Decimal {
   }
 
   toFixed(decimals: number = 2): string {
-    return this.value.toFixed(decimals);
+    return this.toNumber().toFixed(decimals);
   }
 
   equals(other: number | string): boolean {

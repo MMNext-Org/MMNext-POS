@@ -8,6 +8,17 @@ export type OrderStatus =
   | 'completed'
   | 'cancelled';
 
+export const OrderStatusValues: OrderStatus[] = [
+  'draft',
+  'placed',
+  'accepted',
+  'preparing',
+  'ready',
+  'served',
+  'completed',
+  'cancelled',
+];
+
 export const OrderStatusDescriptions = {
   draft: 'Order is being created, not yet submitted',
   placed: 'Order has been placed by customer, pending confirmation',
@@ -19,4 +30,4 @@ export const OrderStatusDescriptions = {
   cancelled: 'Order has been cancelled by customer or restaurant',
 };
 
-export default { OrderStatus, OrderStatusDescriptions };
+export default { OrderStatusValues, OrderStatusDescriptions };

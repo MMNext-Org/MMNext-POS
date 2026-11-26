@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { ShiftHandover } from '@/components/ShiftHandover';
 import { TipsAllocation } from '@/components/TipsAllocation';
 import { ShiftApproval } from '@/components/ShiftApproval';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export const Shifts = () => {
   const {
@@ -20,6 +21,7 @@ export const Shifts = () => {
   const [openHandover, setOpenHandover] = useState(false);
   const [openTips, setOpenTips] = useState(false);
   const [openApproval, setOpenApproval] = useState(false);
+  const [closeConfirm, setCloseConfirm] = useState(false);
   const [staffId, setStaffId] = useState('staff-1');
   const [openingFloat, setOpeningFloat] = useState('0');
   const cashAmountRef = useRef<HTMLInputElement>(null);
@@ -27,11 +29,11 @@ export const Shifts = () => {
   const staffMember = staff.find((s) => s.id === staffId);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4" aria-label="Shift Management">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Shift Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900" id="shifts-heading">Shift Management</h1>
             <p className="text-gray-600">
               Open, close, hand over, and allocate tips for register shifts.
             </p>
@@ -48,8 +50,9 @@ export const Shifts = () => {
               No active shift. Open a register shift to begin taking cash sales.
             </p>
             <div className="space-y-4">
-              <label className="block text-sm font-medium">Staff member opening the shift</label>
+              <label htmlFor="shift-staff-select" className="block text-sm font-medium">Staff member opening the shift</label>
               <select
+                id="shift-staff-select"
                 value={staffId}
                 onChange={(e) => setStaffId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -60,10 +63,11 @@ export const Shifts = () => {
                   </option>
                 ))}
               </select>
-              <div className="flex gap-4 items-end">
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">Opening float ($)</label>
+                  <label htmlFor="shift-opening-float" className="block text-sm font-medium mb-1">Opening float ($)</label>
                   <input
+                    id="shift-opening-float"
                     value={openingFloat}
                     onChange={(e) => setOpeningFloat(e.target.value)}
                     type="number"
@@ -107,13 +111,15 @@ export const Shifts = () => {
 
             <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
               <h2 className="text-lg font-bold mb-4">Cash Drawer</h2>
-              <div className="flex gap-3 mb-6">
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <input
                   ref={cashAmountRef}
+                  id="cash-drawer-amount"
                   type="number"
                   step="0.01"
                   min="0"
                   placeholder="Amount"
+                  aria-label="Cash drawer amount"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
                 />
                 <Button variant="primary" size="sm" onClick={() => cashIn(parseFloat(cashAmountRef.current?.value || '0') || 0)}>
@@ -126,7 +132,7 @@ export const Shifts = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {shift.status === 'open' && (
-                  <Button variant="danger" onClick={requestClose} className="w-full">
+                  <Button variant="danger" onClick={() => setCloseConfirm(true)} className="w-full">
                     Request Shift Close (needs manager approval)
                   </Button>
                 )}
@@ -217,6 +223,21 @@ export const Shifts = () => {
             </table>
           </div>
         )}
+
+        <ConfirmDialog
+          isOpen={closeConfirm}
+          title="Request Shift Close"
+          message="Are you sure you want to request closing this shift? A manager must approve before it can be finalized."
+          confirmLabel="Request Close"
+          cancelLabel="Cancel"
+          variant="danger"
+          loading={false}
+          onConfirm={() => {
+            requestClose();
+            setCloseConfirm(false);
+          }}
+          onCancel={() => setCloseConfirm(false)}
+        />
       </div>
     </div>
   );

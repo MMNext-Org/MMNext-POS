@@ -128,6 +128,7 @@ export const ShiftProvider = ({
   const [shift, setShift] = useState<RegisterShift | null>(null);
   const [shifts, setShifts] = useState<RegisterShift[]>([]);
   const [staff] = useState<ShiftUser[]>(defaultStaff);
+  const [loading] = useState<boolean>(false);
 
   const cashIn = useCallback((amount: number) => {
     if (!shift) return;

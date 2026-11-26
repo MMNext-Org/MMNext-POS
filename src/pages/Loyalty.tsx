@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type View = 'search' | 'detail';
 
@@ -16,8 +18,6 @@ export const Loyalty = () => {
     earnPoints,
     redeemPoints,
     getCustomerTransactions,
-    loading,
-    error,
   } = useLoyaltyContext();
 
   const [view, setView] = useState<View>('search');
@@ -34,9 +34,10 @@ export const Loyalty = () => {
   const [redeemAmount, setRedeemAmount] = useState('');
   const [redeemReason, setRedeemReason] = useState('');
   const [enrolling, setEnrolling] = useState(false);
+  const [disenrolling, setDisenrolling] = useState(false);
   const [earning, setEarning] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
-  const [disenrolling, setDisenrolling] = useState(false);
+  const [disenrollConfirm, setDisenrollConfirm] = useState(false);
   const earnRef = useRef<HTMLInputElement>(null);
   const redeemRef = useRef<HTMLInputElement>(null);
 
@@ -105,7 +106,11 @@ export const Loyalty = () => {
 
   const handleDisenroll = async () => {
     if (!selectedCustomer) return;
-    if (!window.confirm('Are you sure you want to disenroll this customer from loyalty? This cannot be undone.')) return;
+    setDisenrollConfirm(true);
+  };
+
+  const confirmDisenroll = async () => {
+    setDisenrollConfirm(false);
     setDisenrolling(true);
     try {
       const ok = await disenrollCustomer(selectedCustomer.customer.id);
@@ -217,7 +222,7 @@ export const Loyalty = () => {
               </div>
             </div>
 
-            {customers.length > 0 && (
+            {customers.length > 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
                 <h2 className="text-lg font-bold mb-4">All Customers</h2>
                 <table className="w-full text-left text-sm">
@@ -259,6 +264,12 @@ export const Loyalty = () => {
                   </tbody>
                 </table>
               </div>
+            ) : (
+              <EmptyState
+                icon="🎖️"
+                title="No customers yet"
+                message="Enroll your first loyalty customer to get started."
+              />
             )}
           </>
         ) : (
@@ -279,8 +290,8 @@ export const Loyalty = () => {
                   {selectedCustomer?.customer.name}
                 </h1>
               </div>
-              <Button variant="danger" size="sm" onClick={handleDisenroll}>
-                Disenroll
+              <Button variant="danger" size="sm" onClick={handleDisenroll} disabled={disenrolling}>
+                {disenrolling ? 'Disenrolling...' : 'Disenroll'}
               </Button>
             </div>
 
@@ -423,7 +434,19 @@ export const Loyalty = () => {
                 </table>
               )}
             </div>
-          </>
+
+              <ConfirmDialog
+                isOpen={disenrollConfirm}
+                title="Disenroll Customer"
+                message="Are you sure you want to disenroll this customer from loyalty? This cannot be undone."
+                confirmLabel="Disenroll"
+                cancelLabel="Cancel"
+                variant="danger"
+                loading={disenrolling}
+                onConfirm={confirmDisenroll}
+                onCancel={() => setDisenrollConfirm(false)}
+              />
+            </>
         )}
       </div>
     </div>

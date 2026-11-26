@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '@/components/ui/Toast';
 
 // Define product type
 interface Product {
@@ -21,6 +22,7 @@ const mockProducts: Product[] = [
 ];
 
 const OrderCreationForm: React.FC = () => {
+  const { toast } = useToast();
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [modifiers, setModifiers] = useState<string[]>([]);
@@ -47,37 +49,34 @@ const OrderCreationForm: React.FC = () => {
   };
 
   const handleAddToOrder = () => {
-    if (selectedProductId && quantity > 0) {
-      alert(
-        `Added ${quantity} × ${mockProducts.find((p) => p.id === selectedProductId)?.name} to order with modifiers: ${modifiers.join(', ') || 'none'}`
-      );
+    const product = mockProducts.find((p) => p.id === selectedProductId);
+    if (selectedProductId && quantity > 0 && product) {
+      toast({
+        title: 'Added to order',
+        description: `${quantity} × ${product.name}${modifiers.length ? ` with modifiers: ${modifiers.join(', ')}` : ''}`,
+        type: 'success',
+      });
       // In a real app, this would update OrderContext queue
       setSelectedProductId('');
       setQuantity(1);
       setModifiers([]);
     } else {
-      alert('Please select a product and set quantity.');
+      toast({ title: 'Missing info', description: 'Please select a product and set quantity.', type: 'error' });
     }
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Create Order</h1>
-      <div style={{ marginBottom: '20px' }}>
-        <label htmlFor="product-select" style={{ display: 'block', marginBottom: '5px' }}>
+    <div className="max-w-sm mx-auto p-4 font-sans">
+      <h1 className="text-xl font-bold mb-4">Create Order</h1>
+      <div className="mb-4">
+        <label htmlFor="product-select" className="block mb-1">
           Product:
         </label>
         <select
           id="product-select"
           value={selectedProductId}
           onChange={handleSelectProduct}
-          style={{
-            width: '100%',
-            padding: '8px',
-            marginBottom: '10px',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-          }}
+          className="w-full px-2 py-1 mb-2 rounded border border-gray-300"
         >
           <option value="">-- Select a product --</option>
           {productOptions.map((option) => (
@@ -88,8 +87,8 @@ const OrderCreationForm: React.FC = () => {
         </select>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label htmlFor="quantity" style={{ display: 'block', marginBottom: '5px' }}>
+      <div className="mb-5">
+        <label htmlFor="quantity" className="block mb-1 text-sm font-medium text-gray-700">
           Quantity:
         </label>
         <input
@@ -98,26 +97,20 @@ const OrderCreationForm: React.FC = () => {
           min="1"
           value={quantity}
           onChange={handleQuantityChange}
-          style={{
-            width: '100%',
-            padding: '8px',
-            marginBottom: '10px',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-          }}
+          className="w-full px-3 py-2 mb-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:outline-none"
         />
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <fieldset style={{ border: '1px solid #ccc', padding: '10px' }}>
-          <legend>Modifiers:</legend>
+      <div className="mb-4">
+        <fieldset className="border border-gray-200 p-2 rounded">
+          <legend className="text-sm">Modifiers:</legend>
           {[
             { label: 'Size', value: 'size' },
             { label: 'Extra Cheese', value: 'extra_cheese' },
             { label: 'Toasted', value: 'toasted' },
             { label: 'Spicy', value: 'spicy' },
           ].map((mod) => (
-            <label key={mod.value} style={{ display: 'block', margin: '5px 0' }}>
+            <label key={mod.value} className="block mb-1">
               <input
                 type="checkbox"
                 name="modifier"
@@ -131,18 +124,10 @@ const OrderCreationForm: React.FC = () => {
         </fieldset>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px' }}>
+      <div className="flex gap-2">
         <button
           onClick={handleAddToOrder}
-          style={{
-            flexGrow: 1,
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
-            padding: '10px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
+          className="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >
           Add to Order
         </button>
@@ -152,14 +137,7 @@ const OrderCreationForm: React.FC = () => {
             setQuantity(1);
             setModifiers([]);
           }}
-          style={{
-            backgroundColor: '#6c757d',
-            color: 'white',
-            border: 'none',
-            padding: '10px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
         >
           Clear
         </button>

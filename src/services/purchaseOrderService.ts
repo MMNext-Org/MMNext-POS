@@ -1,5 +1,4 @@
-import { supabase } from '../supabaseClient';
-import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/utils/supabase';
 
 export interface PurchaseOrder {
   id: string;
@@ -39,7 +38,6 @@ export const PurchaseOrderService = {
       .from('purchase_order_items')
       .insert({
         purchase_order_id: poId,
-        organization_id: item.organization_id,
         supplier_item_id: item.supplier_item_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
@@ -48,7 +46,7 @@ export const PurchaseOrderService = {
     if (error) throw error;
   },
 
-  async receiveGoods(poId: string, receiptItems: { supplier_item_id: string; quantity: number }[], receiptId: string): Promise<void> {
+  async receiveGoods(receiptItems: { supplier_item_id: string; quantity: number }[], receiptId: string): Promise<void> {
     // Insert goods receipt items
     const items = receiptItems.map(item => ({
       goods_receipt_id: receiptId,

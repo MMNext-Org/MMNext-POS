@@ -1,18 +1,13 @@
-import { useState } from 'react';
+import { useToast } from '@/components/ui/Toast';
 import { useProducts } from '@/context/ProductsContext';
-import { useRouter } from 'react-router-dom';
-import { useOrderContext } from '@/context/OrderContext';
-import { OrderItem } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 
 export default function Products() {
   const { products, loading, error, refresh } = useProducts();
-  const router = useRouter();
-  const { addOrder } = useOrderContext();
+  const { toast } = useToast();
 
   const handleAddToOrder = (product: any) => {
     // This would be more sophisticated in a real app - open a modal or navigate
-    alert(`${product.name} added to order (simulated)`);
+    toast({ title: 'Added to order', description: product.name, type: 'success' });
   };
 
   if (loading) return <div className="p-6">Loading products...</div>;

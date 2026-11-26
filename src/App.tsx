@@ -1,37 +1,36 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from './context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Routes, Route } from 'react-router-dom';
-import { Navigation } from './components/Navigation';
 import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
-import { Orders } from './pages/Orders';
+import Orders from './pages/Orders';
 import { Profile } from './pages/Profile';
 import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
 import { TenantTest } from './pages/TenantTest';
-import { TenantProvider } from './context/TenantContext';
-import { TenantSelector } from './components/TenantSelector';
-import { PowerSyncProvider } from './context/PowerSyncContext';  // Changed from ../context/AuthContext
-import { getDeviceId } from '@/utils/deviceId';
-import { OrderProvider } from '@/context/OrderContext';
-import { ProductsProvider } from '@/context/ProductsContext';
-import { InventoryProvider } from '@/context/InventoryContext';
-import { CssBaseline } from '@chakra-ui/react';
-import { PrivateRoute } from './context/PrivateRoute';
-import { KitchenDisplay } from './pages/KitchenDisplay';
 import { Shifts } from './pages/Shifts';
 import { Loyalty } from './pages/Loyalty';
 import { Privacy } from './pages/Privacy';
 import { Reports } from './pages/Reports';
+import { TenantProvider } from './context/TenantContext';
+import { TenantSelector } from './components/TenantSelector';
+import { PowerSyncProvider } from './context/PowerSyncContext';
+import { OrderProvider } from '@/context/OrderContext';
+import { ProductsProvider } from '@/context/ProductsContext';
 import { ShiftProvider } from './context/ShiftContext';
 import { LoyaltyProvider } from './context/LoyaltyContext';
 import { ReportsProvider } from './context/ReportsContext';
+import { Navigation } from './components/Navigation';
+import { ToastProvider } from './components/ui/Toast';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 function App() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { loading: authLoading } = useAuth();
+  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
+
+  const toggleColorMode = useCallback(() => {
+    setColorMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
 
   // Initialize PowerSync client once on app mount
   useEffect(() => {
@@ -55,34 +54,20 @@ function App() {
     }
   }, [authLoading]);
 
-  useEffect(() => {
-    if (!authLoading) {
-      setIsAuthenticated(!!user);
-    }
-  }, [authLoading, user]);
-
-  // Initialize device ID on mount
-  useEffect(() => {
-    const id = getDeviceId();
-    deviceIdRef.current = id;
-    console.log('Device ID initialized:', id);
-  }, []);
-
-  // Optional: redirect after login logic kept minimal
-  useEffect(() => {
-    if (!authLoading && user) {
-      // In a real app, this would use navigate
-    }
-  }, [authLoading, user]);
-
   if (authLoading) {
-    return <div className="loading">Loading...</div>;
+    return <LoadingSpinner message="Loading…" />;
   }
 
   return (
     <div className="app">
-      <CssBaseline />
-      <PowerSyncProvider>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-gray-900 focus:text-white"
+      >
+        Skip to main content
+      </a>
+      <ToastProvider>
+        <PowerSyncProvider>
         <OrderProvider>
           <ShiftProvider>
             <ProductsProvider>
@@ -94,7 +79,9 @@ function App() {
         </OrderProvider>
         <LoyaltyProvider>
           <ReportsProvider>
-            <Routes>
+            <Navigation colorMode={colorMode} toggleColorMode={toggleColorMode} />
+            <main id="main-content">
+              <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/orders" element={<Orders />} />
@@ -107,9 +94,11 @@ function App() {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/tenant-test" element={<TenantTest />} />
             </Routes>
+            </main>
           </ReportsProvider>
         </LoyaltyProvider>
       </PowerSyncProvider>
+      </ToastProvider>
     </div>
   );
 }

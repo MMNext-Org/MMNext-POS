@@ -192,7 +192,7 @@ export const Privacy = () => {
           name: customer.name,
           email: customer.email,
           phone: customer.phone,
-          consent: customer.consent ?? false,
+          consent: customerConsent.length > 0,
           createdAt: customer.createdAt,
           updatedAt: customer.updatedAt,
         },
@@ -291,11 +291,11 @@ export const Privacy = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+  <div className="min-h-screen bg-gray-50 p-4" aria-labelledby="privacy-heading">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Privacy & Data</h1>
+          <h1 id="privacy-heading" className="text-2xl font-bold text-gray-900">Privacy & Data</h1>
             <p className="text-gray-600">
               Manage your personal data: export a copy of your records or request deletion per privacy law.
             </p>
@@ -365,8 +365,9 @@ export const Privacy = () => {
           {!deleteConfirm && !deleteLoading ? (
             <>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Select customer to delete</label>
+                <label htmlFor="privacy-delete-customer" className="block text-sm font-medium mb-2">Select customer to delete</label>
                 <select
+                  id="privacy-delete-customer"
                   value={deleteCustomerId || ''}
                   onChange={(e) => setDeleteCustomerId(e.target.value || null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -394,7 +395,7 @@ export const Privacy = () => {
                 <p className="text-sm text-red-700 mb-3">
                   All loyalty data for this customer will be permanently removed and cannot be recovered.
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Button variant="secondary" onClick={handleDeleteCancel}>
                     Cancel
                   </Button>
@@ -433,10 +434,11 @@ export const Privacy = () => {
             </div>
           )}
 
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+              <label htmlFor="privacy-consent-customer" className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
               <select
+                id="privacy-consent-customer"
                 value={newConsentCustomerId || ''}
                 onChange={(e) => setNewConsentCustomerId(e.target.value || null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -450,8 +452,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Consent type</label>
+              <label htmlFor="privacy-consent-type" className="block text-sm font-medium text-gray-700 mb-1">Consent type</label>
               <select
+                id="privacy-consent-type"
                 value={newConsentType}
                 onChange={(e) => setNewConsentType(e.target.value as ConsentType)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -463,8 +466,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Consent given?</label>
+              <label htmlFor="privacy-consent-given" className="block text-sm font-medium text-gray-700 mb-1">Consent given?</label>
               <select
+                id="privacy-consent-given"
                 value={newConsentGiven ? 'true' : 'false'}
                 onChange={(e) => setNewConsentGiven(e.target.value === 'true')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -474,8 +478,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
+              <label htmlFor="privacy-consent-version" className="block text-sm font-medium text-gray-700 mb-1">Version</label>
               <input
+                id="privacy-consent-version"
                 value={newConsentVersion}
                 onChange={(e) => setNewConsentVersion(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -546,10 +551,11 @@ export const Privacy = () => {
             </div>
           )}
 
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data type</label>
+              <label htmlFor="privacy-retention-data-type" className="block text-sm font-medium text-gray-700 mb-1">Data type</label>
               <select
+                id="privacy-retention-data-type"
                 value={newPolicyDataType}
                 onChange={(e) => setNewPolicyDataType(e.target.value as DataType)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500"
@@ -561,8 +567,9 @@ export const Privacy = () => {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Retention period (days)</label>
+              <label htmlFor="privacy-retention-days" className="block text-sm font-medium text-gray-700 mb-1">Retention period (days)</label>
               <input
+                id="privacy-retention-days"
                 type="number"
                 min="1"
                 value={newPolicyDays}

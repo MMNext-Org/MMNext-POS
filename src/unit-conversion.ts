@@ -1,4 +1,4 @@
-import { Unit } from './models/Unit';
+import type { Unit } from './models/Unit';
 
 export class UnitConverter {
   static convert(value: number, fromUnit: Unit, toUnit: Unit): number {

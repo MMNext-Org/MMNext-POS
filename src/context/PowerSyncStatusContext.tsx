@@ -57,7 +57,7 @@ export const PowerSyncStatusProvider = ({ children }: { children: React.ReactNod
 
   return (
     <PowerSyncStatusContext.Provider value={{ 
-      status, 
+      status: status.status, 
       error: status.error 
     }}>
       {children}

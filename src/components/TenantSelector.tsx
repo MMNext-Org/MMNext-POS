@@ -1,12 +1,10 @@
 import { useTenant } from '../context/TenantContext';
-import { Select } from '@chakra-ui/react';
-import { Box, VStack } from '@chakra-ui/react';
-import { Organization, Branch } from '../types';
+import type { Branch } from '../types';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export const TenantSelector = () => {
   const {
     selectedOrganization,
-    selectedBranch,
     setSelectedOrganization,
     setSelectedBranch,
     organizations,
@@ -15,57 +13,53 @@ export const TenantSelector = () => {
   } = useTenant();
 
   if (loading) {
-    return <div>Loading tenant data...</div>;
+    return <LoadingSpinner message="Loading tenant data…" />;
   }
 
   return (
-    <Box
-      maxWidth="md"
-      mx="auto"
-      p={4}
-      textAlign="center"
-      borderWidth={1}
-      borderRadius="md"
-      _hover={{ boxShadow: 'lg' }}
-    >
-      <VStack spacing={2}>
-        <Select
-          placeholder="Select organization..."
-          onChange={(value) => setSelectedOrganization(value)}
-          width="100%"
-          data-testid="org-select"
+    <div className="max-w-md mx-auto p-4 text-center border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex flex-col gap-4 items-center">
+        <select
+          onChange={(e) => {
+            const id = e.target.value;
+            const org = organizations.find((o) => o.id === id);
+            if (org) setSelectedOrganization(org);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:outline-none"
         >
+          <option value="">-- Select organization --</option>
           {organizations.map((org) => (
-            <option key={org.id} value={org}>
+            <option key={org.id} value={org.id}>
               {org.name} - {org.description}
             </option>
           ))}
-        </Select>
+        </select>
 
-        <Select
-          placeholder="Select branch..."
-          onChange={(value) => setSelectedBranch(value)}
-          width="100%"
+        <select
+          onChange={(e) => {
+            const id = e.target.value;
+            const branch = branches.find((b) => b.id === id);
+            if (branch) setSelectedBranch(branch);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:outline-none"
           disabled={!selectedOrganization}
-          data-testid="branch-select"
         >
+          <option value="">-- Select branch --</option>
           {selectedOrganization
-            ? (branches
+            ? branches
                 .filter((b) => b.organizationId === selectedOrganization.id)
                 .map((branch) => (
-                  <option key={branch.id} value={branch}>
+                  <option key={branch.id} value={branch.id}>
                     {branch.name} ({branch.address})
                   </option>
-                )))
-            : (
-              branches.map((branch) => (
-                <option key={branch.id} value={branch}>
+                ))
+            : branches.map((branch: Branch) => (
+                <option key={branch.id} value={branch.id}>
                   {branch.name} (org: {branch.organizationId})
                 </option>
-              ))
-            )}
-        </Select>
-      </VStack>
-    </Box>
+              ))}
+        </select>
+      </div>
+    </div>
   );
 };

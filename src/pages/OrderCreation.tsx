@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSupabaseClient } from '@/utils/supabase';
 import { useOrderContext } from '@/context/OrderContext';
 import { useLoyaltyContext } from '@/context/LoyaltyContext';
 import { useProducts } from '@/context/ProductsContext';
-import { Product } from '@/types/product';
-import { OrderItem, Order } from '@/types';
+import { useOfflineSync } from '../utils/offlineSync';
+import type { Product } from '@/types/product';
+import type { OrderItem, Order } from '@/types';
+import { supabase } from '@/utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
-import { useOfflineSync } from '@/utils/offlineSync'; // New hook for offline sync status
 
 // Simple offline storage using localStorage
 const OFFLINE_ORDERS_KEY = 'offline_orders';
@@ -15,16 +15,14 @@ const OFFLINE_ORDERS_KEY = 'offline_orders';
 const POINTS_PER_DOLLAR = 100;
 
 export default function OrderCreation() {
-  const supabase = useSupabaseClient();
-  const { orders, addOrder } = useOrderContext();
+  const { addOrder } = useOrderContext();
   const {
     customers,
     searchCustomers,
     getAccount,
     redeemPoints,
-    loading: loyaltyLoading,
   } = useLoyaltyContext();
-  const { products, refreshProducts } = useProducts();
+  const { products, refresh } = useProducts();
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -42,8 +40,8 @@ export default function OrderCreation() {
 
   // Load products on component mount
   useEffect(() => {
-    refreshProducts();
-  }, [refreshProducts]);
+    refresh();
+  }, [refresh]);
 
   // Load selected product data when product ID changes
   useEffect(() => {
@@ -54,23 +52,6 @@ export default function OrderCreation() {
       setSelectedProduct(null);
     }
   }, [products, selectedProductId]);
-
-  // Detect online/offline status
-  useEffect(() => {
-    const updateOnlineStatus = () => {
-      setIsOnline(navigator.onLine);
-    };
-
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    updateOnlineStatus(); // Initial check
-
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, []);
 
   const searchResults = searchCustomers(customerSearchQuery);
 

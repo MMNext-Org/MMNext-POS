@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePowerSyncStatus } from '../context/PowerSyncStatusContext';
 
-type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'syncing' | 'error';
-
 export const ConnectionStatus = () => {
   const { status, error } = usePowerSyncStatus();
   const [errorMessage, setErrorMessage] = useState('');

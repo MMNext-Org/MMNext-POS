@@ -11,12 +11,16 @@ export const Navigation = ({ colorMode, toggleColorMode }) => {
   const canViewReports = userRole ? MANAGER_ROLES.includes(userRole) : false;
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" aria-label="Main navigation">
       <div className="nav-brand">
-        <Link to="/">BREWFLOW POS</Link>
+        <Link to="/" aria-label="BREWFLOW POS home">
+          BREWFLOW POS
+        </Link>
       </div>
       <div className="nav-links">
-        <Link to="/">Home</Link>
+        <Link to="/" aria-current="page">
+          Home
+        </Link>
         <ConnectionStatus />
         {user ? (
           <>
@@ -27,9 +31,11 @@ export const Navigation = ({ colorMode, toggleColorMode }) => {
             <Link to="/privacy">Privacy</Link>
             {canViewReports && <Link to="/reports">Reports</Link>}
             <Link to="/profile">Profile</Link>
-            <Link to="/tenant-test">Tenant Test</Link>
             <button onClick={() => user?.logout()}>Logout</button>
-            <button onClick={toggleColorMode}>
+            <button
+              onClick={toggleColorMode}
+              aria-label={colorMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
               {colorMode === 'light' ? '🌙' : '☀️'}
             </button>
           </>
