@@ -59,27 +59,32 @@ namespace MMNextPOS.Infrastructure.Repositories
 
         public async Task<IReadOnlyList<Sale>> GetRecentAsync(int count = 20, CancellationToken cancellationToken = default)
         {
-            const string sql = @"SELECT s.*, c.Name AS CustomerName 
-                                    FROM Sales s 
-                                    LEFT JOIN Customers c ON s.CustomerId = c.Id 
+            const string sql = @"SELECT s.*, c.Name AS CustomerName
+                                    FROM Sales s
+                                    LEFT JOIN Customers c ON s.CustomerId = c.Id
                                     WHERE s.IsDeleted = 0
-                                    ORDER BY s.SaleDate DESC 
+                                    ORDER BY s.SaleDate DESC
                                     LIMIT @Count";
             var result = await Connection.QueryAsync<Sale>(sql, new { Count = count }, Transaction).ConfigureAwait(false);
             return result.AsList();
         }
 
-                public async Task<decimal> GetTodayTotalAsync(CancellationToken cancellationToken = default)
-                {
-                    var today = DateTime.UtcNow.Date;
-                    const string sql = @"SELECT COALESCE(SUM(s.TotalAmount), 0) 
-                                            FROM Sales s 
-                                           WHERE s.IsDeleted = 0 
-                                             AND s.SaleDate >= @TodayStart 
-                                             AND s.SaleDate < @TodayEnd";
-                    var result = await Connection.QuerySingleAsync<decimal>(sql, new { TodayStart = today, TodayEnd = today.AddDays(1) }, Transaction, System.Data.CommandType.Text, cancellationToken).ConfigureAwait(false);
-                    return result;
-                }
+        public async Task<decimal> GetTodayTotalAsync(CancellationToken cancellationToken = default)
+        {
+            var today = DateTime.UtcNow.Date;
+            const string sql = @"SELECT COALESCE(SUM(s.TotalAmount), 0)
+                                 FROM Sales s
+                                 WHERE s.IsDeleted = 0
+                                   AND s.SaleDate >= @TodayStart
+                                   AND s.SaleDate < @TodayEnd";
+            var command = new CommandDefinition(
+                sql,
+                new { TodayStart = today, TodayEnd = today.AddDays(1) },
+                transaction: Transaction,
+                commandType: CommandType.Text,
+                cancellationToken: cancellationToken);
+            return await Connection.QuerySingleAsync<decimal>(command).ConfigureAwait(false);
+        }
 
         // Implement required IRepository methods that may not be fully covered
         // Note: GenericRepository provides AddAsync, UpdateAsync, DeleteAsync, GetByIdAsync, GetAllAsync, GetPageAsync
