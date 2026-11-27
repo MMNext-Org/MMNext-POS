@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MMNextPOS.Domain.Models
 {
@@ -28,6 +29,12 @@ namespace MMNextPOS.Domain.Models
 
         [MaxLength(100)]
         public string? DataSourceMethod { get; set; } // GetTopSellingProducts, GetDailySales, GetLowStockItems, etc.
+
+        /// <summary>
+        /// Runtime data returned for this widget; it is not persisted as a database column.
+        /// </summary>
+        [NotMapped]
+        public object? Value { get; set; }
 
         [MaxLength(2000)]
         public string? Configuration { get; set; } // JSON configuration for the widget (filters, date ranges, chart options, etc.)
