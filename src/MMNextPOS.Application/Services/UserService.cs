@@ -49,11 +49,10 @@ namespace MMNextPOS.Application.Services
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                 return null;
 
-            var users = await _repo.GetAllAsync(cancellationToken);
-            var user = users.FirstOrDefault(u =>
-                string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase));
+            var user = await _repo.GetByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
 
-            if (user == null || !user.IsActive)
+            if (user == null || !user.IsActive ||
+                !string.Equals(user.Username, username, StringComparison.OrdinalIgnoreCase))
                 return null;
 
             // Verify password using BCrypt

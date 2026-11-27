@@ -1,0 +1,63 @@
+name: MMNextPOS Docker Integration Tests
+
+on:
+  push:
+    branches:
+      - tmp/mmnextpos-docker-integration-20261127
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mmnextpos-docker-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  user-repository-integration-tests:
+    name: User repository integration tests (MySQL via Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Verify Docker daemon
+        run: docker info
+
+      - name: Pre-pull MySQL 8.0 image
+        run: |
+          for attempt in 1 2 3; do
+            echo "Pull attempt $attempt/3..."
+            if docker pull mysql:8.0; then
+              echo "mysql:8.0 pulled successfully."
+              exit 0
+            fi
+            echo "Pull failed; waiting 15 seconds before retrying."
+            sleep 15
+          done
+          echo "::error::Failed to pull mysql:8.0 after 3 attempts."
+          exit 1
+
+      - name: Build infrastructure test project
+        run: dotnet build tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj --configuration Release
+
+      - name: Run UserRepositoryIntegrationTests with Testcontainers MySQL
+        run: >
+          dotnet test tests/MMNextPOS.Infrastructure.Tests/MMNextPOS.Infrastructure.Tests.csproj
+          --configuration Release --no-build
+          --filter FullyQualifiedName~UserRepositoryIntegrationTests
+          --logger "console;verbosity=normal"
+          --logger "trx;LogFileName=user-repository-integration-tests.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-repository-integration-tests
+          path: '**/TestResults/user-repository-integration-tests.trx'
+          if-no-files-found: ignore

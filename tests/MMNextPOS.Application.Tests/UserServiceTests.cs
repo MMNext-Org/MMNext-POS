@@ -33,57 +33,64 @@ namespace MMNextPOS.Application.Tests
             };
         }
 
+        private void SetupAuthenticateUser(string username, User? user)
+        {
+            _userRepoMock
+                .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
+        }
+
         [Fact]
         public async Task AuthenticateAsync_ValidCredentials_ReturnsUserAndUpdatesLastLogin()
         {
-            // Arrange
             var user = CreateUser("admin", "Admin@123");
-            _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-                         .ReturnsAsync(new List<User> { user });
+            SetupAuthenticateUser("admin", user);
 
             var service = CreateService();
-
-            // Act
             var result = await service.AuthenticateAsync("admin", "Admin@123");
 
-            // Assert
             Assert.NotNull(result);
             Assert.NotNull(result.LastLoginAt);
+            _userRepoMock.Verify(r => r.GetByUsernameAsync("admin", It.IsAny<CancellationToken>()), Times.Once);
+            _userRepoMock.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
             _userRepoMock.Verify(r => r.UpdateAsync(user, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
         public async Task AuthenticateAsync_UsernameMatchIsCaseInsensitive()
         {
-            // Arrange
             var user = CreateUser("Admin", "password123");
-            _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-                         .ReturnsAsync(new List<User> { user });
+            SetupAuthenticateUser("admin", user);
 
             var service = CreateService();
-
-            // Act
             var result = await service.AuthenticateAsync("admin", "password123");
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal("Admin", result.Username);
         }
 
         [Fact]
-        public async Task AuthenticateAsync_IncorrectPassword_ReturnsNull()
+        public async Task AuthenticateAsync_DatabaseCandidateMustMatchOrdinalIgnoreCase()
         {
-            // Arrange
-            var user = CreateUser("admin", "correct-password");
-            _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-                         .ReturnsAsync(new List<User> { user });
+            var user = CreateUser("café", "password123");
+            SetupAuthenticateUser("cafe", user);
 
             var service = CreateService();
+            var result = await service.AuthenticateAsync("cafe", "password123");
 
-            // Act
+            Assert.Null(result);
+            _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task AuthenticateAsync_IncorrectPassword_ReturnsNull()
+        {
+            var user = CreateUser("admin", "correct-password");
+            SetupAuthenticateUser("admin", user);
+
+            var service = CreateService();
             var result = await service.AuthenticateAsync("admin", "wrong-password");
 
-            // Assert
             Assert.Null(result);
             _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
         }
@@ -91,54 +98,41 @@ namespace MMNextPOS.Application.Tests
         [Fact]
         public async Task AuthenticateAsync_InactiveUser_ReturnsNull()
         {
-            // Arrange
             var user = CreateUser("admin", "Admin@123", isActive: false);
-            _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-                         .ReturnsAsync(new List<User> { user });
+            SetupAuthenticateUser("admin", user);
 
             var service = CreateService();
-
-            // Act
             var result = await service.AuthenticateAsync("admin", "Admin@123");
 
-            // Assert
             Assert.Null(result);
+            _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
         public async Task AuthenticateAsync_UnknownUser_ReturnsNull()
         {
-            // Arrange
-            _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-                         .ReturnsAsync(new List<User>());
+            SetupAuthenticateUser("ghost", null);
 
             var service = CreateService();
-
-            // Act
             var result = await service.AuthenticateAsync("ghost", "password");
 
-            // Assert
             Assert.Null(result);
         }
 
         [Fact]
         public async Task AuthenticateAsync_EmptyCredentials_ReturnsNullWithoutQuerying()
         {
-            // Arrange
             var service = CreateService();
-
-            // Act
             var result = await service.AuthenticateAsync("", "secret");
 
-            // Assert
             Assert.Null(result);
+            _userRepoMock.Verify(r => r.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
             _userRepoMock.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
         public async Task GetUserRolesAsync_ReturnsOnlyActiveRolesForUser()
         {
-            // Arrange
             var userRoles = new List<UserRole>
             {
                 new() { Id = 1, UserId = 1, RoleId = 10 },
@@ -158,11 +152,8 @@ namespace MMNextPOS.Application.Tests
                          .ReturnsAsync(roles);
 
             var service = CreateService();
-
-            // Act
             var result = await service.GetUserRolesAsync(1);
 
-            // Assert
             var role = Assert.Single(result);
             Assert.Equal("Admin", role.Code);
         }
@@ -170,16 +161,12 @@ namespace MMNextPOS.Application.Tests
         [Fact]
         public async Task GetUserRolesAsync_NoRoles_ReturnsEmpty()
         {
-            // Arrange
             _userRoleRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
                              .ReturnsAsync(new List<UserRole>());
 
             var service = CreateService();
-
-            // Act
             var result = await service.GetUserRolesAsync(1);
 
-            // Assert
             Assert.Empty(result);
             _roleRepoMock.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
@@ -187,11 +174,9 @@ namespace MMNextPOS.Application.Tests
         [Fact]
         public void HashPassword_VerifiesAndUsesUniqueSalt()
         {
-            // Act
             var hash1 = UserService.HashPassword("password");
             var hash2 = UserService.HashPassword("password");
 
-            // Assert
             Assert.NotEqual(hash1, hash2);
             Assert.True(BCrypt.Net.BCrypt.Verify("password", hash1));
         }
